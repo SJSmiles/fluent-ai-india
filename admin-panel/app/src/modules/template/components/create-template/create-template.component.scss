@@ -1,0 +1,178 @@
+/* Modal Header */
+.modal-header {
+  border-bottom: 1px solid #e9ecef;
+  padding: 1rem 1rem;
+
+  .modal-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #343a40;
+  }
+
+  .btn-close {
+    background-size: 0.8rem;
+  }
+}
+
+/* Modal Body */
+.modal-body.create-batch-call {
+  padding: 1.5rem;
+}
+
+/* Form Styles */
+.form-label {
+  font-weight: 600;
+  color: #343a40;
+  /* Dark gray for labels */
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+
+  .text-danger {
+    color: #dc3545 !important;
+  }
+}
+
+.custom-input-field-class {
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+  color: #495057;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+
+  &:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+
+  &.is-invalid {
+    border-color: #dc3545;
+
+    &:focus {
+      box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+  }
+}
+
+/* Textarea specific */
+textarea.custom-input-field-class {
+  resize: vertical;
+  min-height: 120px;
+  /* Force minimum height ~ 5 rows */
+}
+
+/* Text Muted / Hints */
+.text-muted {
+  color: #6c757d !important;
+  font-size: 0.8rem;
+}
+
+/* Variables Section */
+.alert-light {
+  background-color: #f0f7ff !important;
+  /* Light blue background like screenshot */
+  border-color: #cce5ff !important;
+  color: #004085;
+
+  .text-primary {
+    color: #0d6efd !important;
+    /* Bootstrap primary blue */
+  }
+
+  .btn-outline-primary {
+    color: #0d6efd;
+    border-color: #0d6efd;
+    background-color: #fff;
+    font-weight: 500;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+
+    &:hover {
+      background-color: #0d6efd !important;
+      color: #fff !important;
+    }
+  }
+}
+
+
+/* Status Card */
+.card {
+  border: 1px solid #e9ecef;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  .fw-bold {
+    font-weight: 600 !important;
+    color: #343a40;
+  }
+}
+
+/* Toggle Switch (Custom Green) */
+/* Toggle Switch (Custom Blue) */
+/* Inactive State */
+.form-check-input {
+  border-color: #dee2e6;
+  /* Standard gray border */
+  background-color: #dee2e6;
+  /* Gray background for inactive */
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  /* Standard white knob */
+}
+
+/* Active State */
+.form-check-input:checked {
+  background-color: #435ebe;
+  /* Matching Create Button */
+  border-color: #435ebe;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  /* Standard white knob */
+}
+
+.text-success {
+  color: #435ebe !important;
+}
+
+/* Footer Buttons */
+.button-section {
+  padding-top: 1rem;
+  border-top: 1px solid #e9ecef;
+  margin-top: 1rem;
+  /* Space from content */
+}
+
+.save-as-draft {
+  /* Cancel Button */
+  background-color: #fff;
+  color: #495057;
+  border: 1px solid #ced4da;
+  padding: 0.5rem 1.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #e2e6ea;
+  }
+}
+
+.create-button {
+  /* Create Template Button */
+  background-color: #435ebe;
+  /* Royal Blue from screenshot */
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #364b9a;
+  }
+
+  &:disabled {
+    background-color: #8da2e2;
+    cursor: not-allowed;
+  }
+}

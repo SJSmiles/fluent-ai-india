@@ -1,0 +1,75 @@
+<div class="modal-header d-flex justify-content-between">
+  <div>
+    <h5 class="modal-title">{{ selectedRecord ? 'Edit Phone Number' : 'Create Phone Number' }}</h5>
+  </div>
+  <button type="button" class="btn-close" aria-label="Close" (click)="close()"></button>
+</div>
+<div class="modal-body create-batch-call">
+  <form [formGroup]="recordForm">
+    <!-- Name Field -->
+    <div class="row">
+      <div class="col-12">
+        <div class="mb-3">
+          <label for="name" class="form-label mb-1">Name <span class="text-danger">*</span></label>
+          <input type="text" formControlName="name" id="name" class="form-control custom-input-field-class" required
+            appTrimText placeholder="e.g., Support Line" [ngClass]="{
+              'is-invalid':
+                (submitted || recordForm.get('name')?.touched) &&
+                recordForm.get('name')?.errors
+            }" />
+          <div class="invalid-feedback" align="left">
+            <app-control-messages [control]="$any(recordForm.get('name'))"></app-control-messages>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone Number Field -->
+    <div class="row">
+      <div class="col-12">
+        <div class="mb-3">
+          <label for="phoneNumber" class="form-label mb-1">Phone Number <span class="text-danger">*</span></label>
+          <input type="text" formControlName="phoneNumber" id="phoneNumber"
+            class="form-control custom-input-field-class" required appTrimText placeholder="e.g., +1234567890"
+            [ngClass]="{
+              'is-invalid':
+                (submitted || recordForm.get('phoneNumber')?.touched) &&
+                recordForm.get('phoneNumber')?.errors
+            }" />
+          <div class="invalid-feedback" align="left">
+            <app-control-messages [control]="$any(recordForm.get('phoneNumber'))"></app-control-messages>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone Number ID Field -->
+    <div class="row">
+      <div class="col-12">
+        <div class="mb-3">
+          <label for="phoneNumberId" class="form-label mb-1">Phone Number ID <span class="text-danger">*</span></label>
+          <input type="text" formControlName="phoneNumberId" id="phoneNumberId"
+            class="form-control custom-input-field-class" required appTrimText placeholder="e.g., 108394998829872"
+            [ngClass]="{
+              'is-invalid':
+                (submitted || recordForm.get('phoneNumberId')?.touched) &&
+                recordForm.get('phoneNumberId')?.errors
+            }" />
+          <div class="invalid-feedback" align="left">
+            <app-control-messages [control]="$any(recordForm.get('phoneNumberId'))"></app-control-messages>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </form>
+
+  <div class="d-flex gap-2 button-section justify-content-end mt-4">
+    <button class="save-as-draft" (click)="close()">Cancel</button>
+    <button type="button" class="create-button" (click)="submit()">
+      <span>
+        {{ selectedRecord ? 'Update Phone Number' : 'Create Phone Number' }}
+      </span>
+    </button>
+  </div>
+</div>

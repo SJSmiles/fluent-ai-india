@@ -1,0 +1,35 @@
+.expiry-options-container {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.expiry-option-btn {
+  padding: 4px 6px;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  color: #374151;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 24px;
+
+  &:hover {
+    border-color: #6366f1;
+    color: #6366f1;
+    background-color: #f5f5ff;
+  }
+
+  &.active {
+    background-color: #6366f1;
+    color: #ffffff;
+    border-color: #6366f1;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+}

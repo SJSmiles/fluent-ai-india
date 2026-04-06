@@ -1,0 +1,430 @@
+<!-- Create Batch Call Modal - Fluent Design System -->
+<div class="create-batch-call-modal">
+  <div class="modal-header">
+    <div>
+      <h2 class="modal-title">Create New Batch</h2>
+      <p class="modal-subtitle">Set up a new outbound calling campaign</p>
+    </div>
+    <button class="close-btn" (click)="close()">✕</button>
+  </div>
+
+  <div class="modal-body">
+    <form [formGroup]="recordForm">
+      <!-- Batch Name -->
+      <div class="form-group">
+        <label class="form-label required">Batch Name</label>
+        <input type="text" formControlName="name" class="form-input" placeholder="e.g., Q4 Enterprise Leads" appTrimText
+          [ngClass]="{
+            'is-invalid':
+              (submitted || recordForm.get('name')?.touched) && recordForm.get('name')?.errors
+          }" />
+        <div class="form-hint">Choose a descriptive name for this calling campaign</div>
+        <div class="invalid-feedback"
+          *ngIf="(submitted || recordForm.get('name')?.touched) && recordForm.get('name')?.errors">
+          <app-control-messages [control]="$any(recordForm.get('name'))"></app-control-messages>
+        </div>
+      </div>
+
+      <!-- Assign to Agent -->
+      <div class="form-group">
+        <label class="form-label required">Assign to Agent</label>
+        <div class="select-wrapper" [ngClass]="{
+            'is-invalid':
+              (submitted || recordForm.get('selectedAgent')?.touched) &&
+              recordForm.get('selectedAgent')?.errors
+          }">
+          <ng-select formControlName="selectedAgent" [items]="agentListing" [clearable]="false" bindLabel="agentName"
+            [searchable]="true" placeholder="Select an agent..." (change)="onAgentSelected($event)">
+            <ng-template ng-label-tmp let-item="item">
+              {{ item.agentName }}
+            </ng-template>
+            <ng-template ng-option-tmp let-item="item">
+              {{ item.agentName }} - {{ item.primaryPhone }}
+            </ng-template>
+          </ng-select>
+        </div>
+        <div class="form-hint">The AI agent who will handle these calls</div>
+        <div class="invalid-feedback" *ngIf="
+            (submitted || recordForm.get('selectedAgent')?.touched) &&
+            recordForm.get('selectedAgent')?.errors
+          ">
+          <app-control-messages [control]="$any(recordForm.get('selectedAgent'))"></app-control-messages>
+        </div>
+      </div>
+
+      <!-- Select Phone Number -->
+      <div class="form-group">
+        <label class="form-label required">Select Phone Number</label>
+        <div class="select-wrapper" [ngClass]="{
+            'is-invalid':
+              (submitted || recordForm.get('phoneNumberId')?.touched) &&
+              recordForm.get('phoneNumberId')?.errors
+          }">
+          <ng-select formControlName="phoneNumberId" [items]="phoneNumberListing" [clearable]="false" bindLabel="name"
+            bindValue="phoneNumberId" [searchable]="true" placeholder="Select a phone number..."
+            (change)="onPhoneNumberSelected($event)">
+            <ng-template ng-label-tmp let-item="item">
+              {{ item.name }} ({{ item.phoneNumber }})
+            </ng-template>
+            <ng-template ng-option-tmp let-item="item">
+              {{ item.name }} ({{ item.phoneNumber }})
+            </ng-template>
+          </ng-select>
+        </div>
+        <div class="form-hint">The phone number to place outbound calls from</div>
+        <div class="invalid-feedback" *ngIf="
+            (submitted || recordForm.get('phoneNumberId')?.touched) &&
+            recordForm.get('phoneNumberId')?.errors
+          ">
+          <app-control-messages [control]="$any(recordForm.get('phoneNumberId'))"></app-control-messages>
+        </div>
+      </div>
+
+
+      <!-- Import Mode Toggle -->
+      <div class="form-group">
+        <label class="form-label">Import Mode</label>
+        <div class="mode-toggle-container">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="toggle-group">
+              <div class="toggle-switch" [class.active]="recordForm.get('isContactSheet')?.value"
+                (click)="toggleImportMode()"></div>
+              <span class="toggle-label">
+                {{
+                recordForm.get('isContactSheet')?.value ? 'Contact List Mode' : 'Batch Call Mode'
+                }}
+              </span>
+            </div>
+
+            <div class="download-sample-container">
+              <button type="button" class="btn-download-sample" (click)="downloadSampleFile()" style="
+                  display: inline-flex;
+                  align-items: center;
+                  gap: 8px;
+                  padding: 8px 16px;
+                  background: #f3f4f6;
+                  border: 1px solid #e5e7eb;
+                  border-radius: 6px;
+                  color: #374151;
+                  font-size: 14px;
+                  font-weight: 500;
+                  cursor: pointer;
+                  transition: all 0.2s;
+                " onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span *ngIf="!recordForm.get('isContactSheet')?.value">Download Batch Call Sample</span>
+                <span *ngIf="recordForm.get('isContactSheet')?.value">Download Contact List Sample</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="mode-description">
+            <span *ngIf="!recordForm.get('isContactSheet')?.value">
+              Upload complete customer data with phone numbers
+            </span>
+            <span *ngIf="recordForm.get('isContactSheet')?.value">
+              Upload basic contact information (first name, last name, email)
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload Contacts -->
+      <div class="form-group">
+        <label class="form-label required">Upload Contacts</label>
+        <div class="upload-zone" (drop)="onDrop($event)" (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)" [class.drag-over]="isDragOver" (click)="fileInput.click()">
+          <input type="file" accept=".xls, .xlsx" (change)="onFileSelected($event)" hidden #fileInput />
+          <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          <div class="upload-text">Drop CSV file here or click to browse</div>
+          <div class="upload-subtext" *ngIf="!recordForm.get('isContactSheet')?.value">
+            Supports .csv files with phone numbers and customer details
+          </div>
+          <div class="upload-subtext" *ngIf="recordForm.get('isContactSheet')?.value">
+            Supports .csv files with first name, last name, and email
+          </div>
+        </div>
+
+        <!-- File Preview -->
+        <div class="file-preview" *ngIf="uploadedFile && !showCsvTable">
+          <div class="file-preview-icon">
+            <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" />
+            </svg>
+          </div>
+          <div class="file-preview-info">
+            <div class="file-preview-name">{{ getFileName() }}</div>
+            <div class="file-preview-size">{{ getFileSize() }}</div>
+          </div>
+          <button class="file-preview-delete" (click)="deleteFile()">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- CSV Table Preview - Batch Call Mode -->
+        <div *ngIf="
+            !csvError &&
+            showCsvTable &&
+            csvData.length > 0 &&
+            !recordForm.get('isContactSheet')?.value
+          " class="csv-preview">
+          <div class="csv-preview-header">
+            <div class="csv-preview-info">
+              <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" />
+              </svg>
+              <div>
+                <div class="csv-preview-filename">{{ getFileName() }}</div>
+                <div class="csv-preview-count">{{ csvData.length }} Recipients</div>
+              </div>
+            </div>
+            <button class="csv-preview-delete" (click)="deleteFile()">
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                  d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                  clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+          <div class="csv-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Client ID</th>
+                  <th>Phone Number</th>
+                  <th>Salutation</th>
+                  <th>First Name</th>
+                  <th>Last Name</th>
+                  <th>Gender</th>
+                  <th>Email</th>
+                  <th>Country</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of csvData; let i = index">
+                  <td>{{ getColumnValue(row, 'client_id', i) }}</td>
+                  <td>{{ getColumnValue(row, 'phone_number', i) }}</td>
+                  <td>{{ getColumnValue(row, 'salutation', i) }}</td>
+                  <td>{{ getColumnValue(row, 'first_name', i) }}</td>
+                  <td>{{ getColumnValue(row, 'last_name', i) }}</td>
+                  <td>{{ getColumnValue(row, 'gender', i) }}</td>
+                  <td>{{ getColumnValue(row, 'email', i) }}</td>
+                  <td>{{ getColumnValue(row, 'country', i) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- CSV Table Preview - Contact List Mode -->
+        <div *ngIf="
+            !csvError &&
+            showCsvTable &&
+            csvData.length > 0 &&
+            recordForm.get('isContactSheet')?.value
+          " class="csv-preview">
+          <div class="csv-preview-header">
+            <div class="csv-preview-info">
+              <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" />
+              </svg>
+              <div>
+                <div class="csv-preview-filename">{{ getFileName() }}</div>
+                <div class="csv-preview-count">{{ csvData.length }} Contacts</div>
+              </div>
+            </div>
+            <button class="csv-preview-delete" (click)="deleteFile()">
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                  d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                  clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+          <div class="csv-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>First Name</th>
+                  <th>Last Name</th>
+                  <th>Email</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of csvData; let i = index">
+                  <td>{{ getColumnValue(row, 'first_name', i) }}</td>
+                  <td>{{ getColumnValue(row, 'last_name', i) }}</td>
+                  <td>{{ getColumnValue(row, 'email', i) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- When to Schedule -->
+      <div class="form-group">
+        <label class="form-label required">When to Schedule</label>
+        <div class="datetime-group">
+          <div>
+            <input type="date" class="form-input" formControlName="date"
+              [min]="currentDateTime?.date | date: 'yyyy-MM-dd'" />
+            <div class="form-hint">Date</div>
+          </div>
+          <div>
+            <input type="time" class="form-input" formControlName="time" />
+            <div class="form-hint">Time</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enable Follow-ups -->
+      <div class="form-group">
+        <label class="form-label">Enable Follow-ups</label>
+        <div class="toggle-group">
+          <div class="toggle-switch" [class.active]="hasOutboundPhone" (click)="toggleOutbound()"></div>
+          <span class="toggle-label">{{ hasOutboundPhone ? 'Enabled' : 'Disabled' }}</span>
+        </div>
+      </div>
+
+      <!-- Follow-up Info Card -->
+      <div class="info-card" *ngIf="hasOutboundPhone">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div class="info-card-content">
+          <div class="info-card-title">Follow-up Call Triggers</div>
+          <div class="info-card-text">
+            Follow-up calls will be automatically scheduled for these call statuses:
+          </div>
+          <ul class="info-card-list">
+            <li><strong>Not Answered</strong> - Recipient did not pick up the call</li>
+            <li><strong>Disconnected</strong> - Call was disconnected before completion</li>
+            <li><strong>Unanswered</strong> - Went to voicemail without answer</li>
+            <li><strong>Timeout</strong> - Call exceeded maximum duration</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Follow-up Schedules -->
+      <div class="followup-schedules" *ngIf="hasOutboundPhone">
+        <label class="form-label">Follow-up Schedule</label>
+        <div class="followup-schedule-item" *ngFor="let followUp of followUpsList; let i = index">
+          <div class="followup-number">{{ i + 1 }}</div>
+          <div class="datetime-group" style="flex: 1; grid-template-columns: 1fr 1fr 1.5fr;">
+            <div>
+              <input type="date" class="form-input" placeholder="Date"
+                [min]="currentDateTime?.date | date: 'yyyy-MM-dd'" [(ngModel)]="followUp.date"
+                [ngModelOptions]="{ standalone: true }" />
+            </div>
+            <div>
+              <input type="time" class="form-input" placeholder="Time" [(ngModel)]="followUp.time"
+                [ngModelOptions]="{ standalone: true }" />
+            </div>
+            <div class="select-wrapper">
+              <ng-select [(ngModel)]="followUp.phoneNumberId" [ngModelOptions]="{ standalone: true }"
+                [items]="phoneNumberListing" [clearable]="false" bindLabel="name" bindValue="phoneNumberId"
+                [searchable]="true" placeholder="Select phone..." (change)="updateFollowUpList()">
+                <ng-template ng-label-tmp let-item="item">
+                  {{ item.name }} ({{ item.phoneNumber }})
+                </ng-template>
+                <ng-template ng-option-tmp let-item="item">
+                  {{ item.name }} ({{ item.phoneNumber }})
+                </ng-template>
+              </ng-select>
+            </div>
+          </div>
+          <button class="delete-followup-btn" *ngIf="followUpsList.length > 1" (click)="deleteFollowUp(i)">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+        <button class="add-followup-btn" *ngIf="followUpsList.length < 10" (click)="addFollowUp()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Add Another Follow-up
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn btn-secondary" (click)="close()">Cancel</button>
+    <button class="btn btn-primary" (click)="save(9)">
+      Create Batch
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- Suggestions Modal -->
+<ng-template #suggestionsModal let-modal>
+  <div class="modal-card modal-small">
+    <div class="modal-header">
+      <h5 class="modal-title">File Validations</h5>
+      <button class="close-btn" (click)="modal.dismiss()">✕</button>
+    </div>
+    <div class="modal-body">
+      <ol class="suggestions-list" *ngIf="!recordForm.get('isContactSheet')?.value">
+        <li>
+          Ensure your excel has columns: salutation, first_name, last_name, email, phone_number,
+          client_id, gender, country
+        </li>
+        <li>Phone numbers should include country code (+49xxxxxxxxxx)</li>
+        <li>Gender should be: masculine, feminine, or Neuter</li>
+        <li>Client Id should be a valid number</li>
+        <li>Remove empty rows and duplicate phone numbers/Client IDs</li>
+      </ol>
+      <ol class="suggestions-list" *ngIf="recordForm.get('isContactSheet')?.value">
+        <li>Ensure your excel has columns: first_name, last_name, email</li>
+        <li>Email should be in valid format (example&#64;domain.com)</li>
+        <li>Remove empty rows and duplicate emails</li>
+      </ol>
+    </div>
+  </div>
+</ng-template>
+
+<!-- Batch Response Modal -->
+<ng-template #batchCreateResponseModel let-modal>
+  <div class="modal-card">
+    <div class="modal-header">
+      <h5 class="modal-title">Upload Batch Response</h5>
+      <button class="close-btn" (click)="modal.dismiss()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>{{ lastBatchResponse?.message }}</p>
+      <div *ngIf="lastBatchResponse?.summary">
+        <h6 class="fw-bold mt-3">Overview</h6>
+        <ul>
+          <li>Total Records: {{ lastBatchResponse?.summary?.total }}</li>
+          <li>Successful Records: {{ lastBatchResponse?.summary?.valid }}</li>
+          <li>Failed Records: {{ lastBatchResponse?.summary?.invalid }}</li>
+          <li>Success Ratio: {{ lastBatchResponse?.summary?.successRate }}</li>
+        </ul>
+      </div>
+      <div class="mt-3">
+        <button class="btn btn-primary w-100" (click)="downloadValidationReport(lastBatchResponse)"
+          [disabled]="!lastBatchResponse?.validationReport?.buffer">
+          ⬇️ Download Excel Report
+        </button>
+      </div>
+    </div>
+  </div>
+</ng-template>

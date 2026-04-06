@@ -1,0 +1,40 @@
+<div class="input-group search-button">
+  <span (click)="onSearch(searchString, searchActive)" class="input-group-text" id="basic-addon1">
+    <i *ngIf="searchActive">
+      <svg
+        width="16"
+        height="17"
+        viewBox="0 0 16 17"
+        fill="currentColor"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          opacity="0.5"
+          d="M13 7C12.9792 8.45833 12.5625 9.73958 11.75 10.8438L15.7188 14.7812C15.9062 14.9896 16 15.2292 16 15.5C16 15.7708 15.9062 16.0104 15.7188 16.2188C15.5104 16.4062 15.2708 16.5 15 16.5C14.7292 16.5 14.4896 16.4062 14.2812 16.2188L10.3438 12.25C9.23958 13.0625 7.95833 13.4792 6.5 13.5C4.66667 13.4583 3.13542 12.8229 1.90625 11.5938C0.677083 10.3646 0.0416667 8.83333 0 7C0.0416667 5.16667 0.677083 3.63542 1.90625 2.40625C3.13542 1.17708 4.66667 0.541667 6.5 0.5C8.33333 0.541667 9.86458 1.17708 11.0938 2.40625C12.3229 3.63542 12.9583 5.16667 13 7ZM6.5 11.5C7.77083 11.4583 8.83333 11.0208 9.6875 10.1875C10.5208 9.33333 10.9583 8.27083 11 7C10.9583 5.72917 10.5208 4.66667 9.6875 3.8125C8.83333 2.97917 7.77083 2.54167 6.5 2.5C5.22917 2.54167 4.16667 2.97917 3.3125 3.8125C2.47917 4.66667 2.04167 5.72917 2 7C2.04167 8.27083 2.47917 9.33333 3.3125 10.1875C4.16667 11.0208 5.22917 11.4583 6.5 11.5Z"
+          fill="currentColor"
+        />
+      </svg>
+    </i>
+    <i *ngIf="!searchActive" class="cursor-pointer">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
+        <path
+          fill="currentColor"
+          d="M20 3H4c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h16c1.103 0 2-.897 2-2V5c0-1.103-.897-2-2-2M4 19V7h16l.001 12z"
+        />
+        <path
+          fill="currentColor"
+          d="m15.707 10.707l-1.414-1.414L12 11.586L9.707 9.293l-1.414 1.414L10.586 13l-2.293 2.293l1.414 1.414L12 14.414l2.293 2.293l1.414-1.414L13.414 13z"
+        />
+      </svg>
+    </i>
+  </span>
+  <input
+    type="text"
+    class="form-control input-background"
+    placeholder="{{ 'COMMON_TEXT.SEARCH' | translate }}"
+    (ngModelChange)="onChange($event)"
+    (keyup.enter)="searchItem(searchString)"
+    [(ngModel)]="searchString"
+    [autocomplete]="'off'"
+  />
+</div>

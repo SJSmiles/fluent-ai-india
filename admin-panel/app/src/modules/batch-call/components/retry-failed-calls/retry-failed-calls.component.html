@@ -1,0 +1,233 @@
+<div class="retry-failed-calls-modal">
+  <div class="retry-modal-header">
+    <div class="header-content">
+      <h2 class="modal-title">Retry Failed Calls</h2>
+      <p class="batch-info">{{ batchName }} • {{ batchCode }}</p>
+    </div>
+    <button type="button" class="close-btn" (click)="cancel()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path
+          d="M13 1L1 13M1 1L13 13"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>
+    </button>
+  </div>
+
+  <div class="retry-modal-body">
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+      <div class="summary-card card-gray">
+        <div class="card-label">TOTAL NUMBERS</div>
+        <div class="card-value">{{ totalNumbers }}</div>
+        <div class="card-subtitle">Uploaded in batch</div>
+      </div>
+
+      <div class="summary-card card-green">
+        <div class="card-label">SUCCESSFULLY PROCESSED</div>
+        <div class="card-value">{{ successfullyProcessed }}</div>
+        <div class="card-subtitle">Won't be retried</div>
+      </div>
+
+      <div class="summary-card card-red">
+        <div class="card-label">AVAILABLE FOR RETRY</div>
+        <div class="card-value">{{ availableForRetry }}</div>
+        <div class="card-subtitle">Failed calls</div>
+      </div>
+    </div>
+
+    <!-- Schedule Retry Section -->
+    <div class="schedule-retry-section">
+      <div class="section-title-header">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="calendar-icon">
+          <rect x="3" y="4" width="14" height="14" rx="2" stroke="currentColor" stroke-width="2" />
+          <path
+            d="M7 2V6M13 2V6M3 8H17"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+        <h3>Schedule Retry</h3>
+      </div>
+
+      <div class="datetime-inputs">
+        <div class="input-group">
+          <label class="input-label">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect
+                x="2"
+                y="3"
+                width="12"
+                height="12"
+                rx="1.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <path
+                d="M5 1V5M11 1V5M2 6H14"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+            DATE
+          </label>
+          <input
+            type="date"
+            class="form-control date-input"
+            [value]="retryForm.value.date"
+            (change)="onDateSelected($event)"
+            [min]="minDateTime.date"
+          />
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" />
+              <path
+                d="M8 4V8L11 11"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+            TIME
+          </label>
+          <input
+            type="time"
+            class="form-control time-input"
+            [value]="retryForm.value.time"
+            (change)="onTimeSelected($event)"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Banner -->
+    <div class="info-banner">
+      <svg class="info-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="9" stroke="#0066CC" stroke-width="2" />
+        <path d="M10 6V10M10 14H10.01" stroke="#0066CC" stroke-width="2" stroke-linecap="round" />
+      </svg>
+      <div class="info-text">
+        <strong>Only Failed Calls Can Be Retried</strong>
+        <p>
+          Numbers that were successfully processed won't be retried. Successfully processed
+          includes:
+          <span class="status-list"
+            >Meeting Booked, Interested, Not Interested, Human Review Needed, Human Action Needed,
+            Not Interested for Now, Changed Interest,</span
+          >
+          and <span class="status-list">Invalid Leads</span>.
+        </p>
+      </div>
+    </div>
+
+    <!-- Available for Retry Section -->
+    <div class="retry-section">
+      <div class="section-header" (click)="toggleFailureSection()">
+        <div class="section-title">
+          <svg class="warning-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path
+              d="M10 2L2 17H18L10 2Z"
+              stroke="#DC2626"
+              stroke-width="2"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M10 8V11M10 14H10.01"
+              stroke="#DC2626"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+          </svg>
+          <span>Available for Retry</span>
+        </div>
+        <div class="section-actions">
+          <span class="count-badge">{{ availableForRetry }}</span>
+          <svg
+            class="chevron-icon"
+            [class.rotated]="showFailureSection"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+          >
+            <path
+              d="M4 6L8 10L12 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+      </div>
+
+      <!-- Failed Calls Table -->
+      <div class="retry-table-container" *ngIf="showFailureSection">
+        <div class="table-actions">
+          <div class="select-numbers-label">Select Numbers to Retry</div>
+          <button type="button" class="deselect-all-btn" (click)="deselectAll()">
+            Deselect All
+          </button>
+        </div>
+
+        <div class="retry-table table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th class="checkbox-col">
+                  <input
+                    type="checkbox"
+                    [checked]="isAllSelected()"
+                    [indeterminate]="isSomeSelected()"
+                    (change)="toggleSelectAll($event)"
+                  />
+                </th>
+                <th>Phone Number</th>
+                <th>Status</th>
+                <th>Last Attempt</th>
+                <th>Attempts</th>
+                <th style="width: 26%">Error Message</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let call of failedCalls">
+                <td class="checkbox-col">
+                  <input type="checkbox" [(ngModel)]="call.selected" />
+                </td>
+                <td class="phone-number">{{ call.number }}</td>
+                <td>
+                  <span class="status-badge status-connection"> Failed </span>
+                </td>
+                <td class="text-muted">{{ formatLastAttempt(call.updatedAt) }}</td>
+                <td class="text-muted">{{ call.attemptLength }}</td>
+                <td class="text-muted error-message-cell">
+                  {{ getSkipReason(call) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Footer -->
+  <div class="retry-modal-footer">
+    <button type="button" class="btn-cancel" (click)="cancel()">Cancel</button>
+    <button
+      type="button"
+      class="btn-retry"
+      [disabled]="getSelectedCount() === 0"
+      (click)="retrySelectedNumbers()"
+    >
+      Retry {{ getSelectedCount() }} Selected Numbers
+    </button>
+  </div>
+</div>

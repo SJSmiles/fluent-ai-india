@@ -1,0 +1,44 @@
+// #basic-addon1 {
+//   background-color: #ffffff;
+//   border-radius: 0px 22px 22px 0px;
+//   cursor: pointer;
+//   height: 37px;
+// }
+
+// .search-button .form-control {
+//   border-radius: 22px;
+// }
+
+.search-button {
+  .input-group-text {
+    background-color: transparent !important;
+    border-right: 0px !important;
+    padding: 0.5rem !important;
+    border-bottom-left-radius: 10px !important;
+    border-top-left-radius: 10px !important;
+    border-color: var(--primary-border-color) !important;
+  }
+
+  input {
+    border-left: 0px !important;
+    padding-left: 0px !important;
+    width: 200px !important;
+    font-size: 14px !important;
+    border-bottom-right-radius: 10px !important;
+    border-top-right-radius: 10px !important;
+    border-color: var(--primary-border-color) !important;
+  }
+
+  input:focus {
+    border: 1px solid var(--primary-border-color) !important;
+    border-left: 0px !important;
+  }
+}
+
+.input-group {
+  flex-wrap: inherit !important;
+}
+
+.input-background {
+  background-color: transparent !important;
+}

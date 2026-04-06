@@ -1,0 +1,50 @@
+{
+  "MENUITEMS": {
+    "DASHBOARD": {
+      "TEXT": "Dashboard"
+    },
+    "LEADS": {
+      "TEXT": "Leads"
+    },
+    "AGENT": {
+      "TEXT": "Agenten"
+    }
+  },
+  "LEADS": {
+    "ACTIONS": {
+      "RENAME": "Umbenennen",
+      "DELETE": "Löschen",
+      "DUPLICATE": "Duplizieren",
+      "SWITCH_TO_CHAT": "Zum Chat wechseln"
+    },
+    "LIST": {
+      "UPLOAD_FILE": "Laden Sie eine Datei hoch, um die Leads hier anzuzeigen",
+      "IMPORT": "Importieren",
+      "CANCEL": "Abbrechen",
+      "LEADS_CSV": "Leads CSV",
+      "RECIPMENTS": "Empfänger",
+      "CHOOSE_CSV_FILE": "Wählen Sie eine CSV-Datei aus oder ziehen Sie sie hierher.",
+      "UP_TO_50MB": "Bis zu 50 MB."
+    },
+    "LABEL": {
+      "GROUP_NAME": "Gruppenname",
+      "UPLOAD_FILE": "Datei hochladen",
+      "IMPORT_LEADS": "Leads importieren"
+    }
+  },
+  "AGENTS": {
+    "ACTIONS": {
+      "RENAME": "Umbenennen",
+      "DELETE": "Löschen",
+      "DUPLICATE": "Duplizieren",
+      "SWITCH_TO_CHAT": "Zum Chat wechseln"
+    },
+    "LIST": {
+      "ARE_YOU_SURE": "Bist du sicher?",
+      "ACTION_CANT_BE_DONE": "Diese Aktion kann nicht rückgängig gemacht werden"
+    },
+    "LABEL": {
+      "AGENT_NAME": "Agentenname"
+    }
+  }
+}

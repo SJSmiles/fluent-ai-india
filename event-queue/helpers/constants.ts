@@ -1,0 +1,19 @@
+export const BATCH_CALL_STATUS = {
+  DRAFT: 1,
+  START_CALLING: 2,
+  NOT_STARTED: 3,
+  IN_PROCESS: 4,
+  COMPLETED: 5,
+  FAILED: 6,
+  SKIP: 7
+};
+
+export const RECIPIENTS_CALL_STATUS = {
+  PENDING: 1,
+  UN_SUCCESS: 2,
+  SUCCESS: 3,
+  DEAD: 4,
+  SKIP: 5,
+  IN_PROCESS: 6,
+  FAILED: 7
+};

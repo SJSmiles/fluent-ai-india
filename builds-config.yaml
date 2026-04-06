@@ -1,0 +1,36 @@
+namespaces:
+  - name: fluent-ai-dev
+    deployments:
+      admin-panel:
+        container: container-0
+        image: sj004/fluent-ai
+        tag: admin-dev-0.0.52
+      analytics-api:
+        container: container-0
+        image: sj004/fluent-ai
+        tag: analytics-api-0.0.15
+      backend-api:
+        container: container-0
+        image: sj004/fluent-ai
+        tag: backend-0.0.66
+      batch-call-process:
+        container: container-0
+        image: sj004/fluent-ai
+        tag: cron-api-0.0.9
+      event-queue:
+        container: container-0
+        image: sj004/fluent-ai
+        tag: event-queue-0.0.19
+    cronjobs:
+      call-summary-ananlysis:
+        container: container-0
+        image: sj004/fluent-ai
+        tag: cron-0.0.23
+      un-success-batch-call:
+        container: container-0
+        image: sj004/fluent-ai
+        tag: cron-0.0.15
+      interested-call-process:
+        container: container-0
+        image: sj004/fluent-ai
+        tag: cron-0.0.24

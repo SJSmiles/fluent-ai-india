@@ -1,0 +1,26 @@
+.popover-dropdown {
+  border: 1px solid var(--primary-border-color);
+  border-radius: 4px;
+}
+
+.status-active {
+  color: #3adea5 !important;
+  font-weight: 600;
+}
+
+.status-inactive {
+  color: #f2457f !important;
+  font-weight: 600;
+}
+
+.status-button {
+  border: 1px solid var(--primary-border-color) !important;
+}
+
+.module-creation {
+  width: 252px;
+}
+
+.dashboard-lead-status-filter {
+  width: 70%;
+}

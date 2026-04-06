@@ -1,0 +1,200 @@
+.module-creation {
+  // width: 160px;
+  // height: 38px;
+  border-radius: 8px;
+  border: 1px;
+  gap: 8px;
+  background: var(--primary-button-color);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 16px;
+  letter-spacing: 0%;
+  text-align: center;
+  color: var(--primary-nav-bar-color);
+  padding: 11px;
+}
+
+.module-creation:hover {
+  background: #2236b7;
+}
+
+.table-responsive {
+  height: calc(100vh - 160px) !important;
+  max-height: calc(100vh - 160px) !important;
+}
+
+.agents-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  thead {
+    th {
+      background-color: var(--primary-nav-bar-color);
+      padding: 8px;
+      color: var(--primary-font-color);
+      font-weight: 500;
+      text-align: left;
+
+      &.cursor-pointer:hover {
+        background-color: var(--primary-color);
+      }
+    }
+  }
+
+  tbody {
+    .agents-table-row {
+      border: 1px solid var(--primary-border-color);
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background-color: var(--primary-color);
+      }
+
+      td {
+        padding: 8px;
+        vertical-align: middle;
+
+        .agent-name {
+          word-break: break-word;
+        }
+      }
+    }
+  }
+}
+
+.phone-icon {
+  border: 1px solid var(--primary-border-color);
+  border-radius: 6px;
+  padding: 2px 5px;
+  background-color: var(--primary-color);
+  display: flex;
+  align-items: center;
+}
+
+.agentName {
+  color: var(--primary-font-color);
+  font-weight: 700;
+}
+
+.phoneNumber {
+  color: var(--primary-font-color);
+  font-weight: 700;
+}
+
+.agent-image {
+  color: var(--primary-small-text-color);
+  font-weight: 500;
+}
+
+.createdAt {
+  color: var(--primary-font-color);
+  font-weight: 700;
+}
+
+.dashboard-font {
+  font-weight: bold !important;
+}
+
+.unsort-color {
+  color: var(--primary-font-color);
+}
+
+.icon-sort-placement {
+  display: inline-flex;
+  align-items: center;
+}
+
+::ng-deep .modal.custom-lead-modal .modal-dialog {
+  width: 436px;
+  height: 518px;
+  border-radius: 16px;
+}
+
+::ng-deep .modal.custom-lead-modal .modal-content {
+  border-radius: 16px;
+}
+
+.dropdown {
+  .dropdown-toggle {
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    }
+
+    &::after {
+      display: none; // Hide default dropdown arrow
+    }
+
+    &:hover {
+      border-radius: 4px;
+    }
+  }
+
+  .dropdown-menu {
+    min-width: 150px;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+
+    .dropdown-item {
+      padding: 4px 16px;
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+
+      &:hover {
+        background-color: #f8f9fa;
+        cursor: pointer;
+      }
+
+      &.text-danger:hover {
+        background-color: #fdf2f2;
+        color: #dc3545;
+      }
+
+      i {
+        font-size: 14px;
+        width: 16px;
+      }
+    }
+
+    .cancel-button {
+      border-radius: 8px;
+      border: 1px solid var(--primary-border-color);
+      background-color: var(--primary-color);
+      color: var(--primary-font-color);
+      font-size: 12px;
+    }
+
+    .delete-button {
+      border-radius: 8px;
+      border: 1px solid var(--primary-border-color);
+      background-color: var(--primary-danger-bg-color);
+      color: var(--primary-nav-bar-color);
+      font-size: 12px;
+      font-weight: 600;
+    }
+  }
+}
+
+.pencil-button {
+  padding: 4px;
+  border-radius: 8px;
+  background: transparent !important;
+  border: 1px solid var(--primary-border-color);
+}
+
+.form-check-input {
+  &:checked {
+    background-color: var(--primary-button-color);
+    border-color: var(--primary-button-color);
+  }
+
+  // Unchecked state - "size bar color"
+  background-color: #e9ecef;
+  border-color: var(--primary-border-color);
+
+  &:focus {
+    box-shadow: 0 0 0 0.25rem rgba(var(--primary-button-color-rgb), 0.25);
+    border-color: var(--primary-button-color);
+  }
+}

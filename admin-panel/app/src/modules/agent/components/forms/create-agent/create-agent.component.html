@@ -1,0 +1,141 @@
+<!-- create-agent.component.html -->
+<div class="modal-header pb-0 pe-4 d-flex justify-content-between">
+  <div>
+    <h5 class="modal-title">
+      {{ modalTitle }}
+    </h5>
+  </div>
+  <button type="button" class="btn-close" aria-label="Close" (click)="close()"></button>
+</div>
+
+<div class="modal-body">
+  <div *ngIf="selectedTab === 'phone'">
+    <form [formGroup]="agentForm">
+      <div class="row d-flex">
+        <div class="col-4">
+          <div class="mb-3">
+            <label for="agentName" class="form-label">Agent Name</label>
+            <input type="text" id="agentName" class="form-control custom-input-field-class" required appTrimText
+              placeholder="Type here" formControlName="agentName" [readonly]="modalMode === 'details'" [ngClass]="{
+                'is-invalid':
+                  agentForm.get('agentName')?.touched && agentForm.get('agentName')?.errors
+              }" />
+            <div class="invalid-feedback" align="left">
+              <app-control-messages [control]="$any(agentForm.get('agentName'))"></app-control-messages>
+            </div>
+          </div>
+
+          <!-- POST CALL ANALYSIS SECTION -->
+          <div class="px-2">
+            <div class="mb-3 collapsible-section1 row d-flex">
+              <div class="section-header d-flex align-items-center justify-content-between">
+                <div>
+                  <label class="fw-bold">Post Call Analysis</label>
+                </div>
+                <button class="section-collapse" type="button" (click)="
+                    expandedIndexBond === -1 ? (expandedIndexBond = null) : (expandedIndexBond = -1)
+                  ">
+                  <app-icon [iconType]="expandedIndexBond === -1 ? 'arrow-up' : 'arrow-down'"></app-icon>
+                </button>
+              </div>
+
+              <div class="section-content-collapsible mt-2" *ngIf="expandedIndexBond === -1">
+                <div *ngFor="let item of selectedAgentData.postCallAnalysisData; let i = index" class="mb-2">
+                  <!-- Item Header -->
+                  <div class="d-flex align-items-center justify-content-between px-2 py-1 border rounded">
+                    <div class="d-flex align-items-start gap-2 flex-grow-1">
+                      <button type="button" class="section-collapse cursor-pointer" (click)="
+                          expandedPostCallIndex === i
+                            ? (expandedPostCallIndex = null)
+                            : (expandedPostCallIndex = i)
+                        " style="top: -2px; position: relative">
+                        <app-icon [iconType]="expandedPostCallIndex === i ? 'arrow-up' : 'arrow-down'"></app-icon>
+                      </button>
+                      <span class="section-collapse cursor-default" style="top: -2px; position: relative">
+                        <app-icon [iconType]="'analysis'"></app-icon>
+                      </span>
+                      <span>{{ item.name }}</span>
+                    </div>
+                    <div class="d-flex gap-1 align-items-end">
+                      <button type="button" class="section-collapse" (click)="onEditPostCallAnalysis(i)">
+                        <app-icon [iconType]="'pencil'"></app-icon>
+                      </button>
+                      <button type="button" class="section-collapse" (click)="onDeletePostCallAnalysis(i)">
+                        <app-icon [iconType]="'delete'"></app-icon>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Expanded Content -->
+                  <div *ngIf="expandedPostCallIndex === i" class="border border-top-0 rounded-bottom p-3 bg-light">
+                    <div class="mb-3">
+                      <label class="fw-semibold d-block mb-1">Description:</label>
+                      <p class="mb-0">{{ item.description }}</p>
+                    </div>
+
+                    <div *ngIf="item.examples && item.examples.length > 0">
+                      <label class="fw-semibold d-block mb-2">Examples:</label>
+                      <ul class="mb-0">
+                        <li *ngFor="let example of item.examples" class="mb-1">
+                          <code class="bg-white px-2 py-1 rounded">{{ example }}</code>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+
+              </div>
+            </div>
+          </div>
+          <!-- END POST CALL ANALYSIS SECTION -->
+        </div>
+
+        <div class="col-8 full-section">
+          <!-- First Message Field -->
+          <div class="mb-3">
+            <label for="firstMessage" class="form-label">First Message</label>
+            <input type="text" id="firstMessage" class="form-control custom-input-field-class"
+              placeholder="Type first message here" formControlName="firstMessage" [ngClass]="{
+                'is-invalid':
+                  agentForm.get('firstMessage')?.touched && agentForm.get('firstMessage')?.errors
+              }" />
+            <div class="invalid-feedback" align="left">
+              <app-control-messages [control]="$any(agentForm.get('firstMessage'))"></app-control-messages>
+            </div>
+          </div>
+
+          <!-- System Prompt Field -->
+          <div class="main-section">
+            <label for="agentPrompt" class="form-label">System Prompt</label>
+          </div>
+          <div class="sub-section mb-3">
+            <textarea formControlName="systemPrompt" id="systemPrompt" class="form-control custom-input-text-class"
+              cols="50" placeholder="Type your system prompt here..." [ngClass]="{
+                'is-invalid':
+                  agentForm.get('systemPrompt')?.touched && agentForm.get('systemPrompt')?.errors,
+                'expanded-textarea': expandedIndexBond === -1
+              }"></textarea>
+            <div class="invalid-feedback" align="left">
+              <app-control-messages [control]="$any(agentForm.get('systemPrompt'))"></app-control-messages>
+            </div>
+          </div>
+          <div class="d-flex justify-content-end mt-3 gap-2" *ngIf="modalMode === 'update'">
+            <button type="button" class="cancel-button" (click)="close()">Cancel</button>
+            <button type="button" class="update-agent" [disabled]="agentForm.invalid || isReadonly"
+              (click)="onUpdate()">
+              Update
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ViewChild Template Reference for Post Call Analysis Modal -->
+<ng-template #postCallAnalysisModal let-modal>
+  <app-post-call-analysis-modal [analysis]="currentAnalysis" [editingIndex]="editingIndex" (save)="handleSave($event)"
+    (close)="handleClose()">
+  </app-post-call-analysis-modal>
+</ng-template>

@@ -1,0 +1,90 @@
+<div style="padding-right: 0.6rem">
+  <div class="d-flex justify-content-between align-items-center">
+    <app-header [moduleName]="'Phone Number'"> </app-header>
+    <div class="d-flex justify-content-end">
+      <div class="d-flex flex-end mt-3 justify-content-end gap-2">
+        <div class="dashboard-lead-status-filter" *ngIf="currentUser.user.isSuperAdmin && currentUser?.user?.isAdmin">
+          <ng-select [items]="companyListing" [clearable]="false" bindLabel="fullName" bindValue="_id"
+            [searchable]="true" placeholder="Select Company" class="select-input-type" [(ngModel)]="companyId"
+            name="companyId" (ngModelChange)="selectCompany($event)">
+          </ng-select>
+        </div>
+        <div class="global-search me-2">
+          <app-search-filters placeholder="Search" (search)="customSearch($event)" [clear]="clearFilter"
+            [selectedText]="selectedText"></app-search-filters>
+        </div>
+        <div class="module-creation d-flex align-items-center cursor-pointer justify-content-center cursor-pointer"
+          (click)="createPhoneNumber()">
+          <app-icon iconType="createIcon" aria-label="create" placement="right"></app-icon>
+          Create
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module-table mt-3 table-responsive batch-call-table-responsive pt-0">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col" (click)="sortActive('name')" class="unsort-color px-2 cursor-pointer"
+            [ngClass]="{ 'font-weight-bold': currentSort === 'name' }">
+            <app-sort-icon [sortState]="[sortStates['name']]" class="icon-sort-placement"></app-sort-icon>
+            <span class="ps-1">Name</span>
+          </th>
+          <th class="px-2">Phone Number</th>
+          <th class="px-2">Phone Number ID</th>
+          <th class="px-2 text-center">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let record of recordsList || []; let i = index">
+          <tr class="cursor-pointer">
+            <td class="px-2" [ngClass]="{ 'font-weight-bold': currentSort === 'name' }">
+              <span class="date-time-display">
+                {{ (record.name | titlecase) || '-' }}
+              </span>
+            </td>
+            <td class="px-2">{{ record.phoneNumber || '-' }}</td>
+            <td class="px-2">{{ record.phoneNumberId || '-' }}</td>
+            <td class="px-2">
+              <div class="d-flex justify-content-center">
+                <div class="dropdown" ngbDropdown [autoClose]="'outside'">
+                  <button class="btn p-0 border-0 bg-transparent" type="button" aria-expanded="false"
+                    (click)="updatePhoneNumber(record)" aria-label="actions">
+                    <i class="fs-5 text-muted">
+                      <app-icon iconType="pencil" aria-label="edit" placement="right"></app-icon>
+                    </i>
+                  </button>
+
+                </div>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+        <tr class="cursor-pointer" *ngIf="!recordsList || recordsList.length === 0">
+          <td colspan="10">No Records Found</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination-container d-flex justify-content-between align-items-center mt-2" *ngIf="totalCount > 0">
+    <div class="pagination-info">
+      Showing {{ pageIndex * currentPageSize + 1 }} to
+      {{ currentPageSize * currentPage < totalCount ? currentPageSize * currentPage : totalCount }} of {{ totalCount }}
+        entries </div>
+        <div class="pagination-controls">
+          <ngb-pagination [maxSize]="5" [rotate]="true" [boundaryLinks]="true" [(page)]="currentPage"
+            [pageSize]="currentPageSize" [collectionSize]="totalCount" (pageChange)="pageChanged($event)">
+          </ngb-pagination>
+        </div>
+    </div>
+  </div>
+
+  <ng-template #createPhoneNumberModel let-modal>
+    <app-create-phone-number [selectedRecord]="selectedUserData" [currentUser]="currentUser"
+      [companyId]="companyId"
+      (createdUpdatedRecord)="createdUpdatedRecord()">
+    </app-create-phone-number>
+  </ng-template>

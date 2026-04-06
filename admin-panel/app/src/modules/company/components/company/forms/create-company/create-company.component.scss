@@ -1,0 +1,18 @@
+.form-check-input:checked {
+  background-color: var(--primary-button-color);
+}
+
+.custom-user-email input {
+  border-top-right-radius: 0px !important;
+  border-bottom-right-radius: 0px !important;
+  border-right: none !important;
+}
+
+.custom-height-domain {
+  height: 38px !important;
+  border-top-left-radius: 0px;
+  border-bottom-left-radius: 0px !important;
+  background: transparent;
+  border-left: none;
+  border-color: var(--primary-border-color);
+}

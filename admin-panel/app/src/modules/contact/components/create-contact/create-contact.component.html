@@ -1,0 +1,224 @@
+<div class="modal-header d-flex justify-content-between">
+  <div>
+    <h5 class="modal-title">{{ selectedContactData ? 'Edit Contact' : 'Create Contact' }}</h5>
+  </div>
+  <button type="button" class="btn-close" aria-label="Close" (click)="close()"></button>
+</div>
+<div class="modal-body create-batch-call">
+  <form [formGroup]="recordForm">
+    <div class="row">
+      <div class="col-3">
+        <div class="mb-3">
+          <label for="salutation" class="form-label mb-1">Salutation</label>
+          <ng-select
+            [items]="salutationOptions"
+            bindLabel="label"
+            bindValue="value"
+            [clearable]="true"
+            placeholder="Select"
+            class="select-input-type"
+            formControlName="salutation"
+            [ngClass]="{
+              'is-invalid':
+                (submitted || recordForm.get('salutation')?.touched) &&
+                recordForm.get('salutation')?.errors
+            }"
+          >
+          </ng-select>
+          <div class="invalid-feedback" align="left">
+            <app-control-messages
+              [control]="$any(recordForm.get('salutation'))"
+            ></app-control-messages>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-4">
+        <div class="mb-3">
+          <label for="firstName" class="form-label mb-1">First Name </label>
+          <input
+            type="text"
+            formControlName="firstName"
+            id="firstName"
+            class="form-control custom-input-field-class"
+            appTrimText
+            placeholder="First Name"
+            [ngClass]="{
+              'is-invalid':
+                (submitted || recordForm.get('firstName')?.touched) &&
+                recordForm.get('firstName')?.errors
+            }"
+          />
+          <div class="invalid-feedback" align="left">
+            <app-control-messages
+              [control]="$any(recordForm.get('firstName'))"
+            ></app-control-messages>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-5">
+        <div class="mb-3">
+          <label for="lastName" class="form-label mb-1">Last Name</label>
+          <input
+            type="text"
+            formControlName="lastName"
+            id="lastName"
+            class="form-control custom-input-field-class"
+            appTrimText
+            placeholder="Last Name"
+            [ngClass]="{
+              'is-invalid':
+                (submitted || recordForm.get('lastName')?.touched) &&
+                recordForm.get('lastName')?.errors
+            }"
+          />
+          <div class="invalid-feedback" align="left">
+            <app-control-messages
+              [control]="$any(recordForm.get('lastName'))"
+            ></app-control-messages>
+          </div>
+        </div>
+      </div>
+    </div>
+
+     <div class="row">
+      <div class="col-6">
+        <div class="mb-3">
+          <label for="gender" class="form-label mb-1">Gender</label>
+          <ng-select
+            [items]="genderOptions"
+            bindLabel="label"
+            bindValue="value"
+            [clearable]="true"
+            placeholder="Select Gender"
+            class="select-input-type"
+            formControlName="gender"
+            [ngClass]="{
+              'is-invalid':
+                (submitted || recordForm.get('gender')?.touched) && recordForm.get('gender')?.errors
+            }"
+          >
+          </ng-select>
+          <div class="invalid-feedback" align="left">
+            <app-control-messages [control]="$any(recordForm.get('gender'))"></app-control-messages>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="mb-3">
+          <label for="country" class="form-label mb-1">Country</label>
+          <ng-select
+            [items]="countryList"
+            bindLabel="label"
+            bindValue="value"
+            [clearable]="true"
+            [searchable]="true"
+            placeholder="Select Country"
+            class="select-input-type"
+            formControlName="country"
+            [ngClass]="{
+              'is-invalid':
+                (submitted || recordForm.get('country')?.touched) &&
+                recordForm.get('country')?.errors
+            }"
+          >
+          </ng-select>
+          <div class="invalid-feedback" align="left">
+            <app-control-messages
+              [control]="$any(recordForm.get('country'))"
+            ></app-control-messages>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-6">
+        <div class="mb-3">
+          <label for="email" class="form-label mb-1">Email *</label>
+          <input
+            type="email"
+            appTrimText
+            formControlName="email"
+            id="email"
+            class="form-control custom-input-field-class"
+            required
+            placeholder="Email Address"
+            [ngClass]="{
+              'is-invalid':
+                (submitted || recordForm.get('email')?.touched) && recordForm.get('email')?.errors
+            }"
+          />
+          <div class="invalid-feedback" align="left">
+            <app-control-messages [control]="$any(recordForm.get('email'))"></app-control-messages>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="mb-3">
+          <label for="number" class="form-label mb-1">Phone Number *</label>
+          <input
+            type="text"
+            formControlName="number"
+            id="number"
+            class="form-control custom-input-field-class"
+            required
+            appTrimText
+            pattern="^\+\d{8,20}$"
+            
+            inputmode="numeric"
+            placeholder="Phone Number (e.g. +49xxxxxxxxxx)"
+            [ngClass]="{
+              'is-invalid':
+                (submitted || recordForm.get('number')?.touched) &&
+                recordForm.get('number')?.errors
+            }"
+          />
+          <div class="invalid-feedback" align="left">
+            <app-control-messages
+              [control]="$any(recordForm.get('number'))"
+            ></app-control-messages>
+          </div>
+        </div>
+      </div>
+    </div>
+
+   
+
+    <div class="row">
+      <div class="col-12">
+        <div class="mb-3">
+          <label for="bmbyId" class="form-label mb-1">Client ID *</label>
+          <input
+            type="text"
+            formControlName="bmbyId"
+            id="bmbyId"
+            class="form-control custom-input-field-class"
+            appTrimText
+            required
+            placeholder="Client ID"
+            [ngClass]="{
+              'is-invalid':
+                (submitted || recordForm.get('bmbyId')?.touched) &&
+                recordForm.get('bmbyId')?.errors
+            }"
+          />
+          <div class="invalid-feedback" align="left">
+            <app-control-messages
+              [control]="$any(recordForm.get('bmbyId'))"
+            ></app-control-messages>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+  <div class="d-flex gap-2 button-section">
+    <button class="save-as-draft" (click)="close()">Cancel</button>
+    <button type="button" class="create-button" (click)="submit()">
+      {{ selectedContactData ? 'Update' : 'Create' }}
+    </button>
+  </div>
+</div>

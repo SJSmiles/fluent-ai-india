@@ -1,0 +1,37 @@
+:root {
+  --primary-color: #f4f4ff;
+  --primary-svg-color: #000000;
+  --primary-nav-bar-color: #ffffff;
+  --primary-font-color: #00014b;
+  --primary-border-color: #ebebff;
+  --primary-success-color: #3adea5;
+  --primary-danger-color: #f2457f;
+  --primary-small-text-color: #84849c;
+  --primary-dashed-border-color: #3e4de6;
+  --primary-button-color: #3e4de6;
+  --primary-running-status-color: #3a3cde;
+  --primary-pending-status-color: #84849c;
+  --primary-success-background-color: #d6fff1;
+  --primary-danger-background-color: #ffd0e0;
+  --primary-volume-background-color: #ffffff;
+  --primary-danger-bg-color: #f2457f;
+}
+
+[data-bs-theme='dark'] {
+  --primary-color: #000000;
+  --primary-svg-color: #f4f4ff;
+  --primary-nav-bar-color: #111111;
+  --primary-font-color: #ffffff;
+  --primary-border-color: #242424;
+  --primary-success-color: #d6fff1;
+  --primary-danger-color: #ffd0e0;
+  --primary-small-text-color: #ffffff;
+  --primary-dashed-border-color: #3e4de6;
+  --primary-button-color: #3e4de6;
+  --primary-running-status-color: #d8d9ff;
+  --primary-pending-status-color: #a1a1b7;
+  --primary-success-background-color: #3adea5;
+  --primary-danger-background-color: #f2457f;
+  --primary-volume-background-color: #292e34;
+  --primary-danger-bg-color: #f2457f;
+}

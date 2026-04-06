@@ -1,0 +1,68 @@
+<div class="dashboard-wrapper mt-2">
+  <!-- Analytics Header with Single Toggle -->
+  <div class="analytics-header" (click)="toggleAnalytics()">
+    <h2 class="main-title">Analytics</h2>
+    <span class="toggle-icon" [class.rotated]="isAnalyticsCollapsed">
+      <app-icon iconType="menuArrow"></app-icon>
+    </span>
+  </div>
+
+  <!-- Analytics Content (Both Sections) -->
+  <div class="analytics-content" [hidden]="isAnalyticsCollapsed">
+    <!-- Call Analytics Section -->
+    <section class="section">
+      <div class="analytics-cards">
+        <div class="analytics-card">
+          <div class="metric-info">
+            <div class="metric-label">Total Calls</div>
+            <div class="metric-number">
+              <span>{{ totalCalls?.value || 0 }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="analytics-card">
+          <div class="metric-info">
+            <div class="metric-label">Duration Count</div>
+            <div class="metric-number">
+              <span>{{ (callDuration?.value / 60000).toFixed(2) || 0 }} min</span>
+            </div>
+          </div>
+        </div>
+        <div class="analytics-card">
+          <div class="metric-info">
+            <div class="metric-label">Pickup Calls</div>
+            <div class="metric-number">
+              <span>{{ pickupCalls || 0 }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="analytics-card">
+          <div class="metric-info">
+            <div class="metric-label">Not Pickup Calls</div>
+            <div class="metric-number">
+              <span>{{ notPickupCalls || 0 }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="analytics-card">
+          <div class="metric-info">
+            <div class="metric-label">Failed Calls</div>
+            <div class="metric-number">
+              <span>{{ failedCalls || 0 }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Lead Status</h2>
+      <div class="lead-grid">
+        <div class="status-tag" *ngFor="let record of statusCounts; let i = index">
+          <span class="status-title"> {{ record.name }}</span>
+          <span class="status-valuespan bought">{{ record.count }}</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

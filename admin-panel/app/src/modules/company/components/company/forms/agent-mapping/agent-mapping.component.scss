@@ -1,0 +1,165 @@
+.form-check-input:checked {
+  background-color: var(--primary-button-color);
+}
+
+.form-check-input:focus {
+  border-color: var(--primary-border-color);
+}
+
+.form-control {
+  border-color: var(--primary-border-color);
+}
+
+.form-control:focus {
+  border-color: var(--primary-border-color);
+}
+
+.save-as-draft {
+  width: max-content !important;
+}
+
+.create-button {
+  width: max-content !important;
+}
+
+.list-body {
+  max-height: 240px !important;
+  overflow-y: auto !important;
+}
+
+.agent-id {
+  background-color: var(--primary-button-color);
+  color: var(--primary-color);
+}
+
+.badge-data {
+  color: rgba(var(--vz-dark-rgb), var(--vz-text-opacity)) !important;
+  font-family: var(--vz-body-font-family);
+  font-size: var(--vz-badge-font-size);
+  font-style: var(--vz-badge-font-weight);
+}
+
+.list-height {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.list-border {
+  border: 1px solid var(--primary-border-color);
+  border-radius: 8px;
+  background: var(--primary-color);
+}
+
+// Current Mappings Styles
+.mapping-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.btn-copy-token {
+  border: none !important;
+  background: transparent !important;
+}
+
+.mapping-item {
+  padding: 12px 8px;
+  border-radius: 8px;
+  background-color: var(--primary-border-color);
+  border: 1px solid var(--primary-border-color);
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.mapping-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mapping-user {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 14px;
+  min-width: 150px;
+
+  strong {
+    font-weight: 600;
+  }
+}
+
+.mapping-arrow {
+  color: #6c757d;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.mapping-agents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+  align-items: center;
+}
+
+.agent-tag {
+  align-items: center;
+  padding: 4px 12px;
+  background-color: var(--primary-nav-bar-color);
+  color: var(--primary-button-color);
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.agent-name {
+  color: var(--primary-svg-color);
+  font-weight: 700;
+}
+
+.btn-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background-color: #fee;
+  color: #dc3545;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: auto;
+
+  i {
+    font-size: 16px;
+  }
+
+  &:hover {
+    background-color: #dc3545;
+    color: white;
+    transform: scale(1.1);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.note-color {
+  color: var(--primary-danger-color);
+}

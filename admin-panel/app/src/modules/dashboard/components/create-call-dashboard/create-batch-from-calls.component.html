@@ -1,0 +1,274 @@
+<!-- create-batch-from-calls.component.html -->
+<div class="modal-header d-flex justify-content-between">
+  <div>
+    <h5 class="modal-title">Create Batch Call from Selected Calls</h5>
+  </div>
+  <button type="button" class="btn-close" aria-label="Close" (click)="close()"></button>
+</div>
+
+<div class="modal-body create-batch-call d-flex gap-2">
+  <div class="left-side-data">
+    <form [formGroup]="recordForm">
+      <div class="mb-3">
+        <label for="name" class="form-label mb-1"
+          >{{ 'BATCH_CALL.LABEL.BATCH_CALL_NAME' | translate }}
+        </label>
+        <input
+          type="text"
+          formControlName="name"
+          id="name"
+          class="form-control custom-input-field-class"
+          required
+          appTrimText
+          placeholder="Enter name"
+          [ngClass]="{
+            'is-invalid':
+              (submitted || recordForm.get('name')?.touched) && recordForm.get('name')?.errors
+          }"
+        />
+        <div class="invalid-feedback" align="left">
+          <app-control-messages [control]="$any(recordForm.get('name'))"></app-control-messages>
+        </div>
+      </div>
+
+      <div class="mb-3 custom-batch-call-selection" *ngIf="agentCount > 0">
+        <label for="agentList" class="form-label mb-1">{{
+          'BATCH_CALL.LABEL.SELECT_AGENT' | translate
+        }}</label>
+        <div
+          class="select-wrapper"
+          [ngClass]="{
+            'is-invalid':
+              (submitted || recordForm.get('outboundNumber')?.touched) &&
+              recordForm.get('outboundNumber')?.errors
+          }"
+        >
+          <ng-select
+            id="agentList"
+            formControlName="outboundNumber"
+            [items]="agentListing"
+            [clearable]="false"
+            bindLabel="agentName"
+            bindValue="primaryPhone"
+            [searchable]="true"
+            placeholder="Select Agent"
+            class="select-input-type"
+            (change)="onAgentSelected($event)"
+          >
+          </ng-select>
+        </div>
+        <div class="invalid-feedback" align="left">
+          <app-control-messages
+            [control]="$any(recordForm.get('outboundNumber'))"
+          ></app-control-messages>
+        </div>
+      </div>
+
+      <div class="mb-3" *ngIf="agentCount == null || agentCount == undefined || agentCount == ''">
+        <label for="outboundNumber" class="form-label mb-1">Outbound Number </label>
+        <input
+          type="number"
+          formControlName="outboundNumber"
+          id="outboundNumber"
+          class="form-control custom-input-field-class"
+          required
+          placeholder="Enter Number"
+          [ngClass]="{
+            'is-invalid':
+              (submitted || recordForm.get('outboundNumber')?.touched) &&
+              recordForm.get('outboundNumber')?.errors
+          }"
+        />
+        <div class="invalid-feedback" align="left">
+          <app-control-messages
+            [control]="$any(recordForm.get('outboundNumber'))"
+          ></app-control-messages>
+        </div>
+      </div>
+
+      <div>
+        {{ 'BATCH_CALL.LABEL.WHEN_TO_SEND_CALLS' | translate }}
+        <div class="d-flex align-items-center justify-content-between w-100 mt-1 tab-section">
+          <button
+            type="button"
+            class="btn w-50"
+            (click)="selectTab(false)"
+            [ngClass]="
+              recordForm.get('schedule')?.value ? { 'in-active-tab': true } : { 'active-tab': true }
+            "
+          >
+            <div>
+              <span class="tab-title">{{ 'BATCH_CALL.LABEL.SEND_NOW' | translate }}</span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            class="btn w-50"
+            (click)="selectTab(true)"
+            [ngClass]="
+              recordForm.get('schedule')?.value ? { 'active-tab': true } : { 'in-active-tab': true }
+            "
+          >
+            <div>
+              <span class="tab-title">{{ 'BATCH_CALL.LABEL.SCHEDULE' | translate }}</span>
+            </div>
+          </button>
+        </div>
+
+        <div *ngIf="!recordForm.get('schedule')?.value" class="mt-2"></div>
+
+        <div *ngIf="recordForm.get('schedule')?.value" class="schedule mt-2">
+          <div class="mb-3">
+            <label for="time" class="form-label mb-1"
+              >{{ 'BATCH_CALL.LABEL.ENTER_DATE_TIME' | translate }}
+            </label>
+            <app-icon iconType="info-icon" class="px-2"></app-icon>
+            <div>
+              <app-single-date-selector
+                class="new-coverage-form-date"
+                [minDate]="currentDateTime?.date"
+                [format]="'Y-m-d H:i'"
+                (selected)="onDateSelected($event)"
+                [placeholder]="'Select Date'"
+                [enableTime]="true"
+              >
+              </app-single-date-selector>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="custom-padding-time-frame">
+        <div class="mb-1 collapsible-section1 row d-flex">
+          <div class="section-header d-flex align-items-center cursor-pointer">
+            <div class="d-flex align-items-center gap-2">
+              <app-icon
+                iconType="arrowIcon"
+                class="arrow-icon"
+                [class.rotated]="hasOutboundPhone"
+              ></app-icon>
+              <label class="ms-1"><b>FollowUps</b></label>
+            </div>
+
+            <div class="toggle-wrapper ms-auto" (click)="$event.stopPropagation()">
+              <label class="toggle-switch">
+                <input
+                  type="checkbox"
+                  [checked]="hasOutboundPhone"
+                  (change)="onToggleChange($event)"
+                />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="section-content">
+            <div [class.disabled-section]="!hasOutboundPhone">
+              <div class="followups-call-overflow">
+                <div *ngFor="let followUp of followUpsList; let i = index" class="mb-2">
+                  <div class="d-flex align-items-center gap-1 w-100">
+                    <div class="w-50 justify-content-center align-items-center">
+                      <div>Follow Up {{ i + 1 }}</div>
+                    </div>
+                    <div class="d-flex align-items-center w-50 gap-1">
+                      <div class="w-100">
+                        <app-single-date-selector
+                          class="new-coverage-form-date"
+                          [minDate]="currentDateTime?.date"
+                          [format]="'Y-m-d H:i'"
+                          (selected)="onFollowUpDateSelected($event, i)"
+                          [placeholder]="'Select Date'"
+                          [enableTime]="true"
+                          [disabled]="!hasOutboundPhone"
+                        >
+                        </app-single-date-selector>
+                      </div>
+                      <button
+                        *ngIf="followUpsList.length > 1"
+                        class="download-sample custom-timezon"
+                        (click)="deleteFollowUp(i)"
+                        [disabled]="!hasOutboundPhone"
+                      >
+                        <div class="download-csv-button gap-1">
+                          <app-icon iconType="delete"></app-icon>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                *ngIf="followUpsList.length < 10"
+                class="download-sample custom-timezon"
+                (click)="addFollowUp()"
+                [disabled]="!hasOutboundPhone"
+              >
+                <div class="download-csv-button gap-1">
+                  <app-icon iconType="addIcon"></app-icon>
+                  <div>Add</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <div class="d-flex gap-2 button-section">
+      <button class="save-as-draft" (click)="save(1)">
+        {{ 'BATCH_CALL.LABEL.SAVE_AS_DRAFT' | translate }}
+      </button>
+      <button class="start-calling" (click)="save(2)">
+        <Span *ngIf="!recordForm.get('schedule')?.value">Start Calling</Span>
+        <Span *ngIf="recordForm.get('schedule')?.value">Schedule Calling</Span>
+      </button>
+    </div>
+  </div>
+
+  <div class="right-side-data p-4">
+    <div>
+      <div class="d-flex mb-3 align-items-center justify-content-between">
+        <label class="form-label mb-1">Selected Calls Preview</label>
+        <div class="badge bg-primary">{{ selectedCallIds.length }} Calls Selected</div>
+      </div>
+
+      <!-- Preview Table -->
+      <div *ngIf="showPreview && previewData.length > 0" class="csv-table-container">
+        <div class="table-responsive csv-table-wrapper">
+          <table class="table table-hover table-striped custom-table">
+            <thead class="table-dark">
+              <tr>
+                <th scope="col" style="white-space: nowrap">Client ID</th>
+                <th scope="col" style="white-space: nowrap">Phone Number</th>
+                <th scope="col" style="white-space: nowrap">First Name</th>
+                <th scope="col" style="white-space: nowrap">Last Name</th>
+                <th scope="col">Gender</th>
+                <th scope="col">Email</th>
+                <th scope="col">Country</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of previewData; let i = index" class="csv-data-row">
+                <td>{{ getColumnValue(row, 'clientId') }}</td>
+                <td>{{ getColumnValue(row, 'phoneNumber') }}</td>
+                <td>{{ getColumnValue(row, 'firstName') }}</td>
+                <td>{{ getColumnValue(row, 'lastName') }}</td>
+                <td>{{ getColumnValue(row, 'gender') }}</td>
+                <td>{{ getColumnValue(row, 'email') }}</td>
+                <td>{{ getColumnValue(row, 'country') }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- No Data Message -->
+      <div *ngIf="!showPreview || previewData.length === 0" class="text-center py-5">
+        <app-icon iconType="info-icon" class="text-warning mb-2"></app-icon>
+        <p>No calls selected for preview</p>
+      </div>
+    </div>
+  </div>
+</div>

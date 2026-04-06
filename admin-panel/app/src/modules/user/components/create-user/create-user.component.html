@@ -1,0 +1,330 @@
+<div class="modal-header d-flex justify-content-between">
+  <div>
+    <h5 class="modal-title">{{ selectedUserData ? 'Edit User' : 'Create User' }}</h5>
+  </div>
+  <button type="button" class="btn-close" aria-label="Close" (click)="close()"></button>
+</div>
+<div class="modal-body create-batch-call">
+  <form [formGroup]="recordForm">
+    <div class="row">
+      <label for="name" class="form-label mb-1">Name *</label>
+      <div class="col-6">
+        <div class="mb-3">
+          <input
+            type="text"
+            formControlName="firstName"
+            id="firstName"
+            class="form-control custom-input-field-class"
+            required
+            appTrimText
+            placeholder="First Name"
+            [ngClass]="{
+              'is-invalid':
+                (submitted || recordForm.get('firstName')?.touched) &&
+                recordForm.get('firstName')?.errors
+            }"
+          />
+          <div class="invalid-feedback" align="left">
+            <app-control-messages
+              [control]="$any(recordForm.get('firstName'))"
+            ></app-control-messages>
+          </div>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="mb-3">
+          <input
+            type="text"
+            formControlName="lastName"
+            id="lastName"
+            class="form-control custom-input-field-class"
+            required
+            appTrimText
+            placeholder="Last Name"
+            [ngClass]="{
+              'is-invalid':
+                (submitted || recordForm.get('lastName')?.touched) &&
+                recordForm.get('lastName')?.errors
+            }"
+          />
+          <div class="invalid-feedback" align="left">
+            <app-control-messages
+              [control]="$any(recordForm.get('lastName'))"
+            ></app-control-messages>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6">
+      <div class="mb-3">
+        <label for="name" class="form-label mb-1">Phone Number</label>
+        <input
+          type="text"
+          formControlName="phoneNumber"
+          id="phoneNumber"
+          class="form-control custom-input-field-class"
+          appTrimText
+          pattern="^\+\d{8,15}$"
+          (keypress)="allowOnlyPlusAndDigits($event)"
+          inputmode="numeric"
+          placeholder="Phone Number (e.g. +49xxxxxxxxxx)"
+          [ngClass]="{
+            'is-invalid':
+              (submitted || recordForm.get('phoneNumber')?.touched) &&
+              recordForm.get('phoneNumber')?.errors
+          }"
+        />
+        <div class="invalid-feedback" align="left">
+          <app-control-messages
+            [control]="$any(recordForm.get('phoneNumber'))"
+          ></app-control-messages>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-6">
+        <div class="mb-3" *ngIf="!selectedUserData?._id">
+          <label for="email" class="form-label mb-1">Email *</label>
+          <div class="d-flex custom-user-email">
+            <div class="w-100">
+              <input
+                type="text"
+                id="email"
+                class="form-control custom-email-radius custom-input-field-class"
+                placeholder="Enter Email"
+                formControlName="email"
+                appTrimText
+                [ngClass]="{
+                  'is-invalid':
+                    (submitted || recordForm.controls['email'].touched) &&
+                    recordForm.controls['email'].errors
+                }"
+              />
+              <div class="invalid-feedback" align="left">
+                <app-control-messages
+                  [control]="$any(recordForm.get('email'))"
+                ></app-control-messages>
+              </div>
+            </div>
+            <span class="input-group-text custom-height-domain" id="basic-addon2"
+              >&#64; {{ selectedDomain }}</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="mb-3" *ngIf="!selectedUserData?._id">
+          <div>
+            <label for="password" class="form-label mb-1">Password *</label>
+          </div>
+          <div class="d-flex custom-user-email">
+            <div class="w-100">
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                formControlName="password"
+                id="password"
+                class="form-control custom-input-field-class"
+                required
+                placeholder="Enter password (min 8 characters)"
+                [ngClass]="{
+                  'is-invalid':
+                    (submitted || recordForm.controls['password'].touched) &&
+                    recordForm.controls['password'].errors
+                }"
+              />
+              <div class="invalid-feedback" align="left">
+                <app-control-messages
+                  [control]="$any(recordForm.get('password'))"
+                ></app-control-messages>
+              </div>
+            </div>
+            <span class="input-group-text custom-height-domain" id="basic-addon2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                class="cursor-pointer"
+                [ngClass]="{
+                  'icon-with-error':
+                    (submitted || recordForm.controls['password'].touched) &&
+                    recordForm.controls['password'].errors
+                }"
+                (click)="togglePasswordVisibility()"
+                *ngIf="showPassword"
+                fill="currentColor"
+              >
+                <path fill="none" d="M0 0h24v24H0z" />
+                <path
+                  d="M1.173 12C2.445 7.943 6.08 5 12 5s9.555 2.943 10.827 7c-1.272 4.057-4.907 7-10.827 7S2.445 16.057 1.173 12zm10.827 5a5 5 0 100-10 5 5 0 000 10zm0-2a3 3 0 110-6 3 3 0 010 6z"
+                />
+              </svg>
+              <svg
+                *ngIf="!showPassword"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="cursor-pointer"
+                [ngClass]="{
+                  'icon-with-error':
+                    (submitted || recordForm.controls['password'].touched) &&
+                    recordForm.controls['password'].errors
+                }"
+                (click)="togglePasswordVisibility()"
+              >
+                <path
+                  d="M17.94 17.94A10.94 10.94 0 0112 20C5 20 1 12 1 12a21.5 21.5 0 015.11-6.36M22.54 12.88A10.94 10.94 0 0023 12S19 4 12 4c-1.79 0-3.48.37-5.05 1.03"
+                />
+                <path d="M9.88 9.88a3 3 0 104.24 4.24" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </svg>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" *ngIf="bmbyConfig">
+      <div class="col-12">
+        <h6 class="form-label mb-3 mt-3">BMBY Profile</h6>
+      </div>
+    </div>
+
+    <!-- <div class="row">
+      <div class="col-6">
+        <div class="mb-3">
+          <label for="bmbyUserName" class="form-label mb-1">User Name</label>
+          <input type="text" formControlName="bmbyUserName" id="bmbyUserName"
+            class="form-control custom-input-field-class" appTrimText placeholder="Enter User Name" [ngClass]="{
+            'is-invalid':
+              (submitted || recordForm.get('bmbyUserName')?.touched) &&
+              recordForm.get('bmbyUserName')?.errors
+          }" />
+          <div class="invalid-feedback" align="left">
+            <app-control-messages [control]="$any(recordForm.get('bmbyUserName'))"></app-control-messages>
+          </div>
+        </div>
+      </div>
+
+    
+      <div class="col-6">
+        <div class="mb-3">
+          <label for="bmbyPassword" class="form-label mb-1">Password</label>
+          <div class="d-flex custom-user-email">
+            <div class="w-100">
+              <input [type]="showBmbyPassword ? 'text' : 'password'" formControlName="bmbyPassword" id="bmbyPassword"
+                class="form-control custom-input-field-class" placeholder="Enter Password" [ngClass]="{
+                'is-invalid':
+                  (submitted || recordForm.controls['bmbyPassword'].touched) &&
+                  recordForm.controls['bmbyPassword'].errors
+              }" />
+              <div class="invalid-feedback" align="left">
+                <app-control-messages [control]="$any(recordForm.get('bmbyPassword'))"></app-control-messages>
+              </div>
+            </div>
+            <span class="input-group-text custom-height-domain" id="basic-addon3">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" class="cursor-pointer"
+                [ngClass]="{
+                'icon-with-error':
+                  (submitted || recordForm.controls['bmbyPassword'].touched) &&
+                  recordForm.controls['bmbyPassword'].errors
+              }" (click)="toggleBmbyPasswordVisibility()" *ngIf="showBmbyPassword" fill="currentColor">
+                <path fill="none" d="M0 0h24v24H0z" />
+                <path
+                  d="M1.173 12C2.445 7.943 6.08 5 12 5s9.555 2.943 10.827 7c-1.272 4.057-4.907 7-10.827 7S2.445 16.057 1.173 12zm10.827 5a5 5 0 100-10 5 5 0 000 10zm0-2a3 3 0 110-6 3 3 0 010 6z" />
+              </svg>
+              <svg *ngIf="!showBmbyPassword" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20"
+                height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" class="cursor-pointer" [ngClass]="{
+                'icon-with-error':
+                  (submitted || recordForm.controls['bmbyPassword'].touched) &&
+                  recordForm.controls['bmbyPassword'].errors
+              }" (click)="toggleBmbyPasswordVisibility()">
+                <path
+                  d="M17.94 17.94A10.94 10.94 0 0112 20C5 20 1 12 1 12a21.5 21.5 0 015.11-6.36M22.54 12.88A10.94 10.94 0 0023 12S19 4 12 4c-1.79 0-3.48.37-5.05 1.03" />
+                <path d="M9.88 9.88a3 3 0 104.24 4.24" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </svg>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div> -->
+
+    <div class="row" *ngIf="bmbyConfig">
+      <div class="col-6">
+        <div class="mb-3">
+          <label for="bmbyUserId" class="form-label mb-1">User ID</label>
+          <input
+            type="text"
+            formControlName="bmbyUserId"
+            id="bmbyUserId"
+            class="form-control custom-input-field-class"
+            appTrimText
+            placeholder="Enter User ID"
+            [attr.disabled]="recordForm.get('bmbyUserId')?.disabled ? true : null"
+            [ngClass]="{
+              'is-invalid':
+                (submitted || recordForm.get('bmbyUserId')?.touched) &&
+                recordForm.get('bmbyUserId')?.errors
+            }"
+          />
+
+          <div class="invalid-feedback" align="left">
+            <app-control-messages
+              [control]="$any(recordForm.get('bmbyUserId'))"
+            ></app-control-messages>
+          </div>
+        </div>
+      </div>
+
+      <!-- BMBY Project ID -->
+      <div class="col-6">
+        <div class="mb-3">
+          <label for="bmbyProjectId" class="form-label mb-1">Project ID</label>
+          <input
+            type="text"
+            formControlName="bmbyProjectId"
+            id="bmbyProjectId"
+            class="form-control custom-input-field-class"
+            appTrimText
+            placeholder="Enter Project ID"
+            [ngClass]="{
+              'is-invalid':
+                (submitted || recordForm.get('bmbyProjectId')?.touched) &&
+                recordForm.get('bmbyProjectId')?.errors
+            }"
+          />
+          <div class="invalid-feedback" align="left">
+            <app-control-messages
+              [control]="$any(recordForm.get('bmbyProjectId'))"
+            ></app-control-messages>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- <div class="mb-3" *ngIf="selectedUserData?._id && !selectedUserData.isAdmin">
+      <div class="form-check mt-4">
+        <input class="form-check-input custom-input-check-field-class me-1" type="checkbox" id="is_active"
+          formControlName="status" />
+        <label class="form-check-label" for="is_active"> Is Active </label>
+      </div>
+    </div> -->
+  </form>
+  <div class="d-flex gap-2 button-section">
+    <button class="save-as-draft" (click)="close()">Cancel</button>
+    <button type="button" class="create-button" (click)="submit()">
+      {{ selectedUserData ? 'Update' : 'Create' }}
+    </button>
+  </div>
+</div>

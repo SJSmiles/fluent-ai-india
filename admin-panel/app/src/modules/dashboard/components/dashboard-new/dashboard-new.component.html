@@ -1,0 +1,858 @@
+<div style="padding-right: 0.6rem">
+  <!-- Header Section -->
+  <div class="d-flex justify-content-between align-items-center">
+    <app-header [moduleName]="'Dashboard'"></app-header>
+
+    <div class="d-flex justify-content-end">
+      <!-- Date Range Selector -->
+      <div class="d-flex align-items-center justify-content-between w-100 custom-timezone me-2">
+        <div *ngFor="let option of getDisplayOptions()" [ngClass]="{
+            'cursor-pointer': true,
+            'fix-height-width': true,
+            'current-selected-date': selectedRange === option.key
+          }" (click)="selectDateRange(option.key)">
+          {{ option.display }}
+        </div>
+      </div>
+
+      <!-- Custom Date Range -->
+      <div class="d-flex align-items-center justify-content-between custom-timezone additional-date"
+        *ngIf="isCustomDate">
+        <div>
+          <app-date-selector [defaultDate]="dateRange.startDate" class="app-date-selector-class" [format]="'d/m/Y'"
+            [maxDate]="maxStartDate" [value]="startDate" [placeholder]="'Select Start Date'"
+            (selected)="onDateRangeSelected($event, 'startDate')">
+          </app-date-selector>
+        </div>
+        <div>to</div>
+        <div>
+          <app-date-selector [defaultDate]="dateRange.endDate" class="app-date-selector-class" [format]="'d/m/Y'"
+            [minDate]="minEndDate" [value]="endDate" [placeholder]="'Select End Date'"
+            (selected)="onDateRangeSelected($event, 'endDate')">
+          </app-date-selector>
+        </div>
+      </div>
+
+      <!-- Page Size Selector -->
+      <div class="d-flex align-items-center gap-2 ps-2">
+        <label class="mb-0">Show:</label>
+        <div style="width: 100px">
+          <ng-select [items]="pageSizeOptions" [clearable]="false" [searchable]="false" placeholder="Select size"
+            class="select-input-type" [(ngModel)]="currentPageSize" (ngModelChange)="customSizeChanged($event)">
+          </ng-select>
+        </div>
+        <button class="export-btn ms-2" (click)="exportCallList()">
+          <app-icon iconType="downloadFile"></app-icon>
+          <span>Export</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analytics and Content Section -->
+  <div class="analytics-dashboard-combined">
+    <div>
+      <!-- Analytics Section -->
+      <div class="analytics-section" *ngIf="recordsFilter.userId && recordsFilter.startDate && recordsFilter.endDate">
+        <dashboard-analytics-new [AnalyticsStartDate]="recordsFilter.startDate"
+          [AnalyticsEndDate]="recordsFilter.endDate" [AnalyticsUserId]="recordsFilter.userId"
+          [leadDistributionChanged]="leadDistributionChanged" [bmbyEnabled]="bmbyEnabled">
+        </dashboard-analytics-new>
+      </div>
+
+      <!-- Filters Section -->
+      <div class="d-flex flex-end mt-3 w-100 gap-2 filter-option" *ngIf="currentUser?.user">
+        <!-- Company Filter (Super Admin only) -->
+        <div class="dashboard-lead-status-filter d-flex align-items-center gap-1"
+          *ngIf="currentUser.user.isSuperAdmin && currentUser.user.isAdmin">
+          <div>Company:</div>
+          <ng-select style="width: 100%" [items]="companyListing" [clearable]="false" bindLabel="fullName"
+            bindValue="_id" [searchable]="true" placeholder="Select Company" class="select-input-type"
+            [(ngModel)]="companyId" name="companyId" (ngModelChange)="selectCompany($event)"
+            (clear)="selectCompany(null)">
+          </ng-select>
+        </div>
+
+        <!-- User Filter (Admin only) -->
+        <div class="dashboard-lead-status-filter d-flex align-items-center gap-1" *ngIf="currentUser.user.isAdmin">
+          <div>User:</div>
+          <ng-select style="width: 100%" [items]="userListing" [clearable]="false" bindLabel="fullName" bindValue="_id"
+            [searchable]="true" placeholder="Select User" class="select-input-type" [(ngModel)]="userId" name="userId"
+            (ngModelChange)="selectUser($event)" (clear)="selectUser(null)">
+          </ng-select>
+        </div>
+
+        <!-- Lead Status Filter -->
+        <div class="dashboard-lead-status-filter lead-status-multi-select d-flex align-items-center gap-1">
+          <div>Lead Status:</div>
+          <ng-select style="width: 100%" id="leadStatusList" [items]="leadStatusFilterList"
+            [(ngModel)]="selectedLeadStatus" (change)="selectLeadStatus($event)" [clearable]="true" [searchable]="true"
+            placeholder="Select Lead Status" class="select-input-type" [multiple]="true" [closeOnSelect]="false"
+            (clear)="selectLeadStatus(null)">
+            <ng-template ng-multi-label-tmp let-items="items" let-clear="clear">
+              <div class="ng-value" *ngFor="let item of items | slice:0:1">
+                <span class="ng-value-icon left" (click)="clear(item)" aria-hidden="true">×</span>
+                <span class="ng-value-label">{{item}}</span>
+              </div>
+              <div class="ng-value" *ngIf="items.length > 1">
+                <span class="ng-value-label">+{{items.length - 1}} more</span>
+              </div>
+            </ng-template>
+          </ng-select>
+        </div>
+
+        <!-- Agent Filter -->
+        <div class="dashboard-lead-status-filter d-flex align-items-center gap-1" *ngIf="currentUser.user.isAdmin">
+          <div>Agent:</div>
+          <ng-select style="width: 100%" id="agentList" [items]="agentList" [(ngModel)]="selectedAgent"
+            (ngModelChange)="selectAgent($event)" [clearable]="true" bindLabel="agentName" bindValue="agentId"
+            [searchable]="true" placeholder="Select Agent" class="select-input-type" (clear)="selectAgent(null)">
+          </ng-select>
+        </div>
+
+        <!-- Search Filter -->
+        <div class="global-search">
+          <app-search-filters placeholder="Search" (search)="customSearch($event)" [clear]="clearFilter"
+            [selectedText]="searchText">
+          </app-search-filters>
+        </div>
+      </div>
+
+      <div class="active-filters-container" *ngIf="hasActiveFilters()">
+        <div class="active-filters-label">Active Filters:</div>
+
+        <div class="active-filters-tags">
+          <!-- Agent Filter Tag -->
+          <div class="filter-tag" *ngIf="selectedAgent">
+            <span class="filter-tag-label">Agent:</span>
+            <span class="filter-tag-value">{{ getAgentName(selectedAgent) }}</span>
+            <button class="filter-tag-close" (click)="removeFilter('agent')" type="button">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Lead Status Filter Tag -->
+          <div class="filter-tag" *ngIf="selectedLeadStatus && selectedLeadStatus.length > 0">
+            <span class="filter-tag-label">Status:</span>
+            <span class="filter-tag-value">{{ getSelectedLeadStatusDisplay() }}</span>
+            <button class="filter-tag-close" (click)="removeFilter('leadStatus')" type="button">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Search Filter Tag -->
+          <div class="filter-tag" *ngIf="searchText">
+            <span class="filter-tag-label">Search:</span>
+            <span class="filter-tag-value">"{{ searchText }}"</span>
+            <button class="filter-tag-close" (click)="removeFilter('search')" type="button">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Company Filter Tag -->
+          <div class="filter-tag" *ngIf="
+              companyId &&
+              currentUser.user.isSuperAdmin &&
+              currentUser.user.isAdmin &&
+              companyId !== currentUser.user.companyId
+            ">
+            <span class="filter-tag-label">Company:</span>
+            <span class="filter-tag-value">{{ getCompanyName(companyId) }}</span>
+            <!-- <button class="filter-tag-close" (click)="removeFilter('company')" type="button">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button> -->
+          </div>
+
+          <!-- User Filter Tag -->
+          <div class="filter-tag" *ngIf="userId && currentUser.user.isAdmin && userId !== currentUser.user._id">
+            <span class="filter-tag-label">User:</span>
+            <span class="filter-tag-value">{{ getUserName(userId) }}</span>
+            <button class="filter-tag-close" (click)="removeFilter('user')" type="button">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Clear All Button -->
+        <button class="clear-all-btn" (click)="clearAllFilters()" type="button">Clear All</button>
+      </div>
+
+      <!-- Attempts Info Banner -->
+      <div class="attempts-info" role="complementary" aria-labelledby="attempts-info-title">
+        <div class="attempts-info-icon" aria-hidden="true">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="attempts-info-text">
+          <div id="attempts-info-title" class="attempts-info-title">
+            Understanding Call Attempts
+          </div>
+          <div class="attempts-info-description">
+            Each <strong>Call</strong> = 1 unique contact. Each <strong>Attempt</strong> = dialing
+            that contact. Use the "Attempts" filter to find first-time successes, retries, or
+            persistent contacts. Hover over attempt badges for details.
+          </div>
+        </div>
+        <div class="attempts-legend">
+          <div class="legend-item">
+            <div class="legend-badge legend-badge-1">1</div>
+            <span>First try</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-badge legend-badge-2">2</div>
+            <span>Retried once</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-badge legend-badge-3">3+</div>
+            <span>Multiple retries</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calls Table -->
+    <div class="table-wrapper">
+      <table class="calls-table">
+        <thead>
+          <tr>
+            <th class="th-expand">
+              <span class="sr-only">Expand row</span>
+            </th>
+            <th class="th-sortable" [class.sorted-asc]="sortStates['createdAt'] === 'asc'"
+              [class.sorted-desc]="sortStates['createdAt'] === 'desc'" (click)="sortActive('createdAt')">
+              <span class="th-content">
+                DATE/TIME
+                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                </svg>
+              </span>
+            </th>
+            <th class="th-sortable" [class.sorted-asc]="sortStates['duration'] === 'asc'"
+              [class.sorted-desc]="sortStates['duration'] === 'desc'" (click)="sortActive('duration')">
+              <span class="th-content">
+                DURATION
+                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                </svg>
+              </span>
+            </th>
+            <th class="th-regular">
+              <span class="th-content">STATUS</span>
+            </th>
+            <th class="th-regular" class="th-sortable" [class.sorted-asc]="sortStates['leadStatus'] === 'asc'"
+              [class.sorted-desc]="sortStates['leadStatus'] === 'desc'" (click)="sortActive('leadStatus')">
+              <span class="th-content">LEAD STATUS
+                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                </svg>
+
+              </span>
+            </th>
+            <th class="th-regular">
+              <span class="th-content">CALL END</span>
+            </th>
+            <th class="th-sortable" [class.sorted-asc]="sortStates['customerName'] === 'asc'"
+              [class.sorted-desc]="sortStates['customerName'] === 'desc'" (click)="sortActive('customerName')">
+              <span class="th-content">
+                NAME
+                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                </svg>
+              </span>
+            </th>
+            <th class="th-regular" *ngIf="currentUser.user.isAdmin">
+              <span class="th-content">AGENT</span>
+            </th>
+            <th class="th-regular th-center">
+              <span class="th-content">SYNC</span>
+            </th>
+            <th class="th-regular">
+              <span class="th-content">CLIENT ID</span>
+            </th>
+            <th class="th-regular">
+              <span class="th-content">NUMBER</span>
+            </th>
+            <th class="th-sortable" [class.sorted-asc]="sortStates['totalCalls'] === 'asc'"
+              [class.sorted-desc]="sortStates['totalCalls'] === 'desc'" (click)="sortActive('totalCalls')">
+              <span class="th-content">
+                ATTEMPTS
+                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                </svg>
+              </span>
+            </th>
+            <th class="th-regular th-center">
+              <span class="th-content">ACTIONS</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngIf="recordsList && recordsList.length > 0; else noRecords">
+            <ng-container *ngFor="let record of recordsList; let i = index">
+              <!-- Main Row -->
+              <tr class="table-row" [class.expanded]="isRowExpanded(i)">
+                <td>
+                  <button class="expand-btn" type="button" [class.expanded]="isRowExpanded(i)"
+                    (click)="toggleExpand(record, i)"
+                    [attr.aria-label]="'Expand call details for ' + record.customerName"
+                    [attr.aria-expanded]="isRowExpanded(i)">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </td>
+                <td>
+                  <div class="date-time">
+                    <span class="date">{{ record.latestCallDate | date: 'dd/MM/yyyy' }}</span>
+                    <span class="time">{{ record.latestCallDate | date: 'h:mm a' }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="duration">{{ record.duration }} min</span>
+                </td>
+                <td>
+                  <span class="status-badge ended">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {{ record.status }}
+                  </span>
+                </td>
+                <td>
+                  <div class="lead-status-display">
+                    <span>{{ getMappedLeadStatus(record.leadStatus) | titlecase }}</span>
+                  </div>
+                </td>
+                <td>{{ record.disconnectionReason }}</td>
+                <td>{{ record.customerName }}</td>
+                <td *ngIf="currentUser.user.isAdmin">
+                  <div class="agent-cell">
+                    <div class="agent-avatar">{{ getAgentInitials(record.agentName) }}</div>
+                    <div class="agent-info">
+                      <div class="agent-name">{{ record.agentName }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style="text-align: center;">
+                  <svg class="sync-icon" [class.success]="record.syncInBmby" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path *ngIf="!record.syncInBmby" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M6 18L18 6M6 6l12 12" />
+                    <path *ngIf="record.syncInBmby" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M5 13l4 4L19 7" />
+                  </svg>
+                </td>
+                <td>
+                  <span class="client-id">{{ record.bmbyId }}</span>
+                </td>
+                <td>
+                  <span class="phone-number">{{ record.phoneNumber }}</span>
+                </td>
+                <td>
+                  <div class="attempts-badge" [attr.data-attempts]="record.totalCalls">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    {{ record.totalCalls }}
+                  </div>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button class="action-btn" type="button" (click)="openCommentsModal(record)"
+                      title="View and add comments">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                      </svg>
+                      <span class="comment-count" *ngIf="record.unreadComments > 0">{{
+                        record.unreadComments
+                        }}</span>
+                    </button>
+                    <button class="action-btn" type="button" (click)="openFullDetails(selectedRecords)"
+                      title="Open full call details">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </button>
+
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Expanded Row Content -->
+              <tr class="expanded-row" [class.show]="isRowExpanded(i)">
+                <td colspan="13">
+                  <div class="expanded-content">
+                    <!-- Top Row: 3 Columns -->
+                    <div class="expanded-top-row">
+                      <!-- Call Attempts History -->
+                      <div class="expanded-section" *ngIf="selectedRecords?.calls">
+                        <div class="expanded-section-title">
+                          CALL ATTEMPTS HISTORY ({{ selectedRecords.calls.length }})
+                        </div>
+                        <div class="attempt-list">
+                          <div class="attempt-item" *ngFor="let attempt of selectedRecords.calls; let idx = index"
+                            [class.selected]="attempt.isSelected" (click)="selectCallAttempt(idx)">
+                            <div class="attempt-number active">
+                              {{ selectedRecords.calls.length - idx }}
+                            </div>
+                            <div class="attempt-details">
+                              <div class="attempt-date">{{ attempt.createdAt | date:'dd/mm/yyyy hh:mm a' }}</div>
+                              <div class="attempt-result">
+                                {{ getMappedLeadStatus(attempt.leadStatus) }} • {{ attempt.duration }}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="attempt-tip">
+                          💡 <strong>Tip:</strong> Click any attempt to view its transcript
+                        </div>
+                      </div>
+
+                      <!-- Status Change History -->
+                      <div class="expanded-section">
+                        <div class="expanded-section-title">STATUS CHANGE HISTORY</div>
+
+                        <!-- Single Status Record -->
+                        <div class="status-history" *ngIf="selectedRecords?.leadStatusHistory?.length === 1">
+                          <div class="status-change-item">
+                            <div class="status-change-icon">
+                              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </div>
+                            <div class="status-change-details">
+                              <div class="status-change-header">
+                                <div class="status-from-to">
+                                  {{ getMappedLeadStatus(selectedRecords.leadStatusHistory[0].leadStatus) }}
+                                </div>
+                                <div class="status-timestamp">
+                                  {{
+                                  selectedRecords.leadStatusHistory[0].createdAt
+                                  | date: 'dd MMM yyyy, hh:mm a'
+                                  }}
+                                </div>
+                              </div>
+                              <div class="status-change-by">
+                                Set by: {{ selectedRecords.leadStatusHistory[0].createdBy.name }}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Multiple Status Records -->
+                        <div class="status-history" *ngIf="selectedRecords?.leadStatusHistory?.length > 1">
+                          <ng-container *ngFor="
+                              let change of selectedRecords.leadStatusHistory;
+                              let idx = index
+                            ">
+                            <div class="status-change-item" *ngIf="idx < selectedRecords.leadStatusHistory.length - 1">
+                              <div class="status-change-icon">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </div>
+                              <div class="status-change-details">
+                                <div class="status-change-header">
+                                  <div class="status-from-to">
+                                    {{ getMappedLeadStatus(selectedRecords.leadStatusHistory[idx + 1].leadStatus) }}
+                                    <span class="status-arrow">→</span>
+                                    {{ getMappedLeadStatus(change.leadStatus) }}
+                                  </div>
+                                  <div class="status-timestamp">
+                                    {{ change.createdAt | date: 'dd MMM yyyy, hh:mm a' }}
+                                  </div>
+                                </div>
+                                <div class="status-change-by">
+                                  Changed by: {{ change.createdBy.name }}
+                                </div>
+                              </div>
+                            </div>
+                          </ng-container>
+                        </div>
+
+                        <button class="btn btn-secondary btn-full" type="button" (click)="changeStatus()">
+                          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                          Change Status
+                        </button>
+                      </div>
+
+                      <!-- Follow-up Schedule -->
+                      <div class="expanded-section">
+                        <div class="expanded-section-title">FOLLOW-UP SCHEDULE</div>
+                        <div class="followup-card" *ngIf="selectedRecords?.followup; else noFollowup">
+                          <div class="followup-header">
+                            <div class="followup-icon">
+                              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                            <div>
+                              <div class="followup-status">Scheduled</div>
+                              <div class="followup-date">
+                                {{ selectedRecords.followup.utcDateTime | date: 'medium' }}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <ng-template #noFollowup>
+                          <div class="empty-state">No follow-up scheduled</div>
+                        </ng-template>
+                      </div>
+                    </div>
+
+                    <!-- Bottom Row: 2 Columns -->
+                    <div class="expanded-bottom-row">
+                      <div class="expanded-section transcript-section">
+                        <div class="section-header-with-action">
+                          <div>
+                            <div class="expanded-section-title">CALL SUMMARY</div>
+                          </div>
+                          <div>
+                            <svg width="18" height="18" fill="none" stroke="#2563eb" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                              </path>
+                            </svg>
+                          </div>
+                        </div>
+                        <div class="transcript-content">
+                          <div class="transcript-message">
+                            <div class="message-body">
+                              <ng-container *ngIf="currentSelectedCall?.summery; else noSummery">
+                                <div class="message-content">
+                                  {{ currentSelectedCall.summery }}
+                                </div>
+                              </ng-container>
+
+                              <ng-template #noSummery>
+                                <div class="message-content d-flex align-items-center justify-content-center mt-3"
+                                  style="text-align: center;">
+                                  <div>
+                                    No summery available for this call
+                                  </div>
+                                </div>
+                              </ng-template>
+
+
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Call Transcript -->
+                      <div class="expanded-section transcript-section">
+                        <div class="section-header-with-action">
+                          <div>
+                            <div class="expanded-section-title">CALL TRANSCRIPT</div>
+                            <div class="section-subtitle" *ngIf="currentSelectedCall?.transcript?.length > 0">
+                              Showing first {{ displayedMessages }} messages •
+                              <span class="view-all-link" (click)="viewFullTranscript()">
+                                View all {{ currentSelectedCall.transcript.length }} messages →
+                              </span>
+                            </div>
+                          </div>
+                          <button class="btn btn-secondary btn-sm" type="button"
+                            (click)="openFullDetails(selectedRecords)">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            Open Full Details
+                          </button>
+                        </div>
+                        <div class="transcript-content">
+                          <div class="transcript-message" *ngFor="
+                              let message of currentSelectedCall?.transcript?.slice(
+                                0,
+                                displayedMessages
+                              )
+                            ">
+                            <div class="message-role" [ngClass]="message.role.toLowerCase()">
+                              {{
+                              message.role === 'user'
+                              ? 'USER'
+                              : message.role === 'agent'
+                              ? 'AI'
+                              : message.role.toUpperCase()
+                              }}
+                            </div>
+                            <div class="message-body">
+                              <div class="message-content">{{ message.content }}</div>
+                              <div class="message-timestamp">
+                                {{ formatTimestamp(message.timestamp) }}
+                              </div>
+                            </div>
+                          </div>
+                          <div class="transcript-fade"
+                            *ngIf="currentSelectedCall?.transcript?.length > displayedMessages">
+                            <button class="btn btn-primary btn-sm" type="button" (click)="viewFullTranscript()">
+                              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M19 9l-7 7-7-7" />
+                              </svg>
+                              View
+                              {{ currentSelectedCall.transcript.length - displayedMessages }} More
+                              Messages
+                            </button>
+                          </div>
+                          <div class="empty-state call-transcript-empty-state" *ngIf="
+                              !currentSelectedCall?.transcript ||
+                              currentSelectedCall.transcript.length === 0
+                            ">
+                            No transcript available for this call
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Comments Thread -->
+                      <div class="expanded-section comments-section">
+                        <div class="section-header-with-action">
+                          <div class="expanded-section-title">
+                            COMMENTS THREAD ({{ expandedRowCommentsTotalCount }})
+                          </div>
+                          <button class="btn btn-primary btn-sm" type="button"
+                            (click)="openCommentsModal(selectedRecords)">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Comment
+                          </button>
+                        </div>
+                        <div class="comments-container">
+                          <!-- Loading State -->
+                          <div class="loading-state" *ngIf="expandedRowCommentsLoading">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                              <span class="sr-only">Loading...</span>
+                            </div>
+                          </div>
+
+                          <!-- Comments List -->
+                          <div class="comment-item" *ngFor="let comment of expandedRowCommentsList">
+                            <div class="comment-header">
+                              <span class="comment-author" [class.is-you]="getCommentAuthorName(comment) === 'You'">
+                                {{ getCommentAuthorName(comment) }}
+                              </span>
+                              <span class="comment-date">{{
+                                formatCommentTimestamp(comment.createdAt)
+                                }}</span>
+                            </div>
+                            <p class="comment-text">{{ comment.comment }}</p>
+                          </div>
+
+                          <!-- View More Button -->
+                          <button class="btn btn-primary btn-sm" type="button" *ngIf="expandedRowCommentsTotalCount > 3"
+                            (click)="openCommentsModal(selectedRecords)">
+                            View all {{ expandedRowCommentsTotalCount }} comments →
+                          </button>
+
+                          <!-- Empty State -->
+                          <div class="empty-state" *ngIf="
+                              !expandedRowCommentsLoading && expandedRowCommentsList.length === 0
+                            ">
+                            No comments yet
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
+          </ng-container>
+          <ng-template #noRecords>
+            <tr>
+              <td colspan="17">No records found.</td>
+            </tr>
+          </ng-template>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="d-flex justify-content-between align-items-center mt-3" *ngIf="totalCount > 0">
+      <div class="col col-sm-6">
+        <div class="dataTables_info mb-2" id="tickets-table_info" role="status" aria-live="polite">
+          Showing {{ pageIndex * currentPageSize + 1 }} to
+          <span *ngIf="currentPageSize * currentPage < totalCount">
+            {{ currentPageSize * currentPage }} of {{ totalCount }}
+          </span>
+          <span *ngIf="currentPageSize * currentPage >= totalCount">
+            {{ totalCount }} of {{ totalCount }}
+          </span>
+          entries
+        </div>
+      </div>
+      <div class="col col-sm-6">
+        <div class="text-sm-right float-sm-end listjs-pagination mb-2">
+          <ngb-pagination [maxSize]="5" [rotate]="true" [boundaryLinks]="true" [(page)]="currentPage"
+            [pageSize]="currentPageSize" [collectionSize]="totalCount" (pageChange)="pageChanged($event)">
+          </ngb-pagination>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Batch Creation Modal -->
+<ng-template #createBatchFromCallsModal let-modal>
+  <app-create-batch-from-calls [selectedCallIds]="selectedCallIds" [selectedCallsData]="selectedCallsData"
+    (batchCallCreateEvent)="batchCallCreateEvent()">
+  </app-create-batch-from-calls>
+</ng-template>
+
+<!-- Comments Modal -->
+<ng-template #commentModal let-modal>
+  <div class="comment-modal-container">
+    <!-- Modal Header -->
+    <div class="comment-modal-header">
+      <div>
+        <h4 class="modal-title">Call Comments</h4>
+        <p class="customer-name">{{ currentCustomerName }}</p>
+      </div>
+      <button type="button" class="close-btn" (click)="closeCommentsModal()">
+        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="comment-modal-body">
+      <!-- Add Comment Section -->
+      <div class="add-comment-section">
+        <h5 class="section-title">Add Comment</h5>
+        <textarea class="comment-textarea" [(ngModel)]="commentText" [maxlength]="maxCommentLength"
+          placeholder="Enter your comment..." rows="4">
+        </textarea>
+        <div class="comment-actions">
+          <span class="char-counter">{{ getCharacterCount() }}</span>
+          <button class="btn btn-primary" type="button" (click)="addNewComment()"
+            [disabled]="!commentText || commentText.trim().length === 0">
+            Add Comment
+          </button>
+        </div>
+      </div>
+
+      <!-- Comment Thread Section -->
+      <div class="comment-thread-section">
+        <h5 class="section-title">Comment Thread ({{ commentsTotalCount }})</h5>
+
+        <!-- Loading State -->
+        <div class="loading-state" *ngIf="commentsLoading">
+          <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+          </div>
+          <p>Loading comments...</p>
+        </div>
+
+        <!-- Comments List -->
+        <div class="comments-list" *ngIf="!commentsLoading && commentsList.length > 0">
+          <div class="comment-item" *ngFor="let comment of commentsList">
+            <div class="comment-header">
+              <span class="comment-author" [class.is-you]="getCommentAuthorName(comment) === 'You'">
+                {{ getCommentAuthorName(comment) }}
+              </span>
+              <span class="comment-timestamp">{{ formatCommentTimestamp(comment.createdAt) }}</span>
+            </div>
+            <p class="comment-text">{{ comment.comment }}</p>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" *ngIf="!commentsLoading && commentsList.length === 0">
+          <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+          </svg>
+          <p>No comments yet</p>
+          <span>Be the first to add a comment</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+<!-- Change Status Modal -->
+<ng-template #changeStatusModal let-modal>
+  <div class="change-status-modal-container">
+    <!-- Modal Header -->
+    <div class="change-status-header">
+      <div>
+        <h4 class="modal-title">Change Lead Status</h4>
+        <p class="modal-subtitle">Update the classification for this call</p>
+      </div>
+      <button type="button" class="close-btn" (click)="closeChangeStatusModal()">
+        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="change-status-body">
+      <!-- Current Status -->
+      <div class="status-section">
+        <label class="status-label">Current Status</label>
+        <div class="current-status-display">
+          {{ currentLeadStatusForModal || 'N/A' }}
+        </div>
+      </div>
+
+      <!-- New Status -->
+      <div class="status-section">
+        <label class="status-label">New Status</label>
+        <ng-select [items]="leadStatusFilterList" [(ngModel)]="newLeadStatus" [clearable]="false"
+          bindLabel="leadStatusFilterList" bindValue="leadStatusFilterList" [searchable]="false"
+          placeholder="Select Lead Status" class="status-select">
+        </ng-select>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="change-status-footer">
+      <button class="btn btn-cancel" type="button" (click)="closeChangeStatusModal()">
+        Cancel
+      </button>
+      <button class="btn btn-save" type="button" (click)="saveLeadStatusChange()"
+        [disabled]="!newLeadStatus || newLeadStatus === currentLeadStatusForModal">
+        Save Changes
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<!-- Call Details Modal -->
+<ng-template #callDetailsModal let-modal>
+  <dashboard-call-details [currentCallDetails]="selectedCallDetailsData"
+    (closeCallDetailsModal)="closeCallDetailsModal()" [activeTab]="activeTab">
+  </dashboard-call-details>
+</ng-template>

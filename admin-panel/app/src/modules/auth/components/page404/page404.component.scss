@@ -1,0 +1,12 @@
+.go-back {
+  color: var(--primary-color) !important;
+  background-color: var(--primary-button-color) !important;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.auth-page-wrapper {
+  background-color: var(--primary-color);
+  height: 100vh;
+}

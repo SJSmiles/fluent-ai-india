@@ -1,0 +1,137 @@
+{
+  "MENUITEMS": {
+    "DASHBOARD": {
+      "TEXT": "Dashboard"
+    },
+    "LEADS": {
+      "TEXT": "Leads"
+    },
+    "BATCHCALL": {
+      "TEXT": "Batch Call"
+    },
+    "AGENT": {
+      "TEXT": "Agents"
+    },
+    "USER": {
+      "TEXT": "User"
+    },
+    "CONTACT": {
+      "TEXT": "Contact"
+    },
+    "TEMPLATE": {
+      "TEXT": "Template"
+    },
+    "PHONE_NUMBER": {
+      "TEXT": "Phone Number"
+    }
+  },
+  "VALIDATION": {
+    "REQUIRED_FIELD": "Please select option.",
+    "REQUIRED": "Please enter a value.",
+    "MAXLENGTH": "Max {{value}} characters, keep it short",
+    "MINLENGTH": "Min {{value}} characters, keep it long",
+    "VALID_LOCATION": "Please select valid location",
+    "NO_AT_SYMBOL": "The email part should not contain the \"@\" symbol.",
+    "INVALID_DOMAIN": "Please enter a valid domain",
+    "INVALID_HOURLY_RATE": "Please enter valid number",
+    "AT_LEAST_ONE_REQUIRED": "Please Select a value",
+    "INVALID_WHATSAPP": "Please enter a valid WhatsApp number.",
+    "INVALID_EMAIL": "Please enter a valid input.",
+    "INVALID_FULL_EMAIL": "Please enter a valid email.",
+    "GREATER_THAN_ZERO": "Number Should Be Greater than 0",
+    "INVALID_WORKING_RADIUS": "Please enter working radius between 1km to 999km",
+    "INVALID_BANK_NAME": "Please Enter Valid Bank Name",
+    "INVALID_CHARACTERS": "Please enter valid input",
+    "INVALID_TWITTER": "Please enter valid twitter url",
+    "INVALID_LINKEDIN": "Please enter valid linkedIn url",
+    "INVALID_LINK": "Please enter valid url",
+    "INVALID_ALPHA_SPACE": "Input contains invalid characters.",
+    "INVALID_ALPHANUMERIC": "Input contains invalid characters.",
+    "INVALID_WEBSITE": "Please Enter Valid Link (Ex:- https://www.example.com)",
+    "INVALID_FIRST_LETTER": "First Letter Should Be Capital",
+    "INVALID_SOCIAL_MEDIA": "Please Enter Valid Social Media Link",
+    "MIN_NUMBER_LENGTH": "Minimum allowed number length is {{value}}.",
+    "MAX_NUMBER_LENGTH": "Maximum allowed number length is {{value}}.",
+    "INVALID_RATING": "Value must be between 5(strongly agree) and 1(strongly disagree)",
+    "INVALID_CONSENT": "Value must be between 0 and 1",
+    "PHONE_PATTERN": "Please enter a valid number. (EX:- +49100000000)",
+    "MIN": "Value must be greater than or equal to {{value}}",
+    "MAX": "Value must be less than or equal to {{value}}",
+    "INVALID_PHONE": "Please enter a valid phone.",
+    "PASSWORD_STRENGTH": "Password must contain at least 8 characters, including uppercase, lowercase and numbers and special characters",
+    "INVALID_DATE": "End date should be a valid future date.",
+    "INVALID_DATEWISE_FORMAT": "Please enter a valid date in YYYY-MM-DD format",
+    "INVALID_BIRTHDAY_DATE": "Birthday cannot be a future date",
+    "INVALID_SINCE_DATE": "Since date cannot be a future date",
+    "INVALID_UNTIL_DATE": "Until date cannot be a past date",
+    "FUTURE_DATE_NOT_ALLOWED": "Future dates are not allowed for this field",
+    "PAST_DATE_NOT_ALLOWED": "Past dates are not allowed for this field",
+    "PASSWORD_MISMATCH": "Passwords do not match",
+    "WHITESPACE": "Please enter a valid input",
+    "INVALID_INTEGER_ONLY": "Please enter a valid number"
+  },
+  "LEADS": {
+    "ACTIONS": {
+      "RENAME": "Rename",
+      "DELETE": "Delete"
+    },
+    "LIST": {
+      "UPLOAD_FILE": "Upload a file to view leads here",
+      "IMPORT": "Import",
+      "CANCEL": "Cancel",
+      "LEADS_CSV": "Leads CSV",
+      "RECIPMENTS": "Recipients",
+      "CHOOSE_CSV_FILE": "Choose a Excel file or drag it here.",
+      "UP_TO_50MB": "Up to 50 MB."
+    },
+    "LABEL": {
+      "GROUP_NAME": "Group Name",
+      "UPLOAD_FILE": "Upload File",
+      "IMPORT_LEADS": "Import Leads"
+    }
+  },
+  "AGENTS": {
+    "ACTIONS": {
+      "RENAME": "Rename",
+      "DELETE": "Delete",
+      "DUPLICATE": "Duplicate",
+      "SWITCH_TO_CHAT": "Switch to Chat"
+    },
+    "LIST": {
+      "ARE_YOU_SURE": "Are you sure?",
+      "ACTION_CANT_BE_DONE": "The action cant be undone"
+    },
+    "LABEL": {
+      "AGENT_NAME": "Agent Name"
+    }
+  },
+  "COMMON_TEXT": {
+    "SEARCH": "Search"
+  },
+  "BATCH_CALL": {
+    "LABEL": {
+      "TITLE": "Create a Batch Call",
+      "BATCH_CALL_NAME": "Batch Call Name",
+      "OUTBOUND_NUMBER": "Outbound Number",
+      "SELECT_AGENT": "Select Agent",
+      "SELECT_LEAD_GROUP": "Select Lead Group",
+      "ADD_NEW_LEAD_GROUP": "Add new Lead Group",
+      "WHEN_TO_SEND_CALLS": "When to send the calls",
+      "SEND_NOW": "Send Now",
+      "SCHEDULE": "Schedule",
+      "TIME_ZONE": "Time Zone",
+      "ENTER_DATE": "Enter Date",
+      "ENTER_DATE_TIME": "Enter Date & Time",
+      "SAVE_AS_DRAFT": "Save as Draft",
+      "START_CALLING": "Schedule Calling",
+      "UPLOAD_FILE_TO_SEE_RECIPIENTS": "Upload a File to see the Recipients here",
+      "TABLE": {
+        "ID": "Id",
+        "NUMBER": "Number",
+        "NAME": "Name",
+        "GENDER": "Gender",
+        "SELECT_ALL": "Select All"
+      }
+    }
+  }
+}

@@ -1,0 +1,194 @@
+<div style="padding-right: 0.6rem">
+  <div class="d-flex justify-content-between align-items-center">
+    <app-header [moduleName]="'Api Keys'"> </app-header>
+    <div class="d-flex justify-content-end w-100">
+      <div
+        class="dashboard-lead-status-filter me-3"
+        *ngIf="currentUser.user.isSuperAdmin && currentUser?.user?.isAdmin"
+      >
+        <ng-select
+          [items]="companyListing"
+          [clearable]="false"
+          bindLabel="fullName"
+          bindValue="_id"
+          [searchable]="true"
+          placeholder="Select Company"
+          class="select-input-type"
+          [(ngModel)]="companyId"
+          name="companyId"
+          (ngModelChange)="selectCompany($event)"
+        >
+        </ng-select>
+      </div>
+      <div
+        class="module-creation d-flex align-items-center cursor-pointer justify-content-center"
+        (click)="generateToken()"
+      >
+        <app-icon iconType="createIcon" aria-label="create" placement="right"></app-icon>
+        Generate Token
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="module-table mt-3 table-responsive batch-call-table-responsive pt-0">
+  <table>
+    <thead>
+      <tr>
+        <th
+          scope="col"
+          (click)="sortActive('userEmail')"
+          class="unsort-color px-2 cursor-pointer"
+          [ngClass]="{ 'font-weight-bold': currentSort === 'userEmail' }"
+        >
+          <app-sort-icon
+            [sortState]="[sortStates['userEmail']]"
+            class="icon-sort-placement"
+          ></app-sort-icon>
+          <span class="ps-1">User Email</span>
+        </th>
+        <th
+          scope="col"
+          (click)="sortActive('expiryTime')"
+          class="unsort-color px-2 cursor-pointer text-center"
+          [ngClass]="{ 'font-weight-bold': currentSort === 'expiryTime' }"
+        >
+          <app-sort-icon
+            [sortState]="[sortStates['expiryTime']]"
+            class="icon-sort-placement"
+          ></app-sort-icon>
+          <span class="ps-1">Expiry Time</span>
+        </th>
+        <th class="px-2 text-center">Token</th>
+        <th
+          scope="col"
+          (click)="sortActive('createdAt')"
+          class="unsort-color px-2 cursor-pointer text-center"
+          [ngClass]="{ 'font-weight-bold': currentSort === 'createdAt' }"
+        >
+          <app-sort-icon
+            [sortState]="[sortStates['createdAt']]"
+            class="icon-sort-placement"
+          ></app-sort-icon>
+          <span class="ps-1">Created At</span>
+        </th>
+        <th class="px-2 text-center">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <ng-container *ngFor="let record of recordsList; let i = index">
+        <tr class="cursor-default">
+          <td class="px-2" [ngClass]="{ 'font-weight-bold': currentSort === 'userEmail' }">
+            <span class="date-time-display">
+              {{ record.userEmail || '-' }}
+            </span>
+          </td>
+          <td
+            class="px-2 text-center"
+            [ngClass]="{ 'font-weight-bold': currentSort === 'expiryTime' }"
+          >
+            {{ (record.expiryTime | date: 'dd/MM/yyyy hh:mm a') || '-' }}
+          </td>
+          <td class="px-2 text-center">
+            <div class="d-flex align-items-center justify-content-center gap-2">
+              <span class="text-truncate" style="max-width: 200px" [title]="record.token">
+                {{ record.token || '-' }}
+              </span>
+              <button
+                *ngIf="record.token"
+                class="btn-copy-token"
+                (click)="copyToken(record.token, i)"
+                type="button"
+              >
+                <app-icon
+                  [iconType]="copiedIndex === i ? 'completed-status' : 'allCopy'"
+                  [ngClass]="{ 'text-success': copiedIndex === i }"
+                >
+                </app-icon>
+              </button>
+            </div>
+          </td>
+          <td
+            class="px-2 text-center"
+            [ngClass]="{ 'font-weight-bold': currentSort === 'createdAt' }"
+          >
+            {{ (record.createdAt | date: 'dd/MM/yyyy hh:mm a') || '-' }}
+          </td>
+          <td class="px-2 justify-content-center d-flex">
+            <button
+              class="btn d-flex align-items-center gap-1 p-1 status-button"
+              [disabled]="!record.isActive"
+              (click)="confirmDeactivate(record)"
+              type="button"
+            >
+              <app-icon
+                [iconType]="record.isActive ? 'completed-status' : 'failed'"
+                [ngClass]="{ 'text-muted': !record.isActive }"
+              >
+              </app-icon>
+
+              <span>{{ record.isActive ? 'Active' : 'Inactive' }}</span>
+            </button>
+          </td>
+        </tr>
+      </ng-container>
+      <tr class="cursor-pointer" *ngIf="!recordsList || recordsList.length === 0">
+        <td colspan="5">No Records Found</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mt-3" *ngIf="totalCount > 0">
+  <div class="col col-sm-6">
+    <div class="dataTables_info mb-2" id="tickets-table_info" role="status" aria-live="polite">
+      Showing
+      {{ pageIndex * currentPageSize + 1 }} to
+      <span *ngIf="currentPageSize * currentPage < totalCount"
+        >{{ currentPageSize * currentPage }} of {{ totalCount }}</span
+      >
+      <span *ngIf="currentPageSize * currentPage >= totalCount"
+        >{{ totalCount }} of {{ totalCount }}</span
+      >
+      entries
+    </div>
+  </div>
+  <div class="col col-sm-6">
+    <div class="text-sm-right float-sm-end listjs-pagination mb-2">
+      <ngb-pagination
+        [maxSize]="5"
+        [rotate]="true"
+        [boundaryLinks]="true"
+        [(page)]="currentPage"
+        [pageSize]="currentPageSize"
+        [collectionSize]="totalCount"
+        (pageChange)="pageChanged($event)"
+      >
+      </ngb-pagination>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmation Modal -->
+<ng-template #confirmModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">Confirm Deactivation</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body">Are you sure you want to deactivate this API key?</div>
+  <div class="d-flex gap-2 button-section p-2 mb-2">
+    <button type="button" class="save-as-draft" (click)="modal.dismiss()">Cancel</button>
+    <button type="button" class="create-button" (click)="deactivateKey(modal)">
+      Yes, Inactive
+    </button>
+  </div>
+</ng-template>
+
+<ng-template #generateTokenModel let-modal>
+  <app-generate-token
+    [companyId]="companyId"
+    [currentUser]="currentUser"
+    (tokenGeneratedSuccessfully)="tokenGeneratedSuccessfully()"
+  >
+  </app-generate-token>
+</ng-template>

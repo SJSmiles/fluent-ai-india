@@ -1,0 +1,49 @@
+.remove-button {
+  border: 1px solid var(--primary-border-color);
+  border-radius: 6px;
+  padding: 2px 5px;
+  display: flex;
+  align-items: center;
+  background: transparent !important;
+}
+
+.add-button {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--primary-border-color) !important;
+  border-radius: 8px;
+  padding: 4px;
+  color: var(--primary-button-color) !important;
+  background: transparent !important;
+}
+
+.cancel-button {
+  width: 48%;
+  border-radius: 8px;
+  border: 1px solid var(--primary-border-color);
+  background-color: transparent;
+  color: var(--primary-font-color);
+  font-size: 15px;
+  padding: 4px;
+  font-weight: 500;
+}
+
+.cancel-button:hover {
+  background-color: var(--primary-color) !important;
+}
+
+.add-section {
+  border: 1px solid var(--primary-border-color);
+  background-color: var(--primary-pending-status-color);
+  width: 48%;
+  border-radius: 8px;
+  font-size: 15px;
+  padding: 8px;
+  color: white;
+  font-weight: 500;
+}
+
+.example-list {
+  max-height: 150px;
+  overflow-y: auto;
+}

@@ -1,0 +1,27 @@
+//Fonts
+// @import "../../fonts/fonts";
+
+//Core files
+@import './node_modules/bootstrap/scss/functions';
+@import './node_modules/bootstrap/scss/variables';
+@import 'variables';
+@import './custom.scss';
+@import 'variables-custom';
+@import 'variables-dark';
+@import './node_modules/bootstrap/scss/mixins';
+
+// Structure
+@import '../../structure/vertical';
+
+// Components
+@import '../../components/preloader';
+@import '../../components/form/forms';
+
+// Bootstrap components
+@import '../../components/root';
+@import '../../components/form/form-check';
+
+// Pages
+@import '../../components/authentication';
+@import '../../components/dashboard';
+@import '../default/angular-custom.scss';

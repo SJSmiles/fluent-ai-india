@@ -1,0 +1,116 @@
+.custom-timezone {
+  height: 34px;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 14px;
+  letter-spacing: 0%;
+  vertical-align: middle;
+  color: var(--primary-small-text-color) !important;
+  border-radius: 8px;
+  background-color: var(--primary-color) !important;
+  gap: 20px;
+  padding: 10px 1px;
+  border: 1px solid var(--primary-border-color);
+}
+
+.current-selected-date {
+  background-color: var(--primary-nav-bar-color);
+  border: 1px solid var(--primary-border-color);
+  color: var(--primary-font-color) !important;
+}
+
+.fix-height-width {
+  height: 30;
+  gap: 8px;
+
+  border-radius: 8px;
+  padding-top: 8px;
+  padding-right: 12px;
+  padding-bottom: 8px;
+  padding-left: 12px;
+}
+
+.custom-call-type {
+  height: 30;
+  gap: 8px;
+  border-width: 1px;
+  border-radius: 8px;
+  padding-top: 8px;
+  padding-right: 12px;
+  padding-bottom: 8px;
+  padding-left: 12px;
+}
+
+.custom-offcanvas {
+  background: none !important;
+  padding: 10px !important;
+  border-left: none !important;
+  background-color: transparent !important;
+}
+
+.dashboard-font {
+  font-weight: bold !important;
+}
+
+.popover {
+  width: 200px !important;
+}
+
+.popover-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border: 1px solid var(--primary-border-color);
+  border-radius: 8px;
+
+  .heading {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 14px;
+    letter-spacing: 0%;
+    color: var(--primary-font-color);
+  }
+
+  .action-button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+
+    .cancel {
+      height: 30px;
+      opacity: 1;
+      border-radius: 8px;
+      border: 1px solid var(--primary-border-color);
+      padding: 8px;
+      color: var(--primary-font-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .save {
+      height: 30px;
+      width: 100%;
+      gap: 8px;
+      opacity: 1;
+      border-radius: 8px;
+      padding: 8px;
+      background-color: var(--primary-button-color);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+}
+
+.form-check-input:checked {
+  background-color: var(--primary-button-color);
+}
+
+.analytics-dashboard-combined {
+  max-height: calc(100vh - 92px);
+  overflow: auto;
+  padding-right: 14px;
+}

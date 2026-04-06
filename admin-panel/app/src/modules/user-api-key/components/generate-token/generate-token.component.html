@@ -1,0 +1,99 @@
+<div class="modal-header">
+  <h5 class="modal-title">Generate Token</h5>
+  <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
+</div>
+
+<div class="modal-body">
+  <form [formGroup]="tokenForm" (ngSubmit)="onSubmit()">
+    <div class="row">
+      <!-- User Email Dropdown -->
+      <div class="col-12 mb-3 custom-batch-call-selection">
+        <label for="userEmail" class="form-label mb-1"> Select User * </label>
+        <div
+          class="select-wrapper"
+          [ngClass]="{
+            'is-invalid': f['userEmail'].touched && f['userEmail'].errors
+          }"
+        >
+          <ng-select
+            id="userEmail"
+            formControlName="userEmail"
+            [items]="usersList"
+            [clearable]="false"
+            bindLabel="email"
+            bindValue="email"
+            [searchable]="true"
+            placeholder="Select a user"
+            class="select-input-type"
+          >
+            <ng-template ng-label-tmp let-item="item">
+              {{ item.email }}
+            </ng-template>
+            <ng-template ng-option-tmp let-item="item">
+              {{ item.email }}
+            </ng-template>
+          </ng-select>
+        </div>
+        <div class="invalid-feedback" *ngIf="f['userEmail'].touched && f['userEmail'].errors">
+          <div *ngIf="f['userEmail'].errors['required']">User is required</div>
+        </div>
+      </div>
+
+      <!-- Expiry Time Selection -->
+      <div class="col-12 mb-3">
+        <label class="form-label mb-2"> Token Valid Until * </label>
+
+        <!-- Time Period Buttons -->
+        <div class="expiry-options-container mb-3">
+          <button
+            *ngFor="let option of expiryOptions"
+            type="button"
+            class="expiry-option-btn"
+            [class.active]="selectedExpiryOption === option.value"
+            (click)="selectExpiryOption(option.value)"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+
+        <!-- Custom Date Selector (only shown when custom is selected) -->
+        <div *ngIf="selectedExpiryOption === 'custom'">
+          <app-single-date-selector
+            class="new-coverage-form-date"
+            [minDate]="minDate"
+            [enableTime]="true"
+            [format]="'Y-m-d H:i'"
+            [placeholder]="'Select Expiry Date & Time'"
+            [calendarIcon]="false"
+            (selected)="onDateSelected($event)"
+          >
+          </app-single-date-selector>
+        </div>
+
+        <!-- Display selected expiry time -->
+        <div
+          *ngIf="selectedExpiryOption !== 'custom' && tokenForm.get('expiryTime')?.value"
+          class="mt-2 text-muted"
+          style="font-size: 0.875rem"
+        >
+          Token expires on: {{ tokenForm.get('expiryTime')?.value | date: 'medium' }}
+        </div>
+
+        <div
+          *ngIf="f['expiryTime'].touched && f['expiryTime'].errors"
+          class="text-danger mt-1"
+          style="font-size: 0.875rem"
+        >
+          <div *ngIf="f['expiryTime'].errors['required']">Expiry date is required</div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="d-flex gap-2 button-section p-2 mb-2">
+  <button class="save-as-draft" (click)="closeModal()">Cancel</button>
+  <button type="button" class="create-button" (click)="onSubmit()" [disabled]="isSubmitting">
+    {{ isSubmitting ? 'Generating...' : 'Generate Token' }}
+  </button>
+</div>

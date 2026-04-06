@@ -1,0 +1,431 @@
+<div class="contact-module-container">
+  <!-- Header Section -->
+  <div class="module-header">
+    <h1 class="module-title">Contact</h1>
+    <div class="header-actions">
+      <!-- Company Filter (Super Admin Only) -->
+      <div class="company-filter" *ngIf="currentUser?.user?.isSuperAdmin && currentUser?.user?.isAdmin">
+        <ng-select [items]="companyListing" [clearable]="false" bindLabel="fullName" bindValue="_id" [searchable]="true"
+          placeholder="Select Company" class="select-company" [(ngModel)]="companyId" name="companyId"
+          (ngModelChange)="selectCompany($event)">
+        </ng-select>
+      </div>
+
+
+      <div class="company-filter" *ngIf="currentUser?.user?.isAdmin">
+        <ng-select [items]="userListing" [clearable]="false" bindLabel="fullName" bindValue="_id" [searchable]="true"
+          placeholder="Select User" class="select-company" [(ngModel)]="selectedUserId" name="userId"
+          (ngModelChange)="selectUser($event)">
+        </ng-select>
+      </div>
+
+      <!-- Search -->
+      <div class="search-box">
+        <app-search-filters placeholder="Search contacts..." (search)="customSearch($event)" [clear]="clearFilter"
+          [selectedText]="selectedText"></app-search-filters>
+      </div>
+
+      <!-- Upload Button -->
+      <button class="btn-action btn-outline" (click)="openUploadModal()" [disabled]="isUploading">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+        </svg>
+        Upload Contacts
+      </button>
+
+      <!-- Create Button -->
+      <button class="btn-action btn-primary" (click)="createContact()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Create Contact
+      </button>
+      <button class="btn-action btn-primary" (click)="exportContact()">
+
+        Export Contacts
+      </button>
+    </div>
+  </div>
+
+  <!-- Table Section -->
+  <div class="table-container table-responsive">
+    <table class="modern-table">
+      <thead>
+        <tr>
+          <th class="th-salutation">Salutation</th>
+          <th class="th-sortable" (click)="sortActive('firstName')" [class.active-sort]="currentSort === 'firstName'">
+            <div class="th-content">
+              <app-sort-icon [sortState]="[sortStates['firstName']]"></app-sort-icon>
+              <span>First Name</span>
+            </div>
+          </th>
+          <th class="th-sortable" (click)="sortActive('lastName')" [class.active-sort]="currentSort === 'lastName'">
+            <div class="th-content">
+              <app-sort-icon [sortState]="[sortStates['lastName']]"></app-sort-icon>
+              <span>Last Name</span>
+            </div>
+          </th>
+          <th>Gender</th>
+          <th class="th-sortable" (click)="sortActive('email')" [class.active-sort]="currentSort === 'email'">
+            <div class="th-content">
+              <app-sort-icon [sortState]="[sortStates['email']]"></app-sort-icon>
+              <span>Email</span>
+            </div>
+          </th>
+          <th class="th-center">Phone Number</th>
+          <th class="th-center">Country</th>
+          <th class="th-sortable" (click)="sortActive('bmbyId')" [class.active-sort]="currentSort === 'bmbyId'">
+            <div class="th-content">
+              <app-sort-icon [sortState]="[sortStates['bmbyId']]"></app-sort-icon>
+              <span>Client ID</span>
+            </div>
+          </th>
+          <th class="th-center" *ngIf="selectedUserId === currentUser?.user?._id">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let record of recordsList; let i = index" class="table-row">
+          <td class="td-salutation">
+            <span class="text-medium">{{ record.salutation || '—' }}</span>
+          </td>
+          <td [class.font-semibold]="currentSort === 'firstName'">
+            <span class="text-medium">{{ (record.firstName | titlecase) || '—' }}</span>
+          </td>
+          <td [class.font-semibold]="currentSort === 'lastName'">
+            <span class="text-medium">{{ (record.lastName | titlecase) || '—' }}</span>
+          </td>
+          <td>
+            <span class="text-medium">{{ record.gender || '—' }}</span>
+          </td>
+          <td [class.font-semibold]="currentSort === 'email'">
+            <span class="text-medium">{{ record.email || '—' }}</span>
+          </td>
+          <td class="td-center">
+            <span class="text-medium">{{ record.number || '—' }}</span>
+          </td>
+          <td class="td-center">
+            <span class="text-medium">{{ record.country || '—' }}</span>
+          </td>
+          <td [class.font-semibold]="currentSort === 'bmbyId'">
+            <span class="text-medium">{{ record.bmbyId || '—' }}</span>
+          </td>
+          <td class="td-center" *ngIf="selectedUserId === currentUser?.user?._id">
+            <div class="action-cell">
+              <div class="dropdown" ngbDropdown [autoClose]="'outside'" container="body" #dropdownRef="ngbDropdown">
+                <button class="action-button" type="button" ngbDropdownToggle aria-label="actions">
+                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <circle cx="8" cy="3" r="1.5" />
+                    <circle cx="8" cy="8" r="1.5" />
+                    <circle cx="8" cy="13" r="1.5" />
+                  </svg>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end action-dropdown" ngbDropdownMenu>
+                  <li>
+                    <a class="dropdown-item" (click)="updateContact(dropdownRef, record)">
+                      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                      Edit
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="!recordsList || recordsList.length === 0" class="empty-row">
+          <td colspan="9">
+            <div class="empty-state">
+              <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+              <p>No contacts found</p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination-container" *ngIf="totalCount > 0">
+    <div class="pagination-info">
+      Showing {{ pageIndex * currentPageSize + 1 }} to
+      {{ currentPageSize * currentPage < totalCount ? currentPageSize * currentPage : totalCount }} of {{ totalCount }}
+        entries </div>
+        <div class="pagination-controls">
+          <ngb-pagination [maxSize]="5" [rotate]="true" [boundaryLinks]="true" [(page)]="currentPage"
+            [pageSize]="currentPageSize" [collectionSize]="totalCount" (pageChange)="pageChanged($event)">
+          </ngb-pagination>
+        </div>
+    </div>
+  </div>
+
+  <!-- Upload Contacts Modal -->
+  <ng-template #uploadContactsModal let-modal>
+    <div class="upload-modal-container">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title">Upload Contacts</h5>
+          <p class="modal-subtitle">Import contacts from CSV or Excel file</p>
+        </div>
+        <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Header Action Buttons Row -->
+        <div class="modal-body-header">
+          <button type="button" class="btn-outline-info" (click)="openSuggestionsModal()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            File Guidelines
+          </button>
+          <button type="button" class="btn-outline-info" (click)="downloadSampleFile()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download Sample
+          </button>
+        </div>
+
+        <!-- Upload Error Alert -->
+        <div class="alert alert-danger d-flex align-items-start gap-2" *ngIf="uploadError">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <div>{{ uploadError }}</div>
+        </div>
+
+        <!-- CSV Parse Error Alert -->
+        <div class="alert alert-danger d-flex align-items-start gap-2" *ngIf="csvError">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <div>{{ csvError }}</div>
+        </div>
+
+        <!-- Upload Contacts Label -->
+        <div class="upload-section-label">
+          Upload Contacts <span class="required-star">*</span>
+        </div>
+
+        <!-- Upload Dropzone -->
+        <div *ngIf="!selectedFile" class="upload-dropzone-modern" [class.drag-over]="isDragOver"
+          (click)="fileInput.click()" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)">
+          <div class="upload-content">
+            <svg class="upload-icon" width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <p class="upload-title">Drop CSV/EXCEL file here or click to browse</p>
+            <p class="upload-subtitle">Supports .csv/.xlsx files with phone numbers and customer details</p>
+          </div>
+          <input type="file" #fileInput accept=".xlsx,.xls,.csv" (change)="onFileSelectedFromModal($event)"
+            style="display: none" />
+        </div>
+
+        <!-- File Preview (Before Parsing) -->
+        <div *ngIf="selectedFile && !showCsvTable && csvData.length === 0" class="file-preview">
+          <div class="file-preview-icon">
+            <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+                clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="file-preview-info">
+            <div class="file-preview-name">{{ getFileName() }}</div>
+            <div class="file-preview-size">{{ getFileSize() }}</div>
+          </div>
+          <button class="file-preview-delete" (click)="deleteFile()">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- CSV Table Preview -->
+        <div *ngIf="!csvError && showCsvTable && csvData.length > 0" class="csv-preview">
+          <div class="csv-preview-header">
+            <div class="csv-preview-info">
+              <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z">
+                </path>
+              </svg>
+              <div>
+                <div class="csv-preview-filename">{{ getFileName() }}</div>
+                <div class="csv-preview-count">{{ csvData.length }} Contacts</div>
+              </div>
+            </div>
+            <button class="csv-preview-delete" (click)="deleteFile()">
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                  d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                  clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+          <div class="csv-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Phone Number</th>
+                  <th>Salutation</th>
+                  <th>First Name</th>
+                  <th>Last Name</th>
+                  <th>Gender</th>
+                  <th>Email</th>
+                  <th>Client ID</th>
+                  <th>Country</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of csvData; let i = index">
+                  <td>{{ getColumnValue(row, 'phone_number', i) }}</td>
+                  <td>{{ getColumnValue(row, 'salutation', i) }}</td>
+                  <td>{{ getColumnValue(row, 'first_name', i) }}</td>
+                  <td>{{ getColumnValue(row, 'last_name', i) }}</td>
+                  <td>{{ getColumnValue(row, 'gender', i) }}</td>
+                  <td>{{ getColumnValue(row, 'email', i) }}</td>
+                  <td>{{ getColumnValue(row, 'client_id', i) }}</td>
+                  <td>{{ getColumnValue(row, 'country', i) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" (click)="modal.dismiss()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" [disabled]="!selectedFile || isUploading || csvData.length === 0"
+          (click)="uploadContactsFile()">
+          <span *ngIf="isUploading" class="spinner-border spinner-border-sm me-2"></span>
+          <svg *ngIf="!isUploading" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          {{ isUploading ? 'Uploading...' : 'Upload Contacts' }}
+        </button>
+      </div>
+    </div>
+  </ng-template>
+
+  <!-- File Guidelines Modal -->
+  <ng-template #suggestionsModal let-modal>
+    <div class="modal-card modal-small">
+      <div class="modal-header">
+        <h5 class="modal-title">File Upload Guidelines</h5>
+        <button class="btn-close" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body">
+        <h6 class="fw-bold mb-2">Required Columns:</h6>
+        <ol class="suggestions-list mb-3">
+          <li>phone_number - Include country code (e.g., +919876543210)</li>
+          <li>first_name - Contact's first name</li>
+          <li>last_name - Contact's last name</li>
+          <li>email - Valid email address (example&#64;domain.com)</li>
+          <li>gender - Masculine, Feminine, or Neuter</li>
+          <li>salutation - Frau, Herr</li>
+          <li>client_id - Unique client identifier (number)</li>
+          <li>country - Country name</li>
+        </ol>
+
+        <h6 class="fw-bold mb-2">Important Notes:</h6>
+        <ul class="suggestions-list">
+          <li>All column headers must be in lowercase</li>
+          <li>Remove empty rows before uploading</li>
+          <li>Ensure no duplicate phone numbers or client IDs</li>
+          <li>Maximum file size: 10MB</li>
+          <li>Supported formats: .csv, .xlsx, .xls</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" (click)="modal.dismiss()">Got it</button>
+      </div>
+    </div>
+  </ng-template>
+
+  <!-- Upload Response Modal -->
+  <ng-template #uploadResponseModal let-modal>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h5 class="modal-title">Upload Contacts Response</h5>
+        <button class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">
+          {{ lastUploadResponse?.hasErrors ? 'Upload completed with some errors' : 'Upload completed successfully!' }}
+        </p>
+
+        <div *ngIf="lastUploadResponse">
+          <h6 class="fw-bold mt-3">Overview</h6>
+          <ul class="list-unstyled">
+            <li class="mb-2">
+              📊 Total Records: <strong>{{ lastUploadResponse?.totalRecords }}</strong>
+            </li>
+            <li class="mb-2 text-success">
+              ✅ Successful Records: <strong>{{ lastUploadResponse?.successCount }}</strong>
+            </li>
+            <li class="mb-2 text-danger" *ngIf="lastUploadResponse?.failedCount > 0">
+              ❌ Failed Records: <strong>{{ lastUploadResponse?.failedCount }}</strong>
+            </li>
+            <li class="mb-2" *ngIf="lastUploadResponse?.totalRecords > 0">
+              📈 Success Ratio:
+              <strong>{{ ((lastUploadResponse?.successCount / lastUploadResponse?.totalRecords) * 100).toFixed(2)
+                }}%</strong>
+            </li>
+          </ul>
+        </div>
+
+        <div class="mt-3" *ngIf="lastUploadResponse?.hasErrors && lastUploadResponse?.validationReport?.buffer">
+          <button class="btn btn-warning w-100" (click)="downloadValidationReport()">
+            <i class="bi bi-download me-2"></i>
+            Download Error Report (Excel)
+          </button>
+          <p class="text-muted small text-center mt-2 mb-0">
+            Click to download detailed error report with all issues
+          </p>
+        </div>
+
+        <div class="mt-3">
+          <button class="btn btn-primary w-100" (click)="modal.dismiss()">Close</button>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  <!-- Delete Confirmation Modal -->
+  <ng-template #confirmDeleteModal let-modal>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm Deletion</h5>
+        <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2">Are you sure you want to delete this contact?</p>
+        <p class="mb-2">
+          <strong>{{ selectedContactData?.firstName }} {{ selectedContactData?.lastName }}</strong>
+        </p>
+        <p class="text-muted small mb-0">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">Cancel</button>
+        <button type="button" class="btn btn-danger" (click)="deleteContact(modal)">Yes, Delete</button>
+      </div>
+    </div>
+  </ng-template>
+
+  <!-- Create/Edit Contact Modal -->
+  <ng-template #createContactModel let-modal>
+    <app-create-contact [selectedContactData]="selectedContactData" [currentUser]="currentUser"
+      [selectedCompany]="selectedCompany" (createdUpdatedContact)="createdUpdatedContact()">
+    </app-create-contact>
+  </ng-template>

@@ -1,0 +1,329 @@
+.modal-header {
+  .modal-title {
+    color: var(--primary-font-color);
+    font-weight: 700;
+  }
+
+  .btn-close {
+    border-radius: 8px;
+    border: 1px solid #ebebff;
+    width: 6px;
+    height: 6px;
+    color: var(--primary-font-color);
+  }
+}
+
+.modal-body {
+  .tab-section {
+    border: 1px solid var(--primary-border-color);
+    padding: 3px;
+    width: 100%;
+    height: 34px;
+    background-color: var(--primary-color);
+    border-radius: 8px;
+
+    .w-50 {
+      width: 50%;
+      display: flex;
+      align-items: center;
+
+      div {
+        margin-left: 21px;
+
+        .tab-title {
+          font-size: 11px;
+          margin-left: 5px;
+        }
+      }
+    }
+
+    .active-tab {
+      border: 1px solid var(--primary-border-color);
+      background-color: var(--primary-nav-bar-color);
+
+      .tab-title {
+        color: var(--primary-font-color);
+        font-weight: 700;
+      }
+    }
+
+    .in-active-tab {
+      .tab-title {
+        color: var(--primary-small-text-color);
+        font-weight: 500;
+      }
+    }
+  }
+
+  .collapsible-section1 {
+    border: 1px solid var(--primary-border-color);
+    background-color: var(--primary-border-color);
+    border-radius: 6px;
+    margin-bottom: 8px;
+
+    .section-header {
+      padding: 12px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+
+      &:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+      }
+    }
+
+    .section-content {
+      padding: 0 12px 4px 12px;
+      max-height: 500px;
+      overflow: hidden;
+      transition:
+        max-height 0.3s ease,
+        padding 0.3s ease;
+
+      &.collapsed {
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+    }
+  }
+
+  .phone-numbers-container {
+    border-radius: 4px;
+    padding: 12px;
+  }
+
+  .phone-numbers-list {
+    margin-bottom: 12px;
+  }
+
+  .phone-input-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+
+    .phone-input {
+      flex: 1;
+      font-size: 14px;
+    }
+
+    .btn {
+      padding: 6px 10px;
+      font-size: 12px;
+
+      i {
+        font-size: 10px;
+      }
+    }
+  }
+
+  .add-phone-section {
+    text-align: center;
+
+    .btn {
+      font-size: 14px;
+      padding: 8px 16px;
+
+      i {
+        margin-right: 6px;
+      }
+    }
+  }
+
+  .no-phones-message {
+    color: #6c757d;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 12px;
+  }
+
+  .phone-number-label {
+    font-weight: 600;
+  }
+
+  .phone-number-line {
+    color: #6c757d;
+    font-size: 14px;
+  }
+
+  .cancel-button {
+    width: 25%;
+    border-radius: 8px;
+    border: 1px solid var(--primary-border-color);
+    background-color: var(--primary-color);
+    color: var(--primary-font-color);
+    font-size: 15px;
+  }
+
+  .create-button-agent {
+    width: 25%;
+    border-radius: 8px;
+    border: 1px;
+    background-color: var(--primary-button-color) !important;
+    color: var(--primary-nav-bar-color);
+    font-size: 15px;
+  }
+
+  .chat-content {
+    border: 1px solid var(--primary-border-color);
+    border-radius: 8px;
+    background-color: var(--primary-color);
+    width: 404px;
+    height: 270px;
+
+    div {
+      position: relative;
+      top: 50%;
+      color: var(--primary-font-color);
+      font-weight: 500;
+      font-size: 15px;
+    }
+  }
+
+  .radio {
+    width: 24px;
+    height: 15px;
+    accent-color: var(--primary-buttom-color);
+  }
+
+  .sub-section .custom-input-text-class {
+    height: 72vh !important;
+  }
+
+  // .sub-section .custom-input-text-class.expanded-textarea {
+  //   height: 72vh !important;
+  // }
+
+  //TODO prompt is not taken in process yet
+  // .prompt {
+  //     border: 1px solid var(--primary-border-color);
+  //     padding: 5px;
+  //     border-radius: 4px;
+  //     background-color: var(--primary-color);
+  // }
+
+  // .promptList {
+  //     .prompt-title {
+  //         color: var(--primary-font-color);
+  //         font-weight: 500;
+  //         font-size: 12px;
+  //     }
+
+  //     .prompt-description {
+  //         color: var(--primary-small-text-color);
+  //         font-weight: 500;
+  //         font-size: 12px;
+  //     }
+  // }
+
+  // .promptList-content {
+  //     border: 1px solid var(--primary-border-color);
+  //     border-radius: 8px;
+  //     padding: 4px;
+
+  //     &:hover {
+  //         background-color: var(--primary-color); // Or any light color
+  //         cursor: pointer;
+  //     }
+
+  // }
+}
+
+// TODO agent-detail-form and offCanvas panel is not taken in process yet
+// .offcanvas-panel {
+//     position: fixed;
+//     top: 0;
+//     right: 0;
+//     width: 100%;
+//     height: 100vh;
+//     background-color: #fff;
+//     z-index: 1055;
+//     box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+//     padding: 1rem;
+//     animation: slideIn 0.3s ease-out;
+//     border-radius: 10px;
+// }
+
+// .offcanvas-backdrop {
+//     position: fixed;
+//     inset: 0;
+//     background-color: rgba(0, 0, 0, 0.3);
+//     z-index: 1050;
+// }
+
+// @keyframes slideIn {
+//     from {
+//         right: -400px;
+//     }
+
+//     to {
+//         right: 0;
+//     }
+// }
+
+.pointer-none {
+  pointer-events: none;
+}
+
+#agentPrompt[readonly] {
+  cursor: default;
+}
+
+.section-collapse {
+  border: 1px solid var(--primary-border-color);
+  border-radius: 6px;
+  padding: 2px 5px;
+  display: flex;
+  align-items: center;
+  background: transparent !important;
+}
+
+.section-content-collapsible {
+  padding: 0 12px 4px 12px;
+  max-height: 270px;
+  overflow-y: auto;
+  transition:
+    max-height 0.3s ease,
+    padding 0.3s ease;
+
+  &.collapsed {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
+.add-button {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--primary-color) !important;
+  border-radius: 8px;
+  padding: 4px;
+  color: var(--primary-button-color) !important;
+  background: transparent !important;
+}
+
+.cancel-button {
+  width: 25%;
+  border-radius: 8px;
+  border: 1px solid var(--primary-border-color);
+  background-color: transparent;
+  color: var(--primary-font-color);
+  font-size: 15px;
+  padding: 4px;
+  font-weight: 500;
+}
+
+.update-agent {
+  border: 1px solid var(--primary-border-color);
+  background-color: var(--primary-pending-status-color);
+  width: 25%;
+  border-radius: 8px;
+  font-size: 15px;
+  padding: 4px;
+  color: white;
+  font-weight: 500;
+}

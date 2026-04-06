@@ -1,0 +1,267 @@
+<div class="app-menu navbar-menu" #sideMenu [ngClass]="{ extended: isSidebarExtended }">
+  <div class="navbar-brand-box d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center" [ngClass]="{ 'd-none': isSidebarExtended }">
+      <a routerLink="/" class="logo logo-light">
+        <span class="logo-lg">
+          <img src="src/assets/images/fluent/logo.svg" alt="" height="20" />
+        </span>
+      </a>
+    </div>
+
+    <div *ngIf="isSidebarExtended">
+      <img src="src/assets/images/fluent/logo-icon.svg" alt="" height="20" />
+    </div>
+
+    <div
+      class="d-flex align-items-center cursor-pointer ms-2 custom-toggle-button p-2"
+      (click)="toggleSidebar()"
+    >
+      <app-icon *ngIf="isSidebarExtended" iconType="openSidebar"></app-icon>
+      <app-icon *ngIf="!isSidebarExtended" iconType="closeSidebar"></app-icon>
+    </div>
+
+    <button
+      type="button"
+      class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover"
+      id="vertical-hover"
+    >
+      <i class="ri-record-circle-line"></i>
+    </button>
+  </div>
+
+  <div id="scrollbar" [ngClass]="{ 'mt-4': isSidebarExtended, 'mt-2': !isSidebarExtended }">
+    <div class="container-fluid">
+      <ngx-simplebar class="sidebar-menu-scroll" style="max-height: calc(100vh - 70px)">
+        <ul class="metismenu list-unstyled navbar-nav" id="navbar-nav">
+          @for (item of menuItems; track $index) {
+            @if (item.isTitle) {
+              <li class="menu-title" *ngIf="!isSidebarExtended">
+                <span data-key="t-menu">{{ item.label | translate }}</span>
+              </li>
+            } @else {
+              <li class="nav-item px-2 mb-1 mt-1">
+                @if (hasItems(item)) {
+                  <!-- <a [routerLink]="item.link" 
+   routerLinkActive="active-link"
+   [routerLinkActiveOptions]="{ exact: true }">
+   <img [src]="getIconSrc(item)" class="icon nav-icon pe-2" />
+   <span class="" *ngIf="!isSidebarExtended">{{ item.label | translate }}</span>
+   <span class="badge float-end nav-arrow" *ngIf="isActive(item.link)">
+      <app-icon iconType="menuArrow"></app-icon> 
+   </span>  
+</a> -->
+
+                  <div
+                    class="collapse menu-dropdown"
+                    #collapse="ngbCollapse"
+                    [(ngbCollapse)]="item.isCollapsed"
+                    *ngIf="!isSidebarExtended"
+                  >
+                    <ul class="nav nav-sm flex-column" aria-expanded="false">
+                      @for (subitem of item.subItems; track $index) {
+                        <li class="nav-item px-2 mb-1 mt-1">
+                          @if (hasItems(subitem)) {
+                            <a
+                              class="nav-link"
+                              href="javascript:void(0);"
+                              [attr.data-parent]="subitem.parentId"
+                              [ngClass]="{ 'active-link': !subitem.isCollapsed }"
+                              data-bs-toggle="collapse"
+                              [attr.aria-expanded]="!subitem.isCollapsed"
+                              (click)="toggleItem(subitem)"
+                            >
+                              {{ subitem.label | translate }}
+                              @if (subitem.badge) {
+                                <span class="badge badge-pill {{ subitem.badge.variant }}">{{
+                                  subitem.badge.text | translate
+                                }}</span>
+                              }
+                            </a>
+
+                            <div
+                              class="collapse menu-dropdown sub-menu"
+                              #collapse="ngbCollapse"
+                              [(ngbCollapse)]="subitem.isCollapsed"
+                            >
+                              <ul class="nav nav-sm flex-column" aria-expanded="false">
+                                @for (subSubitem of subitem.subItems; track $index) {
+                                  <li class="nav-item mb-1 mt-1">
+                                    @if (hasItems(subSubitem)) {
+                                      <a
+                                        class="nav-link"
+                                        href="javascript:void(0);"
+                                        [attr.data-parent]="subSubitem.parentId"
+                                        [ngClass]="{ 'active-link': !subSubitem.isCollapsed }"
+                                        data-bs-toggle="collapse"
+                                        [attr.aria-expanded]="!subSubitem.isCollapsed"
+                                        (click)="toggleItem(subSubitem)"
+                                      >
+                                        {{ subSubitem.label | translate }}
+                                        @if (subSubitem.badge) {
+                                          <span
+                                            class="badge badge-pill {{ subSubitem.badge.variant }}"
+                                            >{{ subSubitem.badge.text | translate }}</span
+                                          >
+                                        }
+                                      </a>
+
+                                      <div
+                                        class="collapse menu-dropdown extra-sub-menu"
+                                        #collapse="ngbCollapse"
+                                        [(ngbCollapse)]="subSubitem.isCollapsed"
+                                      >
+                                        <ul class="nav nav-sm flex-column" aria-expanded="false">
+                                          @for (subSubitem1 of subSubitem.subItems; track $index) {
+                                            <li class="nav-item mb-1 mt-1">
+                                              <a
+                                                [attr.data-parent]="subSubitem1.parentId"
+                                                [routerLink]="subSubitem1.link"
+                                                [class]="
+                                                  'nav-link' +
+                                                  (isRouteActive(subSubitem1.link)
+                                                    ? ' active-link'
+                                                    : '')
+                                                "
+                                                (click)="updateActive($event)"
+                                              >
+                                                {{ subSubitem1.label | translate }}
+                                              </a>
+                                            </li>
+                                          }
+                                        </ul>
+                                      </div>
+                                    } @else {
+                                      <a
+                                        [routerLink]="subSubitem.link"
+                                        [class]="
+                                          'nav-link' +
+                                          (isRouteActive(subSubitem.link) ? ' active-link' : '')
+                                        "
+                                        [attr.data-parent]="subSubitem.parentId"
+                                        (click)="updateActive($event)"
+                                      >
+                                        {{ subSubitem.label | translate }}
+                                        @if (subSubitem.badge) {
+                                          <span
+                                            class="badge badge-pill {{ subSubitem.badge.variant }}"
+                                            >{{ subSubitem.badge.text | translate }}</span
+                                          >
+                                        }
+                                      </a>
+                                    }
+                                  </li>
+                                }
+                              </ul>
+                            </div>
+                          } @else {
+                            <a
+                              [routerLink]="subitem.link"
+                              [class]="
+                                'nav-link' + (isRouteActive(subitem.link) ? ' active-link' : '')
+                              "
+                              [attr.data-parent]="subitem.parentId"
+                              (click)="updateActive($event)"
+                            >
+                              {{ subitem.label | translate }}
+                              @if (subitem.badge) {
+                                <span class="badge badge-pill {{ subitem.badge.variant }}">{{
+                                  subitem.badge.text | translate
+                                }}</span>
+                              }
+                            </a>
+                          }
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                } @else {
+                  <a
+                    [routerLink]="getFullPath(item.link)"
+                    [class]="
+                      'side-nav-link-ref nav-link menu-link' +
+                      (isRouteActive(item.link) ? ' active-link' : '')
+                    "
+                    (click)="
+                      isRouteActive(item.link) ? $event.preventDefault() : updateActive($event)
+                    "
+                    [style.pointer-events]="isRouteActive(item.link) ? 'none' : 'auto'"
+                    [style.cursor]="isRouteActive(item.link) ? 'default' : 'pointer'"
+                    placement="right"
+                  >
+                    @if (item.icon) {
+                      <img [src]="getIconSrc(item)" class="icon nav-icon pe-2" />
+                    }
+                    <span class="" *ngIf="!isSidebarExtended"> {{ item.label | translate }} </span>
+                    <span
+                      class="badge float-end nav-arrow"
+                      [class.show-arrow]="isActive(item?.link)"
+                    >
+                      <app-icon iconType="menuArrow"></app-icon>
+                    </span>
+                  </a>
+                }
+              </li>
+            }
+          }
+        </ul>
+      </ngx-simplebar>
+    </div>
+  </div>
+
+  <!-- <div class="bottom-bar w-100 d-flex align-items-center justify-content-center" *ngIf="isSidebarExtended">
+          <img src="src/assets/images/sidebar-icon/icon-help.svg" alt="" height="20">
+        </div> -->
+
+  <div class="bottom-bar">
+    <div class="flex-shrink-0">
+      <div style="display: none;"
+        class="form-check form-switch form-switch-right form-switch-md toggle-class-padding mb-4"
+      >
+        <div class="d-flex align-items-center toggle-mode-class" *ngIf="!isSidebarExtended">
+          <div>
+            <input
+              class="form-check-input code-switcher"
+              type="checkbox"
+              id="grid-button"
+              [(ngModel)]="isDarked"
+              (ngModelChange)="changeMode($event)"
+            />
+          </div>
+          <div>
+            <img
+              *ngIf="isDarked"
+              src="src/assets/images/sidebar-icon/dark-icon.svg"
+              alt="Dark mode"
+            />
+            <img
+              *ngIf="!isDarked"
+              src="src/assets/images/sidebar-icon/light-icon.svg"
+              alt="Light mode"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <div *ngIf="!isSidebarExtended">
+          <div class="d-flex align-items-center gap-2">
+            <div class="name-icon">
+              {{ getUserInitials(currentUser?.user?.firstName, currentUser?.user?.lastName) }}
+            </div>
+            <div
+              class="name-label"
+              [ngbTooltip]="currentUser?.user?.firstName + ' ' + currentUser?.user?.lastName"
+            >
+              {{ currentUser?.user?.firstName | limitTo: 10 }}
+              {{ currentUser?.user?.lastName | limitTo: 10 }}
+            </div>
+          </div>
+        </div>
+        <div (click)="logout()">
+          <app-icon *ngIf="isDarked" iconType="lightLogout"></app-icon>
+          <app-icon *ngIf="!isDarked" iconType="darkLogout"></app-icon>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

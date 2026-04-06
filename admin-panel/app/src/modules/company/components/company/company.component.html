@@ -1,0 +1,369 @@
+<div style="padding-right: 0.6rem">
+  <div class="d-flex justify-content-between align-items-center">
+    <app-header [moduleName]="'Company'"> </app-header>
+    <div class="d-flex justify-content-end">
+      <div class="global-search me-2">
+        <app-search-filters
+          placeholder="Search"
+          (search)="customSearch($event)"
+          [clear]="clearFilter"
+          [selectedText]="selectedText"
+        ></app-search-filters>
+      </div>
+      <div
+        class="module-creation d-flex align-items-center justify-content-center cursor-pointer"
+        (click)="createCompany()"
+      >
+        <app-icon iconType="createIcon" aria-label="create" placement="right"></app-icon>
+        Create Company
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="module-table mt-3 table-responsive batch-call-table-responsive pt-0">
+  <table>
+    <thead>
+      <tr>
+        <th
+          scope="col"
+          (click)="sortActive('name')"
+          class="unsort-color px-2 cursor-pointer"
+          [ngClass]="{ 'font-weight-bold': currentSort === 'name' }"
+        >
+          <app-sort-icon
+            [sortState]="[sortStates['name']]"
+            class="icon-sort-placement"
+          ></app-sort-icon>
+          <span class="ps-1">Name</span>
+        </th>
+        <th class="px-2">Domain</th>
+        <th class="px-2 text-center">Voice Provider</th>
+        <th class="px-2 text-center">Webhook Token</th>
+        <th
+          scope="col"
+          (click)="sortActive('createdAt')"
+          class="unsort-color px-2 cursor-pointer"
+          [ngClass]="{ 'font-weight-bold': currentSort === 'createdAt' }"
+        >
+          <app-sort-icon
+            [sortState]="[sortStates['createdAt']]"
+            class="icon-sort-placement"
+          ></app-sort-icon>
+          <span class="ps-1">Created At</span>
+        </th>
+        <th class="px-2 text-center">Status</th>
+        <th class="px-2 text-center">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <ng-container *ngFor="let record of recordsList; let i = index">
+        <tr class="cursor-pointer">
+          <td class="px-2" [ngClass]="{ 'font-weight-bold': currentSort === 'name' }">
+            <span class="date-time-display">
+              {{ (record.name | titlecase) || '-' }}
+            </span>
+          </td>
+          <td class="px-2">{{ record.domain || '-' }}</td>
+          <td class="px-2 text-center">
+            <div class="d-flex flex-wrap gap-1 justify-content-center">
+              <ng-container
+                *ngIf="record.voiceProviders && record.voiceProviders.length > 0; else noProviders"
+              >
+                <ng-container
+                  *ngFor="let provider of record.voiceProviders; let isLast = last; let i = index"
+                >
+                  <span
+                    class="voice-provider-badge"
+                    [ngClass]="provider.name === 'vapi' ? 'badge-vapi' : 'badge-retell'"
+                    [title]="'API Key: ' + provider.api_key_id"
+                  >
+                    {{ provider.name | uppercase }}{{ !isLast ? ',' : '' }}
+                  </span>
+                </ng-container>
+              </ng-container>
+              <ng-template #noProviders>
+                <span class="text-muted">-</span>
+              </ng-template>
+            </div>
+          </td>
+          <td class="px-2 text-center">
+            <div class="d-flex align-items-center justify-content-center gap-2">
+              <span class="text-truncate" style="max-width: 200px" [title]="record.webhookToken">
+                {{ record.webhookToken || '-' }}
+              </span>
+              <button
+                *ngIf="record.webhookToken"
+                class="btn-copy-token"
+                (click)="copyToken(record.webhookToken, i)"
+                type="button"
+              >
+                <app-icon
+                  [iconType]="copiedIndex === i ? 'completed-status' : 'allCopy'"
+                  [ngClass]="{ 'text-success': copiedIndex === i }"
+                >
+                </app-icon>
+              </button>
+            </div>
+          </td>
+          <td class="px-2" [ngClass]="{ 'font-weight-bold': currentSort === 'createdAt' }">
+            <span class="date-time-display">
+              {{ (record.createdAt | date: 'MMM d, y, h:mm a') || '-' }}
+            </span>
+          </td>
+          <td class="px-2 justify-content-center d-flex">
+            <button
+              class="btn d-flex align-items-center gap-1 p-1 status-button"
+              (click)="confirmToggleStatus(record)"
+              type="button"
+              [disabled]="record._id === companyId"
+            >
+              <app-icon
+                [iconType]="record.isActive ? 'completed-status' : 'failed'"
+                [ngClass]="{ 'text-muted': !record.isActive }"
+              >
+              </app-icon>
+              <span>{{ record.isActive ? 'Active' : 'Inactive' }}</span>
+            </button>
+          </td>
+          <td class="px-2">
+            <div class="d-flex justify-content-center">
+              <div
+                class="dropdown"
+                ngbDropdown
+                [autoClose]="'outside'"
+                container="body"
+                #dropdownRef="ngbDropdown"
+              >
+                <button
+                  class="btn p-0 border-0 bg-transparent"
+                  type="button"
+                  ngbDropdownToggle
+                  aria-expanded="false"
+                  aria-label="actions"
+                >
+                  <i class="fs-5 text-muted">
+                    <app-icon iconType="action-icon" aria-label="actions"> </app-icon>
+                  </i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end popover-dropdown" ngbDropdownMenu>
+                  <li>
+                    <a
+                      class="dropdown-item cursor-pointer gap-1"
+                      (click)="updateCompany(dropdownRef, record)"
+                    >
+                      <app-icon iconType="pencil" aria-label="edit" placement="right"></app-icon>
+                      Edit
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item cursor-pointer gap-1"
+                      (click)="agentMapping(dropdownRef, record)"
+                    >
+                      <app-icon
+                        iconType="link"
+                        aria-label="agent-mapping"
+                        placement="right"
+                      ></app-icon>
+                      Agent Mapping
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item cursor-pointer gap-1"
+                      (click)="pullAgent(dropdownRef, record)"
+                    >
+                      <app-icon
+                        iconType="download"
+                        aria-label="pull-agent"
+                        placement="right"
+                      ></app-icon>
+                      Pull Agent
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item cursor-pointer gap-1"
+                      (click)="companyUsers(dropdownRef, record)"
+                    >
+                      <app-icon
+                        iconType="users"
+                        aria-label="company-users"
+                        placement="right"
+                      ></app-icon>
+                      Company Users
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item cursor-pointer gap-1"
+                      (click)="generateToken(dropdownRef, record)"
+                    >
+                      <app-icon
+                        iconType="key"
+                        aria-label="company-users"
+                        placement="right"
+                      ></app-icon>
+                      Generate Token
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </ng-container>
+      <tr class="cursor-pointer" *ngIf="!recordsList || recordsList.length === 0">
+        <td colspan="7">No Records Found</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mt-3" *ngIf="totalCount > 0">
+  <div class="col col-sm-6">
+    <div class="dataTables_info mb-2" id="tickets-table_info" role="status" aria-live="polite">
+      Showing
+      {{ pageIndex * currentPageSize + 1 }} to
+      <span *ngIf="currentPageSize * currentPage < totalCount"
+        >{{ currentPageSize * currentPage }} of {{ totalCount }}</span
+      >
+      <span *ngIf="currentPageSize * currentPage >= totalCount"
+        >{{ totalCount }} of {{ totalCount }}</span
+      >
+      entries
+    </div>
+  </div>
+  <div class="col col-sm-6">
+    <div class="text-sm-right float-sm-end listjs-pagination mb-2">
+      <ngb-pagination
+        [maxSize]="5"
+        [rotate]="true"
+        [boundaryLinks]="true"
+        [(page)]="currentPage"
+        [pageSize]="currentPageSize"
+        [collectionSize]="totalCount"
+        (pageChange)="pageChanged($event)"
+      >
+      </ngb-pagination>
+    </div>
+  </div>
+</div>
+
+<ng-template #createCompanyModel let-modal>
+  <app-create-company
+    [selectedCompanyData]="selectedCompanyData"
+    [currentUser]="currentUser"
+    (createdUpdatedCompany)="createdUpdatedCompany()"
+  >
+  </app-create-company>
+</ng-template>
+
+<ng-template #agentMappingModel let-modal>
+  <app-agent-mapping
+    [selectedCompanyData]="selectedCompanyData"
+    (mappingComplete)="mappingComplete()"
+  >
+  </app-agent-mapping>
+</ng-template>
+
+<ng-template #pullAgentConfirmModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">Confirm Pull Agent</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body">
+    <p class="mb-3">Are you sure you want to pull agents for this company?</p>
+
+    <div class="mb-3">
+      <label for="voiceProvider" class="form-label mb-1"> Voice Provider * </label>
+      <ng-select
+        [items]="voiceProviders"
+        bindLabel="label"
+        bindValue="value"
+        [multiple]="false"
+        [closeOnSelect]="true"
+        [searchable]="false"
+        [clearable]="false"
+        placeholder="Select voice provider"
+        [(ngModel)]="selectedVoiceProvider"
+        [ngModelOptions]="{ standalone: true }"
+        class="select-input-type"
+        [ngClass]="{
+          'is-invalid': !selectedVoiceProvider
+        }"
+      >
+      </ng-select>
+    </div>
+  </div>
+  <div class="d-flex gap-2 button-section p-2 mb-2">
+    <button type="button" class="save-as-draft" (click)="modal.dismiss()">Cancel</button>
+    <button
+      type="button"
+      class="create-button"
+      (click)="confirmPullAgent(modal)"
+      [disabled]="!selectedVoiceProvider"
+    >
+      Yes, Pull Agent
+    </button>
+  </div>
+</ng-template>
+
+<!-- Toggle Status Confirmation Modal (Activate/Deactivate) -->
+<ng-template #confirmModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      {{ selectedCompanyData?.isActive ? 'Confirm Deactivation' : 'Confirm Activation' }}
+    </h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body">
+    <ng-container *ngIf="selectedCompanyData?.isActive">
+      Are you sure you want to deactivate this Company?<br />
+      <strong>This will deactivate all associated Users and login will be disabled.</strong>
+    </ng-container>
+    <ng-container *ngIf="!selectedCompanyData?.isActive">
+      Are you sure you want to activate this Company?<br />
+      <strong
+        >Note: Associated Users will remain inactive and need to be activated manually.</strong
+      >
+    </ng-container>
+  </div>
+  <div class="d-flex gap-2 button-section p-2 mb-2">
+    <button type="button" class="save-as-draft" (click)="modal.dismiss()">Cancel</button>
+    <button type="button" class="create-button" (click)="toggleCompanyStatus(modal)">
+      {{ selectedCompanyData?.isActive ? 'Yes, Deactivate' : 'Yes, Activate' }}
+    </button>
+  </div>
+</ng-template>
+
+<ng-template #generateTokenConfirmModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      {{ selectedCompanyForGenerateToken?.webhookToken === '' ? 'Generate Token' : 'Update Token' }}
+    </h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body">
+    <ng-container *ngIf="selectedCompanyForGenerateToken?.webhookToken === ''">
+      Are you sure you want to generate token for this company?<br />
+    </ng-container>
+    <ng-container *ngIf="selectedCompanyForGenerateToken?.webhookToken !== ''">
+      Are you sure you want to update token for this company?<br />
+      <strong
+        >Note: You need to update your token in VoiceProvider too for the mapped agents.</strong
+      >
+    </ng-container>
+  </div>
+  <div class="d-flex gap-2 button-section p-2 mb-2">
+    <button type="button" class="save-as-draft" (click)="modal.dismiss()">Cancel</button>
+    <button type="button" class="create-button" (click)="generateCompanyToken(modal)">
+      {{
+        selectedCompanyForGenerateToken?.webhookToken === ''
+          ? 'Yes, Generate Token'
+          : 'Yes, Update Token'
+      }}
+    </button>
+  </div>
+</ng-template>

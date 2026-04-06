@@ -1,0 +1,12 @@
+<div class="module-header d-flex align-items-center justify-content-between">
+  <div class="d-flex">
+    <div class="module-name ms-2">
+      <span class="header-text-name d-flex gap-1 align-items-center">
+        {{ moduleName | translate }}
+        <span class="header-text-name" *ngIf="moduleName === 'Agents'"
+          ><strong>({{ totalCount ? totalCount : 0 }})</strong></span
+        >
+      </span>
+    </div>
+  </div>
+</div>

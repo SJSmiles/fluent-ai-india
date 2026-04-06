@@ -1,0 +1,71 @@
+<!-- post-call-analysis-modal.component.html -->
+<div class="modal-header">
+  <h5 class="modal-title d-flex align-items-start gap-2">
+    <span style="top: -2px; position: relative"><app-icon [iconType]="'analysis'"></app-icon></span>
+    {{ 'Text' }}
+  </h5>
+  <button type="button" class="btn-close" (click)="onClose()"></button>
+</div>
+
+<div class="modal-body">
+  <form [formGroup]="analysisForm">
+    <div class="mb-3">
+      <label class="form-label">Name</label>
+      <input
+        type="text"
+        class="form-control custom-input-field-class"
+        formControlName="name"
+        placeholder="Enter field name"
+        [ngClass]="{
+          'is-invalid': analysisForm.get('name')?.touched && analysisForm.get('name')?.errors
+        }"
+      />
+      <div class="invalid-feedback" align="left">
+        <app-control-messages [control]="$any(analysisForm.get('name'))"></app-control-messages>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Description</label>
+      <textarea
+        class="form-control custom-input-text-class"
+        formControlName="description"
+        rows="5"
+        placeholder="Enter description"
+        [ngClass]="{
+          'is-invalid':
+            analysisForm.get('description')?.touched && analysisForm.get('description')?.errors
+        }"
+      >
+      </textarea>
+      <div class="invalid-feedback" align="left">
+        <app-control-messages
+          [control]="$any(analysisForm.get('description'))"
+        ></app-control-messages>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Format Examples (Optional)</label>
+      <div class="example-list">
+        <div *ngFor="let example of examplesArray.controls; let i = index" class="d-flex mb-2">
+          <input
+            type="text"
+            class="form-control custom-input-field-class me-2"
+            [formControl]="$any(example)"
+            placeholder="Example {{ i + 1 }}"
+          />
+          <button type="button" class="remove-button" (click)="removeExample(i)">
+            <app-icon [iconType]="'delete'"></app-icon>
+          </button>
+        </div>
+      </div>
+      <button type="button" class="add-button" (click)="addExample()">+ Add Example</button>
+    </div>
+  </form>
+</div>
+
+<div class="modal-footer">
+  <button type="button" class="cancel-button" (click)="onClose()">Cancel</button>
+  <button type="button" class="add-section" (click)="onSave()">Save</button>
+</div>

@@ -1,0 +1,32 @@
+.form-label {
+  font-weight: 500;
+  color: var(--primary-font-color);
+  margin-bottom: 0.5rem;
+}
+
+.custom-user-email input {
+  border-top-right-radius: 0px !important;
+  border-bottom-right-radius: 0px !important;
+  border-right: none !important;
+}
+
+.custom-height-domain {
+  height: 38px !important;
+  border-top-left-radius: 0px;
+  border-bottom-left-radius: 0px !important;
+  background: transparent;
+  border-left: none;
+  border-color: var(--primary-border-color);
+}
+
+.form-check-input:checked {
+  background-color: var(--primary-button-color);
+}
+
+.custom-input-field-class:disabled {
+  background-color: #e9ecef !important;
+  /* light gray */
+  opacity: 1;
+  /* remove dimming */
+  cursor: not-allowed;
+}

@@ -1,0 +1,270 @@
+<div class="call-details-container">
+  <!-- Header -->
+  <div class="call-details-header">
+    <div class="header-content">
+      <h4 class="modal-title">Call Details & Transcript</h4>
+      <p class="modal-subtitle" *ngIf="currentCallDetails?.customerName">
+        {{ currentCallDetails.customerName }} • {{ currentCallDetails.phoneNumber }}
+      </p>
+    </div>
+    <button type="button" class="close-btn" (click)="backToListing()" aria-label="Close">
+      <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="call-details-tabs">
+    <button class="tab-btn" [class.active]="activeTab === 'overview'" (click)="switchTab('overview')">
+      Overview
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'transcript'" (click)="switchTab('transcript')">
+      Transcript
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'statusHistory'" (click)="switchTab('statusHistory')">
+      Status History
+    </button>
+  </div>
+
+  <!-- Tab Content -->
+  <div class="call-details-body">
+    <!-- OVERVIEW TAB -->
+    <div class="tab-content" *ngIf="activeTab === 'overview'">
+      <div class="overview-grid">
+        <!-- Left Column -->
+        <div class="overview-section">
+          <div class="info-group">
+            <label class="info-label">CALL DATE & TIME</label>
+            <div class="info-value">{{ currentCallDetails?.calls?.[0]?.date }}</div>
+          </div>
+
+          <div class="info-group">
+            <label class="info-label">CALL STATUS</label>
+            <div class="status-badge status-ended">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {{ currentCallDetails?.calls?.[0]?.status }}
+            </div>
+          </div>
+
+          <div class="info-group">
+            <label class="info-label">CALL END REASON</label>
+            <div class="info-value">{{ currentCallDetails?.calls?.[0]?.disconnectionReason }}</div>
+          </div>
+
+          <div class="info-group">
+            <label class="info-label">TOTAL ATTEMPTS</label>
+            <div class="info-value">{{ currentCallDetails?.totalAttempts }} attempts</div>
+          </div>
+
+          <div class="info-group">
+            <label class="info-label">CLIENT ID</label>
+            <div class="info-value">{{ currentCallDetails?.bmbyId }}</div>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="overview-section">
+          <div class="info-group">
+            <label class="info-label">DURATION</label>
+            <div class="info-value">{{ currentCallDetails?.calls?.[0]?.duration }} minutes</div>
+          </div>
+
+          <div class="info-group">
+            <label class="info-label">LEAD STATUS</label>
+            <div class="lead-status-display">
+              <svg class="lead-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+              {{ currentCallDetails?.calls?.[0]?.leadStatus }}
+            </div>
+          </div>
+
+          <div class="info-group">
+            <label class="info-label">AGENT</label>
+            <div class="agent-display">
+              <div class="agent-name">{{ currentCallDetails?.calls?.[0]?.agentName }}</div>
+            </div>
+          </div>
+
+          <div class="info-group">
+            <label class="info-label">SYNC STATUS</label>
+            <div class="sync-status" [class.failed]="currentCallDetails?.syncStatus === 'Failed to sync'">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path *ngIf="currentCallDetails?.syncStatus === 'Failed to sync'" stroke-linecap="round"
+                  stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                <path *ngIf="currentCallDetails?.syncStatus !== 'Failed to sync'" stroke-linecap="round"
+                  stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              {{ currentCallDetails?.syncStatus }}
+            </div>
+          </div>
+
+          <div class="info-group">
+            <label class="info-label">PHONE NUMBER</label>
+            <div class="info-value phone-number">{{ currentCallDetails?.phoneNumber }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Call Attempts Timeline -->
+      <div class="timeline-section">
+        <label class="section-label">CALL ATTEMPTS TIMELINE</label>
+        <div class="timeline-list">
+          <div class="timeline-item" *ngFor="let call of currentCallDetails?.calls; let i = index">
+            <div class="timeline-badge success">
+              {{ i + 1 }}
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-date">{{ call.date }}</div>
+              <div class="timeline-result">
+                {{ call.leadStatus }} • Duration: {{ call.duration }}
+              </div>
+            </div>
+            <button class="timeline-view-btn" (click)="switchTab('transcript'); selectAttempt(i)">
+              View Transcript →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSCRIPT TAB -->
+    <div class="tab-content" *ngIf="activeTab === 'transcript'">
+      <!-- Attempt Selector -->
+      <div class="attempt-selector-container">
+        <label class="section-label">SELECT ATTEMPT TO VIEW</label>
+        <div class="attempt-selector">
+          <div class="attempt-card" *ngFor="let call of currentCallDetails?.calls; let i = index"
+            [class.selected]="selectedAttemptIndex === i" (click)="selectAttempt(i)">
+            <div class="attempt-badge">{{ i + 1 }}</div>
+            <div class="attempt-info">
+              <div class="attempt-date">{{ call.createdAt | date:'dd/mm/yyyy hh:mm' }}</div>
+              <div class="attempt-status">{{ call.leadStatus }}</div>
+            </div>
+          </div>
+        </div>
+        <button class="download-transcript-btn" (click)="downloadTranscript()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Download Transcript
+        </button>
+      </div>
+
+      <!-- Audio Player -->
+      <div class="audio-player-container" *ngIf="selectedAttempt">
+        <div class="audio-player-header">
+          <h5>Call Recording - Attempt {{ selectedAttemptIndex + 1 }}</h5>
+          <span class="audio-duration">Duration: {{ selectedAttempt.duration }}</span>
+        </div>
+
+        <!-- Hidden audio element -->
+        <audio #audioPlayer [src]="selectedAttempt.recordingUrl" (play)="onAudioPlay()" (pause)="onAudioPause()"
+          (timeupdate)="onAudioTimeUpdate($event)" (loadedmetadata)="onAudioLoadedMetadata($event)"
+          (durationchange)="onAudioLoadedMetadata($event)" (ended)="onAudioEnded()" preload="metadata"
+          style="display: none"></audio>
+
+        <div class="audio-player">
+          <button class="play-btn" (click)="togglePlayPause()">
+            <svg *ngIf="!isPlaying" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            <svg *ngIf="isPlaying" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+            </svg>
+          </button>
+
+          <div class="audio-timeline">
+            <span class="time-current">{{ formatTime(currentTime) }}</span>
+            <input type="range" class="seekbar" [value]="currentTime" [max]="duration || 100" min="0" step="0.1"
+              (input)="seekAudio($event)" (change)="seekAudio($event)" />
+            <span class="time-total">{{ formatTime(duration) }}</span>
+          </div>
+
+          <button class="speed-btn" (click)="changePlaybackSpeed()">{{ playbackSpeed }}x</button>
+
+          <button class="download-audio-btn" (click)="downloadAudio()" title="Download Audio">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="sync-info">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Transcript is synced with audio playback. Messages highlight as recording plays.
+        </div>
+      </div>
+
+      <!-- Transcript Messages -->
+      <div class="transcript-container" *ngIf="selectedAttempt">
+        <div class="transcript-message" *ngFor="let message of selectedAttempt.transcript">
+          <div class="message-badge" [ngClass]="message.role.toLowerCase()">
+            {{ message.role.toUpperCase() }}
+          </div>
+          <div class="message-body">
+            <div class="message-content">{{ message.content }}</div>
+            <div class="message-time">{{ formatTranscriptTimestamp(message.timestamp) }}</div>
+          </div>
+        </div>
+
+        <div class="empty-state" *ngIf="!selectedAttempt.transcript || selectedAttempt.transcript.length === 0">
+          No transcript available for this call
+        </div>
+      </div>
+    </div>
+
+    <!-- STATUS HISTORY TAB -->
+    <div class="tab-content" *ngIf="activeTab === 'statusHistory'">
+      <div class="status-history-container">
+        <div class="status-history-item" *ngFor="let change of currentCallDetails?.leadStatusHistory; let i = index">
+          <div class="status-history-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+
+          <div class="status-history-content">
+            <div class="status-history-header">
+              <div class="status-change">
+                <span class="status-from" *ngIf="i < currentCallDetails.leadStatusHistory.length - 1">
+                  {{ currentCallDetails.leadStatusHistory[i + 1].leadStatus }}
+                </span>
+                <svg class="arrow" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+                <span class="status-to">{{ change.leadStatus }}</span>
+              </div>
+              <div class="status-timestamp">{{ formatStatusChangeDate(change.createdAt) }}</div>
+            </div>
+            <div class="status-changed-by">Changed by: {{ getStatusChangeAuthor(change) }}</div>
+            <div class="status-reason" *ngIf="change.changeReason">{{ change.changeReason }}</div>
+          </div>
+        </div>
+
+        <div class="empty-state" *ngIf="
+            !currentCallDetails?.leadStatusHistory ||
+            currentCallDetails.leadStatusHistory.length === 0
+          ">
+          No status history available
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="call-details-footer">
+    <button class="btn btn-secondary" (click)="backToListing()">Close</button>
+  </div>
+</div>

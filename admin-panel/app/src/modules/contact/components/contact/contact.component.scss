@@ -1,0 +1,1371 @@
+// ============================================================================
+// DESIGN TOKENS - Scoped to contact module
+// ============================================================================
+.contact-module-container {
+  --contact-primary-blue: #2563eb;
+  --contact-primary-blue-hover: #1d4ed8;
+  --contact-primary-blue-light: #dbeafe;
+  --contact-success-green: #10b981;
+  --contact-warning-yellow: #f59e0b;
+  --contact-error-red: #ef4444;
+  --contact-error-light: #fee2e2;
+  
+  --contact-neutral-950: #0f172a;
+  --contact-neutral-900: #1e293b;
+  --contact-neutral-800: #334155;
+  --contact-neutral-700: #475569;
+  --contact-neutral-600: #64748b;
+  --contact-neutral-500: #94a3b8;
+  --contact-neutral-400: #cbd5e1;
+  --contact-neutral-300: #e2e8f0;
+  --contact-neutral-200: #f1f5f9;
+  --contact-neutral-100: #f8fafc;
+  --contact-neutral-50: #fafafa;
+  --contact-white: #ffffff;
+  
+  --contact-border-radius-sm: 6px;
+  --contact-border-radius-md: 8px;
+  --contact-border-radius-lg: 12px;
+  --contact-border-radius-xl: 16px;
+  
+  --contact-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --contact-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --contact-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --contact-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+}
+
+// ============================================================================
+// CONTACT MODULE CONTAINER - Override all parent styles
+// ============================================================================
+::ng-deep .contact-module-container {
+  
+  // Reset any inherited styles
+  * {
+    box-sizing: border-box;
+  }
+}
+
+// ============================================================================
+// MODULE HEADER - Force override parent styles
+// ============================================================================
+::ng-deep .contact-module-container {
+  .module-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 1.5rem !important;
+    gap: 1rem !important;
+    flex-wrap: wrap !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+
+    .module-title {
+      font-size: 24px !important;
+      font-weight: 600 !important;
+      color: var(--contact-neutral-950) !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      line-height: 1.2 !important;
+    }
+
+    .header-actions {
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.75rem !important;
+      flex-wrap: wrap !important;
+    }
+  }
+}
+
+// ============================================================================
+// SEARCH & FILTERS - Force override
+// ============================================================================
+::ng-deep .contact-module-container {
+  .company-filter {
+    min-width: 200px !important;
+
+    .select-company {
+      .ng-select-container {
+        border: 1px solid var(--contact-neutral-300) !important;
+        border-radius: var(--contact-border-radius-md) !important;
+        background: var(--contact-white) !important;
+        min-height: 40px !important;
+        transition: all 0.2s !important;
+        box-shadow: none !important;
+
+        &:hover {
+          border-color: var(--contact-neutral-400) !important;
+        }
+      }
+
+      &.ng-select-focused {
+        .ng-select-container {
+          border-color: var(--contact-primary-blue) !important;
+          box-shadow: 0 0 0 3px var(--contact-primary-blue-light) !important;
+        }
+      }
+    }
+  }
+
+  .search-box {
+    position: relative !important;
+    min-width: 250px !important;
+
+    .search-icon {
+      position: absolute !important;
+      left: 12px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      color: var(--contact-neutral-400) !important;
+      pointer-events: none !important;
+      z-index: 1 !important;
+    }
+  }
+}
+
+// ============================================================================
+// ACTION BUTTONS - Force override parent styles
+// ============================================================================
+::ng-deep .contact-module-container {
+  .btn-action {
+    height: 40px !important;
+    padding: 0 20px !important;
+    border-radius: var(--contact-border-radius-md) !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    white-space: nowrap !important;
+    line-height: 1 !important;
+
+    svg {
+      width: 16px !important;
+      height: 16px !important;
+      flex-shrink: 0 !important;
+    }
+
+    &.btn-primary {
+      background: var(--contact-primary-blue) !important;
+      color: var(--contact-white) !important;
+      border: 1px solid var(--contact-primary-blue) !important;
+
+      &:hover:not(:disabled) {
+        background: var(--contact-primary-blue-hover) !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+        transform: translateY(-1px) !important;
+      }
+
+      &:active {
+        transform: translateY(0) !important;
+      }
+    }
+
+    &.btn-outline {
+      background: var(--contact-white) !important;
+      color: var(--contact-neutral-700) !important;
+      border: 1px solid var(--contact-neutral-300) !important;
+
+      &:hover:not(:disabled) {
+        background: var(--contact-neutral-50) !important;
+        border-color: var(--contact-neutral-400) !important;
+      }
+    }
+
+    &:disabled {
+      opacity: 0.6 !important;
+      cursor: not-allowed !important;
+    }
+  }
+}
+
+// ============================================================================
+// TABLE STYLES - Batch Call Design (Exact Match)
+// ============================================================================
+::ng-deep .contact-module-container {
+  .table-container {
+    max-height: calc(100vh - 214px) !important;
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 16px !important;
+    overflow: auto !important;
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05) !important;
+    margin: 0 !important;
+    height: 100%;
+  }
+
+  .modern-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 14px !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    display: table !important;
+
+    thead {
+      background: #f9fafb !important;
+      border-bottom: 1px solid #e5e7eb !important;
+      display: table-header-group !important;
+
+      tr {
+        background: #f9fafb !important;
+        display: table-row !important;
+        border: none !important;
+        
+        th {
+          padding: 16px 20px !important;
+          text-align: left !important;
+          font-size: 13px !important;
+          font-weight: 600 !important;
+          color: #475569 !important;
+          border-bottom: none !important;
+          cursor: pointer !important;
+          user-select: none !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0.5px !important;
+          font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+          background: transparent !important;
+          display: table-cell !important;
+          vertical-align: middle !important;
+          border: none !important;
+
+          &.th-center {
+            text-align: center !important;
+          }
+
+          &.th-sortable {
+            cursor: pointer !important;
+            user-select: none !important;
+            transition: all 0.2s !important;
+
+            &:hover {
+              background: #f3f4f6 !important;
+            }
+
+            .th-content {
+              display: inline-flex !important;
+              align-items: center !important;
+              gap: 6px !important;
+
+              app-sort-icon {
+                display: inline-flex !important;
+                align-items: center !important;
+                opacity: 0.5 !important;
+                width: 14px !important;
+                height: 14px !important;
+
+                svg {
+                  width: 14px !important;
+                  height: 14px !important;
+                }
+              }
+            }
+
+            &:hover .th-content app-sort-icon {
+              opacity: 1 !important;
+            }
+          }
+        }
+      }
+    }
+
+    tbody {
+      background: #ffffff !important;
+      display: table-row-group !important;
+      
+      tr {
+        border-bottom: 1px solid #e5e7eb !important;
+        transition: background 0.15s !important;
+        cursor: pointer !important;
+        display: table-row !important;
+        background: #ffffff !important;
+
+        &:hover {
+          background: #f0f7ff !important;
+        }
+
+        &:last-child {
+          border-bottom: none !important;
+        }
+
+        td {
+          padding: 24px 20px !important;
+          font-size: 14px !important;
+          color: #1e293b !important;
+          vertical-align: middle !important;
+          border: none !important;
+          background: transparent !important;
+          font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+          display: table-cell !important;
+          line-height: 1.5 !important;
+
+          &.td-center {
+            text-align: center !important;
+          }
+
+          .text-medium {
+            font-size: 14px !important;
+            line-height: 1.5 !important;
+            color: #1e293b !important;
+          }
+
+          .text-muted {
+            color: #94a3b8 !important;
+          }
+
+          &.font-semibold {
+            font-weight: 600 !important;
+            color: #0f172a !important;
+          }
+        }
+
+        &.empty-row {
+          td {
+            padding: 60px 20px !important;
+            text-align: center !important;
+            color: #94a3b8 !important;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ============================================================================
+// EMPTY STATE - Force override
+// ============================================================================
+::ng-deep .contact-module-container {
+  .empty-state {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 16px !important;
+
+    svg {
+      color: var(--contact-neutral-300) !important;
+    }
+
+    p {
+      font-size: 15px !important;
+      color: var(--contact-neutral-500) !important;
+      margin: 0 !important;
+    }
+  }
+}
+
+// ============================================================================
+// ACTION CELL & DROPDOWN - Force override
+// ============================================================================
+::ng-deep .contact-module-container {
+  .action-cell {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  .action-button {
+    width: 32px !important;
+    height: 32px !important;
+    border: none !important;
+    background: transparent !important;
+    border-radius: var(--contact-border-radius-sm) !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: var(--contact-neutral-500) !important;
+    transition: all 0.2s !important;
+    padding: 0 !important;
+
+    &:hover {
+      background: var(--contact-neutral-100) !important;
+      color: var(--contact-neutral-700) !important;
+    }
+
+    svg {
+      width: 16px !important;
+      height: 16px !important;
+    }
+  }
+}
+
+::ng-deep .action-dropdown {
+  border: 1px solid gray !important;
+
+  .dropdown-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+    color: var(--contact-neutral-700) !important;
+    border-radius: var(--contact-border-radius-sm) !important;
+    cursor: pointer !important;
+    transition: all 0.15s !important;
+    border: none !important;
+    background: transparent !important;
+
+    svg {
+      width: 16px !important;
+      height: 16px !important;
+      color: var(--contact-neutral-500) !important;
+    }
+
+    &:hover {
+      background: var(--contact-neutral-100) !important;
+      color: var(--contact-neutral-900) !important;
+
+      svg {
+        color: var(--contact-neutral-700) !important;
+      }
+    }
+
+    &.dropdown-item-danger {
+      &:hover {
+        background: var(--contact-error-light) !important;
+        color: var(--contact-error-red) !important;
+
+        svg {
+          color: var(--contact-error-red) !important;
+        }
+      }
+    }
+  }
+}
+
+// ============================================================================
+// PAGINATION - Force override
+// ============================================================================
+::ng-deep .contact-module-container {
+  .pagination-container {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-top: 1.5rem !important;
+    
+
+    .pagination-info {
+      font-size: 14px !important;
+      color: var(--contact-neutral-600) !important;
+    }
+
+    .pagination-controls {
+      ngb-pagination {
+        .pagination {
+          margin: 0 !important;
+          gap: 4px !important;
+          display: flex !important;
+
+          .page-item {
+            .page-link {
+              border: 1px solid var(--contact-neutral-300) !important;
+              border-radius: var(--contact-border-radius-sm) !important;
+              color: var(--contact-neutral-700) !important;
+              // padding: 8px 14px !important;
+              font-size: 14px !important;
+              margin: 0 !important;
+              transition: all 0.2s !important;
+              background: var(--contact-white) !important;
+
+              &:hover {
+                background: var(--contact-neutral-100) !important;
+                border-color: var(--contact-neutral-400) !important;
+                text-decoration: none !important;
+              }
+            }
+
+            &.active {
+              .page-link {
+                background: var(--contact-primary-blue) !important;
+                border-color: var(--contact-primary-blue) !important;
+                color: var(--contact-white) !important;
+                font-weight: 600 !important;
+              }
+            }
+
+            &.disabled {
+              .page-link {
+                opacity: 0.5 !important;
+                cursor: not-allowed !important;
+                background: var(--contact-white) !important;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// ============================================================================
+// UPLOAD MODAL - Ultra Strong Overrides for Bootstrap
+// ============================================================================
+::ng-deep .custom-upload-modal {
+  .modal-dialog {
+    max-width: 900px !important;
+
+    .modal-content {
+      border: none !important;
+      border-radius: 12px !important;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
+      overflow: hidden !important;
+    }
+  }
+}
+
+// Multiple selectors for maximum specificity
+::ng-deep .upload-modal-container,
+::ng-deep .modal-card {
+  .modal-header {
+    padding: 24px 32px 20px !important;
+    background: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+
+    > div:first-child {
+      flex: 1 !important;
+    }
+
+    .modal-title {
+      font-size: 20px !important;
+      font-weight: 600 !important;
+      color: #0f172a !important;
+      margin: 0 !important;
+      line-height: 1.2 !important;
+    }
+
+    .modal-subtitle {
+      font-size: 13px !important;
+      color: #94a3b8 !important;
+      margin-top: 4px !important;
+      margin-bottom: 0 !important;
+    }
+
+    // Ultra strong close button override
+    .btn-close,
+    button.btn-close,
+    .close,
+    button.close {
+      width: 36px !important;
+      height: 36px !important;
+      background: #f1f5f9 !important;
+      border-radius: 6px !important;
+      opacity: 1 !important;
+      transition: all 0.2s !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      border: none !important;
+      flex-shrink: 0 !important;
+      position: relative !important;
+      background-image: none !important;
+      background-size: 0 !important;
+      box-shadow: none !important;
+      
+      // Remove any default background
+      &::before,
+      &::after {
+        content: '' !important;
+        position: absolute !important;
+        width: 16px !important;
+        height: 2px !important;
+        background: #64748b !important;
+        top: 50% !important;
+        left: 50% !important;
+        border: none !important;
+      }
+      
+      &::before {
+        transform: translate(-50%, -50%) rotate(45deg) !important;
+      }
+      
+      &::after {
+        transform: translate(-50%, -50%) rotate(-45deg) !important;
+      }
+
+      &:hover {
+        background: #e2e8f0 !important;
+        opacity: 1 !important;
+        
+        &::before,
+        &::after {
+          background: #1e293b !important;
+        }
+      }
+
+      &:focus {
+        box-shadow: none !important;
+        outline: none !important;
+      }
+
+      // Remove any spans or content inside
+      span {
+        display: none !important;
+      }
+    }
+  }
+}
+
+// Modal Body - Upload Container
+::ng-deep .upload-modal-container {
+  .modal-body {
+    padding: 24px 32px 32px !important;
+    max-height: calc(90vh - 200px) !important;
+    overflow-y: auto !important;
+    background: #ffffff !important;
+
+    &::-webkit-scrollbar {
+      width: 8px !important;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f8fafc !important;
+      border-radius: 4px !important;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #e2e8f0 !important;
+      border-radius: 4px !important;
+
+      &:hover {
+        background: #cbd5e1 !important;
+      }
+    }
+  }
+
+  // Modal Body Header with Action Buttons
+  .modal-body-header {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    margin-bottom: 20px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .btn-outline-info,
+  button.btn-outline-info {
+    height: 40px !important;
+    padding: 0 18px !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #475569 !important;
+    background: #ffffff !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    white-space: nowrap !important;
+    line-height: 1 !important;
+    text-decoration: none !important;
+
+    svg {
+      width: 16px !important;
+      height: 16px !important;
+      flex-shrink: 0 !important;
+      stroke-width: 2 !important;
+    }
+
+    &:hover {
+      background: #f8fafc !important;
+      border-color: #cbd5e1 !important;
+      color: #1e293b !important;
+      text-decoration: none !important;
+      transform: none !important;
+    }
+
+    &:active {
+      transform: scale(0.98) !important;
+    }
+
+    &:focus {
+      outline: none !important;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+    }
+  }
+
+  // Upload Section Label
+  .upload-section-label {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: #1e293b !important;
+    margin-bottom: 12px !important;
+
+    .required-star {
+      color: #ef4444 !important;
+      margin-left: 2px !important;
+    }
+  }
+
+  .modal-footer {
+    padding: 16px 32px !important;
+    background: #ffffff !important;
+    border-top: 1px solid #e2e8f0 !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 12px !important;
+
+    .btn {
+      height: 40px !important;
+      padding: 0 20px !important;
+      border-radius: 8px !important;
+      font-size: 14px !important;
+      font-weight: 500 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      transition: all 0.2s !important;
+      cursor: pointer !important;
+      line-height: 1 !important;
+
+      svg {
+        width: 16px !important;
+        height: 16px !important;
+      }
+
+      &.btn-primary {
+        background: #2563eb !important;
+        border: 1px solid #2563eb !important;
+        color: #ffffff !important;
+
+        &:hover:not(:disabled) {
+          background: #1d4ed8 !important;
+          border-color: #1d4ed8 !important;
+        }
+
+        &:disabled {
+          opacity: 0.6 !important;
+          cursor: not-allowed !important;
+        }
+      }
+
+      &.btn-light,
+      &.btn-secondary {
+        background: #ffffff !important;
+        color: #475569 !important;
+        border: 1px solid #e2e8f0 !important;
+
+        &:hover {
+          background: #f8fafc !important;
+          border-color: #cbd5e1 !important;
+        }
+      }
+
+      &.btn-danger {
+        background: #ef4444 !important;
+        border-color: #ef4444 !important;
+        color: #ffffff !important;
+
+        &:hover {
+          background: #dc2626 !important;
+        }
+      }
+
+      &.btn-warning {
+        background: #f59e0b !important;
+        border-color: #f59e0b !important;
+        color: #ffffff !important;
+
+        &:hover {
+          background: #d97706 !important;
+        }
+      }
+    }
+  }
+}
+
+// ============================================================================
+// UPLOAD DROPZONE - Blue Dotted Border (Batch Call Style)
+// ============================================================================
+::ng-deep .upload-modal-container {
+  .upload-dropzone-modern {
+    border: 2px dashed #2563eb !important; // Blue dotted border
+    border-radius: 12px !important;
+    background-color: #ffffff !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    min-height: 200px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 40px 20px !important;
+    position: relative !important;
+
+    .upload-content {
+      text-align: center !important;
+      width: 100% !important;
+    }
+
+    .upload-icon {
+      color: #2563eb !important;
+      margin: 0 auto 16px !important;
+      display: block !important;
+    }
+
+    .upload-title {
+      font-size: 15px !important;
+      font-weight: 600 !important;
+      color: var(--contact-neutral-900) !important;
+      margin: 0 0 8px 0 !important;
+    }
+
+    .upload-subtitle {
+      font-size: 13px !important;
+      color: var(--contact-neutral-500) !important;
+      margin: 0 !important;
+    }
+
+    &:hover {
+      border-color: #1d4ed8 !important;
+      background-color: #f0f9ff !important;
+    }
+
+    &.drag-over {
+      border-color: #1d4ed8 !important;
+      background-color: #dbeafe !important;
+      border-width: 3px !important;
+    }
+  }
+}
+
+// ============================================================================
+// FILE PREVIEW - Force override
+// ============================================================================
+::ng-deep .upload-modal-container {
+  .file-preview {
+    display: flex !important;
+    align-items: center !important;
+    gap: 16px !important;
+    padding: 16px !important;
+    background: var(--contact-neutral-50) !important;
+    border: 1px solid var(--contact-neutral-200) !important;
+    border-radius: var(--contact-border-radius-md) !important;
+
+    .file-preview-icon {
+      width: 48px !important;
+      height: 48px !important;
+      background: var(--contact-primary-blue-light) !important;
+      border-radius: var(--contact-border-radius-md) !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      flex-shrink: 0 !important;
+
+      svg {
+        color: var(--contact-primary-blue) !important;
+      }
+    }
+
+    .file-preview-info {
+      flex: 1 !important;
+      min-width: 0 !important;
+
+      .file-preview-name {
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        color: var(--contact-neutral-900) !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        margin-bottom: 4px !important;
+      }
+
+      .file-preview-size {
+        font-size: 13px !important;
+        color: var(--contact-neutral-500) !important;
+      }
+    }
+
+    .file-preview-delete {
+      width: 32px !important;
+      height: 32px !important;
+      border: none !important;
+      background: transparent !important;
+      border-radius: var(--contact-border-radius-sm) !important;
+      cursor: pointer !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      transition: all 0.2s !important;
+      flex-shrink: 0 !important;
+
+      svg {
+        color: var(--contact-neutral-500) !important;
+      }
+
+      &:hover {
+        background: var(--contact-error-light) !important;
+
+        svg {
+          color: var(--contact-error-red) !important;
+        }
+      }
+    }
+  }
+}
+
+// ============================================================================
+// CSV PREVIEW - Force override
+// ============================================================================
+::ng-deep .upload-modal-container {
+  .csv-preview {
+    background: var(--contact-white) !important;
+    border: 1px solid var(--contact-neutral-200) !important;
+    border-radius: var(--contact-border-radius-lg) !important;
+    overflow: hidden !important;
+
+    .csv-preview-header {
+          display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 16px 20px !important;
+    background-color: #fafafa !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    border-top-right-radius: 10px;
+    border-top-left-radius: 10px;
+
+      .csv-preview-info {
+        display: flex !important;
+        align-items: center !important;
+        gap: 12px !important;
+
+        svg {
+          width: 24px !important;
+          height: 24px !important;
+          color: #2563eb !important;
+          flex-shrink: 0 !important;
+        }
+
+        .csv-preview-filename {
+          font-size: 14px !important;
+          font-weight: 600 !important;
+          color: var(--contact-neutral-900) !important;
+          margin-bottom: 2px !important;
+        }
+
+        .csv-preview-count {
+          font-size: 13px !important;
+          color: var(--contact-neutral-500) !important;
+        }
+      }
+
+      .csv-preview-delete {
+        width: 32px !important;
+        height: 32px !important;
+        border: none !important;
+        background: transparent !important;
+        border-radius: 8px !important;
+        cursor: pointer !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transition: all 0.2s !important;
+
+        svg {
+          color: var(--contact-neutral-500) !important;
+        }
+
+        &:hover {
+          background: #fee2e2 !important;
+
+          svg {
+            color: #ef4444 !important;
+          }
+        }
+      }
+    }
+
+    .csv-table-wrapper {
+      overflow-x: auto !important;
+      max-height: 400px !important;
+      overflow-y: auto !important;
+
+      &::-webkit-scrollbar {
+        width: 8px !important;
+        height: 8px !important;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: var(--contact-neutral-100) !important;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: var(--contact-neutral-300) !important;
+        border-radius: 4px !important;
+
+        &:hover {
+          background: var(--contact-neutral-400) !important;
+        }
+      }
+
+      table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        font-size: 14px !important;
+
+        thead {
+          position: sticky !important;
+          top: 0 !important;
+          z-index: 10 !important;
+          background: var(--contact-neutral-100) !important;
+
+          th {
+            padding: 12px 16px !important;
+            text-align: left !important;
+            font-weight: 600 !important;
+            font-size: 12px !important;
+            color: var(--contact-neutral-600) !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            white-space: nowrap !important;
+            border-bottom: 2px solid var(--contact-neutral-200) !important;
+            border-left: none !important;
+            border-right: none !important;
+            border-top: none !important;
+          }
+        }
+
+        tbody {
+          tr {
+            transition: background 0.15s !important;
+
+            &:hover {
+              background: var(--contact-neutral-50) !important;
+            }
+
+            &:not(:last-child) {
+              border-bottom: 1px solid var(--contact-neutral-200) !important;
+            }
+
+            td {
+              padding: 12px 16px !important;
+              font-size: 13px !important;
+              color: var(--contact-neutral-700) !important;
+              white-space: nowrap !important;
+              border: none !important;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// ============================================================================
+// ALERT STYLING - Force override
+// ============================================================================
+::ng-deep .upload-modal-container {
+  .alert {
+    border-radius: var(--contact-border-radius-md) !important;
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+    border: none !important;
+    margin-bottom: 20px !important;
+
+    &.alert-danger {
+      background: var(--contact-error-light) !important;
+      color: var(--contact-error-red) !important;
+
+      i {
+        color: var(--contact-error-red) !important;
+      }
+    }
+  }
+}
+
+// ============================================================================
+// MODAL CARD (Guidelines & Response) - Ultra Strong Override
+// ============================================================================
+::ng-deep .modal-card {
+  &.modal-small {
+    max-width: 600px !important;
+  }
+
+  .modal-header {
+    padding: 24px 32px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    background: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+
+    .modal-title {
+      font-size: 20px !important;
+      font-weight: 600 !important;
+      color: #0f172a !important;
+      margin: 0 !important;
+    }
+
+    // Ultra strong close button override - same as upload modal
+    .btn-close,
+    button.btn-close,
+    .close,
+    button.close {
+      width: 36px !important;
+      height: 36px !important;
+      border-radius: 6px !important;
+      opacity: 1 !important;
+      background: #f1f5f9 !important;
+      border: none !important;
+      flex-shrink: 0 !important;
+      position: relative !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      transition: all 0.2s !important;
+      background-image: none !important;
+      background-size: 0 !important;
+      box-shadow: none !important;
+      
+      // Make X visible
+      &::before,
+      &::after {
+        content: '' !important;
+        position: absolute !important;
+        width: 16px !important;
+        height: 2px !important;
+        background: #64748b !important;
+        top: 50% !important;
+        left: 50% !important;
+        border: none !important;
+      }
+      
+      &::before {
+        transform: translate(-50%, -50%) rotate(45deg) !important;
+      }
+      
+      &::after {
+        transform: translate(-50%, -50%) rotate(-45deg) !important;
+      }
+
+      &:hover {
+        background: #e2e8f0 !important;
+        opacity: 1 !important;
+        
+        &::before,
+        &::after {
+          background: #1e293b !important;
+        }
+      }
+
+      &:focus {
+        box-shadow: none !important;
+        outline: none !important;
+      }
+
+      // Remove any spans or content inside
+      span {
+        display: none !important;
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 24px 32px !important;
+    max-height: 70vh !important;
+    overflow-y: auto !important;
+    background: #ffffff !important;
+
+    h6 {
+      font-size: 15px !important;
+      font-weight: 600 !important;
+      color: #0f172a !important;
+      margin-bottom: 12px !important;
+      margin-top: 20px !important;
+      
+      &:first-child {
+        margin-top: 0 !important;
+      }
+    }
+
+    p {
+      font-size: 14px !important;
+      color: #475569 !important;
+      line-height: 1.6 !important;
+      margin-bottom: 16px !important;
+    }
+
+    ol, ul {
+      margin: 0 !important;
+      padding-left: 24px !important;
+      
+      &.suggestions-list {
+        padding-left: 28px !important;
+      }
+
+      li {
+        margin-bottom: 14px !important;
+        font-size: 14px !important;
+        color: #475569 !important;
+        line-height: 1.6 !important;
+        padding-left: 8px !important;
+
+        &:last-child {
+          margin-bottom: 0 !important;
+        }
+        
+        strong {
+          font-weight: 600 !important;
+          color: #1e293b !important;
+        }
+      }
+    }
+
+    .list-unstyled {
+      margin: 0 !important;
+      padding: 0 !important;
+      list-style: none !important;
+
+      li {
+        margin-bottom: 12px !important;
+        font-size: 14px !important;
+        padding-left: 0 !important;
+        
+        &:last-child {
+          margin-bottom: 0 !important;
+        }
+      }
+    }
+    
+    &::-webkit-scrollbar {
+      width: 8px !important;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f8fafc !important;
+      border-radius: 4px !important;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #e2e8f0 !important;
+      border-radius: 4px !important;
+
+      &:hover {
+        background: #cbd5e1 !important;
+      }
+    }
+  }
+
+  .modal-footer {
+    padding: 16px 32px !important;
+    border-top: 1px solid #e2e8f0 !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 12px !important;
+    background: #ffffff !important;
+
+    .btn {
+      height: 40px !important;
+      padding: 0 24px !important;
+      border-radius: var(--contact-border-radius-md) !important;
+      font-size: 14px !important;
+      font-weight: 500 !important;
+
+      &.btn-primary {
+        background: var(--contact-primary-blue) !important;
+        border-color: var(--contact-primary-blue) !important;
+        color: var(--contact-white) !important;
+
+        &:hover {
+          background: var(--contact-primary-blue-hover) !important;
+        }
+      }
+
+      &.w-100 {
+        width: 100% !important;
+      }
+    }
+  }
+}
+
+// ============================================================================
+// RESPONSIVE DESIGN
+// ============================================================================
+@media (max-width: 768px) {
+  .contact-module-container {
+    padding: 1rem;
+  }
+
+  .module-header {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .header-actions {
+      width: 100%;
+      justify-content: space-between;
+
+      .btn-action,
+      .search-box,
+      .company-filter {
+        flex: 1;
+        min-width: auto;
+      }
+    }
+  }
+
+  .table-container {
+    overflow-x: auto;
+
+    .modern-table {
+      min-width: 1000px;
+    }
+  }
+
+  .pagination-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .upload-modal-container {
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+      padding: 24px;
+    }
+
+    .modal-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+
+      .header-actions-row {
+        width: 100%;
+        flex-wrap: wrap;
+
+        .btn-outline-primary {
+          flex: 1;
+        }
+      }
+    }
+
+    .modal-footer {
+      flex-direction: column;
+
+      .btn {
+        width: 100%;
+      }
+    }
+  }
+
+  .csv-table-wrapper {
+    table {
+      min-width: 800px;
+    }
+  }
+}
+
+// ============================================================================
+// DARK MODE SUPPORT (Optional)
+// ============================================================================
+@media (prefers-color-scheme: dark) {
+  // Add dark mode styles here if needed
+}

@@ -1,0 +1,39 @@
+{
+    "name": "call-job-scheduler",
+    "version": "1.0.0",
+    "main": "dist",
+    "license": "MIT",
+    "scripts": {
+        "start": "ts-node queue-process/worker.ts",
+        "batch-process": "ts-node queue-process/batch-process.ts",
+        "start-process": "ts-node queue-process/bmby-process.ts",
+        "sheet-process": "ts-node queue-process/sheet-process.ts",
+        "sms-process": "ts-node queue-process/sms-process.ts",
+        "build": "tsc",
+        "start:prod": "node dist/queue-process/worker.js",
+        "batch-process:prod": "node dist/queue-process/batch-process.js",
+        "start-process:prod": "node dist/queue-process/bmby-process.js",
+        "sms-process:prod": "node dist/queue-process/sms-process.js",
+        "sheet-process:prod": "node dist/queue-process/sheet-process.js"
+    },
+    "dependencies": {
+        "@vapi-ai/server-sdk": "^0.10.2",
+        "axios": "^1.12.2",
+        "bull": "^4.10.4",
+        "crypto": "^1.0.1",
+        "dotenv": "^17.2.0",
+        "ioredis": "^5.4.1",
+        "moment": "^2.30.1",
+        "moment-timezone": "^0.6.0",
+        "mongodb": "5.9.0",
+        "openai": "^6.25.0",
+        "retell-sdk": "^4.53.0",
+        "twilio": "^5.12.1"
+    },
+    "devDependencies": {
+        "@types/bull": "^3.15.8",
+        "@types/node": "^20.11.30",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.4.5"
+    }
+}

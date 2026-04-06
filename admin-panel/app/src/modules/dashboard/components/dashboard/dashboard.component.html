@@ -1,0 +1,482 @@
+<div style="padding-right: 0.6rem">
+  <div class="d-flex justify-content-between align-items-center">
+    <app-header [moduleName]="'Dashboard'"> </app-header>
+    <div class="d-flex justify-content-end">
+      <div class="d-flex align-items-center justify-content-between w-100 custom-timezone me-2">
+        <div
+          *ngFor="let option of getDisplayOptions()"
+          [ngClass]="{
+            'cursor-pointer': true,
+            'fix-height-width': true,
+            'current-selected-date': selectedRange === option.key
+          }"
+          (click)="selectDateRange(option.key)"
+        >
+          {{ option.display }}
+        </div>
+      </div>
+
+      <div
+        class="d-flex align-items-center justify-content-between custom-timezone additional-date"
+        *ngIf="isCustomDate"
+      >
+        <div>
+          <app-date-selector
+            [defaultDate]="dateRange.startDate"
+            class="app-date-selector-class"
+            [format]="'d/m/Y'"
+            [maxDate]="maxStartDate"
+            [value]="startDate"
+            [placeholder]="'Select Start Date'"
+            (selected)="onDateRangeSelected($event, 'startDate')"
+          ></app-date-selector>
+        </div>
+        <div>
+          <app-icon iconType="rightArrow"></app-icon>
+        </div>
+        <div>
+          <app-date-selector
+            [defaultDate]="dateRange.endDate"
+            class="app-date-selector-class"
+            [format]="'d/m/Y'"
+            [minDate]="minEndDate"
+            [value]="endDate"
+            [placeholder]="'Select End Date'"
+            (selected)="onDateRangeSelected($event, 'endDate')"
+          ></app-date-selector>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2 ps-2">
+        <label class="mb-0">Show:</label>
+        <div style="width: 100px">
+          <ng-select
+            [items]="pageSizeOptions"
+            [clearable]="false"
+            [searchable]="false"
+            placeholder="Select size"
+            class="select-input-type"
+            [(ngModel)]="currentPageSize"
+            (ngModelChange)="customSizeChanged($event)"
+          >
+          </ng-select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="analytics-dashboard-combined">
+  <div>
+    <div class="analytics-section">
+      <dashboard-analytics-new
+        [AnalyticsStartDate]="recordsFilter.startDate"
+        [AnalyticsEndDate]="recordsFilter.endDate"
+        [AnalyticsUserId]="recordsFilter.userId"
+        [bmbyEnabled]="bmbyEnabled"
+      >
+      </dashboard-analytics-new>
+    </div>
+
+    <div class="d-flex flex-end mt-3 justify-content-end w-100 gap-2">
+      <div
+        class="dashboard-lead-status-filter"
+        *ngIf="currentUser.user.isSuperAdmin && currentUser.user.isAdmin"
+      >
+        <ng-select
+          [items]="companyListing"
+          [clearable]="false"
+          bindLabel="fullName"
+          bindValue="_id"
+          [searchable]="true"
+          placeholder="Select Company"
+          class="select-input-type"
+          [(ngModel)]="companyId"
+          name="companyId"
+          (ngModelChange)="selectCompany($event)"
+        >
+        </ng-select>
+      </div>
+      <div class="dashboard-lead-status-filter" *ngIf="currentUser.user.isAdmin">
+        <ng-select
+          [items]="userListing"
+          [clearable]="false"
+          bindLabel="fullName"
+          bindValue="_id"
+          [searchable]="true"
+          placeholder="Select User"
+          class="select-input-type"
+          [(ngModel)]="userId"
+          name="userId"
+          (ngModelChange)="selectUser($event)"
+        >
+        </ng-select>
+      </div>
+
+      <div class="dashboard-lead-status-filter">
+        <ng-select
+          id="leadStatusList"
+          [items]="leadStatusList"
+          (change)="selectLeadStatus($event)"
+          [clearable]="true"
+          bindLabel="leadStatusList"
+          bindValue="leadStatusList"
+          [searchable]="true"
+          placeholder="Select Lead Status"
+          class="select-input-type"
+        >
+        </ng-select>
+      </div>
+
+      <div class="dashboard-lead-status-filter">
+        <ng-select
+          id="agentList"
+          [items]="agentList"
+          (change)="selectAgent($event)"
+          [clearable]="true"
+          bindLabel="agentName"
+          bindValue="agentId"
+          [searchable]="true"
+          placeholder="Select Agent"
+          [(ngModel)]="selectedAgent"
+          class="select-input-type"
+        >
+        </ng-select>
+      </div>
+
+      <div class="global-search">
+        <app-search-filters
+          placeholder="Search"
+          (search)="customSearch($event)"
+          [clear]="clearFilter"
+          [selectedText]="selectedText"
+        ></app-search-filters>
+      </div>
+
+      <!-- <div class="dashboard-filter-icon" *ngIf="selectedCallIds.length > 0">
+      <button class="btn d-flex align-items-center gap-2"
+        (click)="openCreateBatchFromCalls()">
+        <app-icon iconType="addIcon"></app-icon>
+        <span>Create Batch ({{ getSelectedCount() }})</span>
+      </button>
+    </div> -->
+
+      <!-- <div class="dashboard-filter-icon">
+      <app-icon iconType="filterIcon"></app-icon>
+    </div> -->
+    </div>
+
+    <div class="mt-3">
+      <div class="d-flex align-items-center justify-content-between w-100 custom-timezone">
+        <div
+          class="d-flex align-items-center justify-content-between w-100 text-center custom-call-type"
+          [ngClass]="{ 'current-selected-date': selectedCallType === callStatus.ALL }"
+        >
+          <div class="cursor-pointer flex-grow-1" (click)="selectCallType(callStatus.ALL)">
+            All ({{ statusCounts?.ALL || 0 }})
+          </div>
+          <app-icon
+            *ngIf="selectedCallType === callStatus.ALL"
+            iconType="downloadFile"
+            class="cursor-pointer"
+            (click)="exportCallList()"
+          >
+          </app-icon>
+        </div>
+
+        <div
+          class="d-flex align-items-center justify-content-between w-100 text-center custom-call-type"
+          [ngClass]="{ 'current-selected-date': selectedCallType === callStatus.ONGOING }"
+        >
+          <div class="cursor-pointer flex-grow-1" (click)="selectCallType(callStatus.ONGOING)">
+            Running Calls ({{ statusCounts?.ONGOING || 0 }})
+          </div>
+          <app-icon
+            *ngIf="selectedCallType === callStatus.ONGOING"
+            iconType="downloadFile"
+            class="cursor-pointer"
+            (click)="exportCallList()"
+          >
+          </app-icon>
+        </div>
+
+        <div
+          class="d-flex align-items-center justify-content-between w-100 text-center custom-call-type"
+          [ngClass]="{ 'current-selected-date': selectedCallType === callStatus.ENDED }"
+        >
+          <div class="cursor-pointer flex-grow-1" (click)="selectCallType(callStatus.ENDED)">
+            Ended Calls ({{ statusCounts?.ENDED || 0 }})
+          </div>
+          <app-icon
+            *ngIf="selectedCallType === callStatus.ENDED"
+            iconType="downloadFile"
+            class="cursor-pointer"
+            (click)="exportCallList()"
+          >
+          </app-icon>
+        </div>
+
+        <!-- <div class="d-flex align-items-center justify-content-between w-100 text-center custom-call-type"
+        [ngClass]="{ 'current-selected-date': selectedCallType === callStatus.FAILED }">
+        <div class="cursor-pointer flex-grow-1" (click)="selectCallType(callStatus.FAILED)">
+          Failed Calls ({{ statusCounts?.FAILED || 0 }})
+        </div>
+        <app-icon *ngIf="selectedCallType === callStatus.FAILED" iconType="downloadFile" class="cursor-pointer"
+          (click)="exportCallList()">
+        </app-icon>
+      </div> -->
+        <!-- <div
+        class="d-flex align-items-center justify-content-between w-100 text-center custom-call-type"
+        [ngClass]="{ 'current-selected-date': selectedCallType === callStatus.PENDING }"
+      >
+        <div class="cursor-pointer flex-grow-1" (click)="selectCallType(callStatus.PENDING)">
+          Pending Calls ({{ statusCounts?.PENDING || 0 }})
+        </div>
+        <app-icon
+          *ngIf="selectedCallType === callStatus.PENDING"
+          iconType="downloadFile"
+          class="cursor-pointer"
+          (click)="exportCallList()"
+        >
+        </app-icon>
+      </div> -->
+      </div>
+    </div>
+  </div>
+
+  <div class="module-table mt-3 table-responsive pt-0">
+    <table>
+      <thead>
+        <tr>
+          <!-- <th class="px-2"></th> -->
+          <th
+            scope="col"
+            (click)="sortActive('createdAt')"
+            class="unsort-color px-2 cursor-pointer"
+            [ngClass]="{ 'dashboard-font': currentSort === 'createdAt' }"
+          >
+            <app-sort-icon
+              [sortState]="[sortStates['createdAt']]"
+              class="icon-sort-placement"
+            ></app-sort-icon>
+            <span class="ps-1">Date/Time</span>
+          </th>
+          <th
+            (click)="sortActive('duration')"
+            class="unsort-color px-2 cursor-pointer"
+            [ngClass]="{ 'dashboard-font': currentSort === 'duration' }"
+          >
+            <app-sort-icon
+              [sortState]="[sortStates['duration']]"
+              class="icon-sort-placement"
+            ></app-sort-icon>
+            <span class="ps-1">Duration</span>
+          </th>
+          <!-- <th class="px-2">
+                    Cost</th> -->
+          <th
+            (click)="sortActive('status')"
+            class="unsort-color px-2 cursor-pointer"
+            [ngClass]="{ 'dashboard-font': currentSort === 'status' }"
+          >
+            <app-sort-icon [sortState]="[sortStates['status']]" class="icon-sort-placement">
+            </app-sort-icon>
+            <span class="ps-1">Status</span>
+          </th>
+          <th
+            (click)="sortActive('leadStatus')"
+            class="unsort-color px-2 cursor-pointer"
+            [ngClass]="{ 'dashboard-font': currentSort === 'leadStatus' }"
+          >
+            <app-sort-icon [sortState]="[sortStates['leadStatus']]" class="icon-sort-placement">
+            </app-sort-icon>
+            <span class="ps-1">Lead Status</span>
+          </th>
+          <th class="px-2">Call End</th>
+          <th class="px-2">Name</th>
+          <th class="px-2">Sync</th>
+          <th
+            (click)="sortActive('bmbyId')"
+            class="unsort-color px-2 cursor-pointer"
+            [ngClass]="{ 'dashboard-font': currentSort === 'bmbyId' }"
+          >
+            <app-sort-icon [sortState]="[sortStates['bmbyId']]" class="icon-sort-placement">
+            </app-sort-icon>
+            <span class="ps-1">Client_Id</span>
+          </th>
+          <th class="px-2">Number</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let record of recordsList; let i = index">
+          <tr class="cursor-pointer" (click)="openCallDetails(record)">
+            <!-- <td class="px-2" (click)="$event.stopPropagation()">
+            <input type="checkbox" [checked]="isCallSelected(record._id)" (change)="toggleCallSelection(record, $event)"
+              class="form-check-input  custom-input-check-field-class cursor-pointer" />
+          </td> -->
+            <td class="px-2" [ngClass]="{ 'dashboard-font': currentSort === 'createdAt' }">
+              <span class="date-time-display">
+                {{ record.createdAt ? (record.createdAt | date: 'dd/MM/yyyy') : '-' }} <br />
+                {{ record.createdAt ? (record.createdAt | date: 'h:mm a') : '' }}
+              </span>
+            </td>
+            <td class="px-2" [ngClass]="{ 'dashboard-font': currentSort === 'duration' }">
+              {{ formatDuration(record.duration) }}
+            </td>
+            <!-- <td class="px-2">
+                        {{ record.combinedCost != null
+                        ? '¢' + (record.combinedCost).toFixed(2)
+                        : '-' }}
+                    </td> -->
+            <td class="px-2" [ngClass]="{ 'dashboard-font': currentSort === 'status' }">
+              <div class="d-flex gap-2 align-items-center">
+                <app-icon [iconType]="getStatusConfig(record.status).iconType"></app-icon>
+                <span [class]="getStatusConfig(record.status).class">
+                  {{ getStatusConfig(record.status).label || '-' }}
+                </span>
+              </div>
+            </td>
+            <td class="px-2" [ngClass]="{ 'dashboard-font': currentSort === 'leadStatus' }">
+              <div class="d-flex gap-2 align-items-center">
+                <div
+                  class="lead-status-dropdown d-flex"
+                  ngbDropdown
+                  autoClose="outside"
+                  *ngIf="record?.callInterestStatus"
+                  [open]="isLeadStatusDropdownOpen === i"
+                  (click)="$event.stopPropagation()"
+                  container="body"
+                >
+                  <app-icon
+                    iconType="pencil"
+                    class="action-dropdown cursor-pointer"
+                    ngbDropdownToggle
+                    (click)="toggleLeadStatusDropdown($event, i, record)"
+                  >
+                  </app-icon>
+
+                  <div
+                    class="dropdown-menu-position custom-popover-width"
+                    [class.dropdown-visible]="isLeadStatusDropdownOpen === i"
+                    ngbDropdownMenu
+                    (click)="$event.stopPropagation()"
+                  >
+                    <div class="popover-actions" (click)="$event.stopPropagation()">
+                      <div class="heading px-2 pt-2">Lead Status</div>
+
+                      <div class="lead-status-popover px-2 py-1">
+                        <ng-select
+                          [items]="leadStatusFilterList"
+                          [ngModel]="currentLeadStatus"
+                          (ngModelChange)="changeLeadStatus($event)"
+                          [clearable]="false"
+                          bindLabel="leadStatusFilterList"
+                          bindValue="leadStatusFilterList"
+                          [searchable]="true"
+                          placeholder="Select Lead Status"
+                          class="select-input-type"
+                        >
+                        </ng-select>
+                      </div>
+
+                      <div class="action-button d-flex justify-content-end px-2 py-1">
+                        <div class="cancel cursor-pointer" (click)="cancelLeadStatusChange()">
+                          Cancel
+                        </div>
+                        <div class="save cursor-pointer" (click)="saveLeadStatusChange()">Save</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <span>
+                  {{ (getMappedLeadStatus(record.leadStatus) | titlecase) }}
+                </span>
+              </div>
+            </td>
+            <td
+              class="px-2"
+              appTitleCase
+              [appTitleCase]="record.disconnectionReason | limitTo: 40"
+            ></td>
+            <td class="px-2">
+              <div>
+                {{
+                  record?.firstName && record?.firstName.trim()
+                    ? (record.firstName | titlecase)
+                    : record?.clientName && record?.clientName.trim()
+                      ? (record.clientName | titlecase)
+                      : '-'
+                }}
+                {{
+                  record?.lastName && record?.lastName.trim()
+                    ? ' ' + (record.lastName | titlecase)
+                    : ''
+                }}
+              </div>
+            </td>
+
+            <td class="px-2">
+              <ng-container [ngSwitch]="record.syncInBmby">
+                <app-icon *ngSwitchCase="true" iconType="ended"> </app-icon>
+                <app-icon *ngSwitchCase="false" iconType="failed"> </app-icon>
+                <span *ngSwitchDefault>-</span>
+              </ng-container>
+            </td>
+            <td class="px-2" [ngClass]="{ 'dashboard-font': currentSort === 'bmbyId' }">
+              {{ record.bmbyId || '-' }}
+            </td>
+            <td class="px-2">{{ record.toNumber || '-' }}</td>
+          </tr>
+        </ng-container>
+        <tr class="cursor-pointer" *ngIf="!recordsList || recordsList.length === 0">
+          <td colspan="10">No Records Found</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mt-3" *ngIf="totalCount > 0">
+    <div class="col col-sm-6">
+      <div class="dataTables_info mb-2" id="tickets-table_info" role="status" aria-live="polite">
+        Showing
+        {{ pageIndex * currentPageSize + 1 }} to
+        <span *ngIf="currentPageSize * currentPage < totalCount"
+          >{{ currentPageSize * currentPage }} of {{ totalCount }}</span
+        >
+        <span *ngIf="currentPageSize * currentPage >= totalCount"
+          >{{ totalCount }} of {{ totalCount }}</span
+        >
+        entries
+      </div>
+    </div>
+    <div class="col col-sm-6">
+      <div class="text-sm-right float-sm-end listjs-pagination mb-2">
+        <ngb-pagination
+          [maxSize]="5"
+          [rotate]="true"
+          [boundaryLinks]="true"
+          [(page)]="currentPage"
+          [pageSize]="currentPageSize"
+          [collectionSize]="totalCount"
+          (pageChange)="pageChanged($event)"
+        >
+        </ngb-pagination>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #callDetailsCanvas let-offcanvas>
+  <dashboard-details
+    [currentCallDetails]="currentCallDetails"
+    (backToDashboard)="backToDashboard()"
+  ></dashboard-details>
+</ng-template>
+
+<ng-template #createBatchFromCallsModal let-modal>
+  <app-create-batch-from-calls
+    [selectedCallIds]="selectedCallIds"
+    [selectedCallsData]="selectedCallsData"
+    (batchCallCreateEvent)="batchCallCreateEvent()"
+  >
+  </app-create-batch-from-calls>
+</ng-template>

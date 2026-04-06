@@ -1,0 +1,394 @@
+<div class="dashboard-offcanvas">
+  <div class="d-flex align-items-center p-3 offcanvas-header justify-content-between">
+    <div class="d-flex align-items-center gap-2">
+      <h5 class="canvas-title">
+        {{
+          currentCallDetails.createdAt
+            ? (currentCallDetails.createdAt | date: 'dd/MM/yyyy h:mm a')
+            : '-'
+        }}
+      </h5>
+      <div>
+        <ng-container *ngIf="currentCallDetails; else failed">
+          <div class="d-flex gap-2">
+            <app-icon [iconType]="getStatusConfig(currentCallDetails.status).iconType"></app-icon>
+            <span [class]="getStatusConfig(currentCallDetails.status).class">
+              {{ getStatusConfig(currentCallDetails.status).label }}
+            </span>
+          </div>
+        </ng-container>
+        <ng-template #failed>
+          <div class="d-flex gap-2">
+            <img src="assets/images/fluent/icon-close.svg" />
+            <span class="text-danger">Failed</span>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+    <div>
+      <button
+        type="button"
+        class="btn-close"
+        data-bs-dismiss="offcanvas"
+        aria-label="Close"
+        (click)="backToListing()"
+      ></button>
+    </div>
+  </div>
+  <div class="offcanvas-body p-2 dashboard-offcanvas-body">
+    <div class="content-section">
+      <div>
+        <div class="call-matrix-heading">Call Metrics</div>
+        <div class="d-flex align-items-center justify-content-between gap-2 mt-1">
+          <div class="w-100 call-matrix-div">
+            <div class="matrix-label">Duration</div>
+            <div class="matrix-number">
+              {{
+                formatDuration(currentCallDetails.duration) != null
+                  ? formatDuration(currentCallDetails.duration)
+                  : '-'
+              }}
+            </div>
+          </div>
+          <!-- <div class="w-100 call-matrix-div">
+                    <div class="matrix-label">Costs</div>
+                    <div class="matrix-number">
+                        {{ currentCallDetails.call_cost?.combined_cost != null
+             ? '$' + (currentCallDetails.call_cost.combined_cost | number:'1.2-2')
+             : '-' }}
+                    </div>
+                </div> -->
+          <div class="w-100 call-matrix-div">
+            <div class="matrix-label">Call End</div>
+            <div
+              class="matrix-number"
+              appTitleCase
+              [appTitleCase]="currentCallDetails.disconnectionReason | limitTo: 40"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- <div class="mt-4">
+            <div class="call-matrix-heading">Agent</div>
+            <div class="d-flex align-items-center justify-content-between gap-2 mt-1">
+                <div class="w-100 call-recording-div">
+                    <div class="matrix-label">Agent Name</div>
+                </div>
+            </div>
+        </div> -->
+
+      <div class="mt-4" *ngIf="currentCallDetails?.toNumber || currentCallDetails?.clientName">
+        <div class="call-matrix-heading">Target Information</div>
+        <div class="d-flex align-items-center justify-content-between gap-2 mt-1">
+          <div class="w-100 call-matrix-div" *ngIf="currentCallDetails?.toNumber">
+            <div class="matrix-label">Target Number</div>
+            <div class="matrix-number">{{ currentCallDetails.toNumber || '-' }}</div>
+          </div>
+          <div class="w-100 call-matrix-div">
+            <div class="matrix-label">Recognised Name</div>
+            <div class="matrix-number">
+              {{
+                currentCallDetails?.firstName && currentCallDetails?.firstName.trim()
+                  ? (currentCallDetails.firstName | titlecase)
+                  : currentCallDetails?.clientName && currentCallDetails?.clientName.trim()
+                    ? (currentCallDetails.clientName | titlecase)
+                    : '-'
+              }}
+              {{
+                currentCallDetails?.lastName && currentCallDetails?.lastName.trim()
+                  ? ' ' + (currentCallDetails?.lastName | titlecase)
+                  : ''
+              }}
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between gap-2 mt-1">
+          <div class="w-100 call-matrix-div">
+            <div class="matrix-label">Email</div>
+            <div class="matrix-number">{{ currentCallDetails.email || '-' }}</div>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between gap-2 mt-1">
+          <div class="w-100 call-matrix-div">
+            <div class="matrix-label">Gender</div>
+            <div class="matrix-number">{{ (currentCallDetails?.gender | titlecase) || '-' }}</div>
+          </div>
+          <div class="w-100 call-matrix-div">
+            <div class="matrix-label">Client_Id</div>
+            <div class="matrix-number">{{ currentCallDetails.bmbyId || '-' }}</div>
+          </div>
+        </div>
+
+        <!-- <div class="d-flex align-items-center justify-content-between gap-2 mt-1">
+                <div class="w-100 call-matrix-div">
+                    <div class="matrix-label">Recognised Information</div>
+                    <div class="matrix-number">Booked Meeting</div>
+                </div>
+            </div> -->
+      </div>
+
+      <!-- <div class="d-flex align-items-center dashboard-create-icon gap-2 mt-1">
+        <button class="d-flex btn" (click)="directCall(currentCallDetails?._id)">
+          Call
+        </button>
+      </div> -->
+
+      <div class="mt-4" *ngIf="currentCallDetails?.recordingUrl">
+        <div class="call-matrix-heading">Recording</div>
+        <div class="d-flex align-items-center justify-content-between gap-2 mt-1">
+          <div class="call-recording-div w-100">
+            <div class="d-flex align-items-center">
+              <audio
+                #audioPlayer
+                controls
+                controlsList="nodownload noplaybackrate"
+                [src]="currentCallDetails?.recordingUrl"
+                class="flex-grow-1 custom-audio-player"
+              ></audio>
+              <div
+                class="d-flex position-relative volume-dropdown-container"
+                ngbDropdown
+                autoClose="outside"
+                [open]="isVolumeDropdownOpen"
+              >
+                <div
+                  class="arrow-none cursor-pointer d-flex align-items-center"
+                  ngbDropdownToggle
+                  (click)="toggleDropdown('status')"
+                >
+                  <app-icon
+                    *ngIf="audioVolume > 0"
+                    iconType="volume-up-down"
+                    aria-label="volume control"
+                    placement="right"
+                    class="preview-icon"
+                  ></app-icon>
+                  <app-icon
+                    *ngIf="audioVolume === 0"
+                    iconType="volume-mute"
+                    aria-label="volume muted"
+                    placement="right"
+                    class="preview-icon"
+                  ></app-icon>
+                </div>
+
+                <div
+                  class="volume-dropdown-menu"
+                  [class.dropdown-visible]="isVolumeDropdownOpen"
+                  ngbDropdownMenu
+                >
+                  <div class="volume-control-container">
+                    <input
+                      type="range"
+                      #volumeSlider
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      [value]="1 - audioVolume"
+                      (input)="onVolumeChange($event, audioPlayer)"
+                      class="volume-slider-vertical"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <a>
+                <app-icon
+                  iconType="recordingDownload"
+                  aria-label="preview"
+                  placement="right"
+                  (click)="downloadRecording(currentCallDetails?.recordingUrl)"
+                  class="preview-icon"
+                ></app-icon>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="mt-4"
+        *ngIf="currentCallDetails?.callSummary || currentCallDetails.transcriptObject?.length > 0"
+      >
+        <div class="call-matrix-heading">Transcript & More</div>
+        <div class="accordion-panel mt-1" *ngIf="currentCallDetails?.callSummary">
+          <div class="accordion-header">
+            <div
+              class="d-flex align-items-center gap-2 cursor-pointer"
+              (click)="togglePanel('summery')"
+            >
+              <div class="accordion-icon" [class.rotated]="isPanelOpen('summery')">
+                <app-icon
+                  iconType="arrowIcon"
+                  aria-label="preview"
+                  placement="right"
+                  class="preview-icon"
+                ></app-icon>
+              </div>
+              <div>Summary</div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <div>
+                <app-icon
+                  (click)="downloadContent('summary')"
+                  iconType="allDownload"
+                  aria-label="preview"
+                  placement="right"
+                  class="preview-icon"
+                ></app-icon>
+              </div>
+
+              <div>
+                <app-icon
+                  (click)="copyContent('summary')"
+                  iconType="allCopy"
+                  aria-label="preview"
+                  placement="right"
+                  class="preview-icon"
+                ></app-icon>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-content" [class.open]="isPanelOpen('summery')">
+            <div class="accordion-body">
+              <div class="summery-class">
+                {{ currentCallDetails?.callSummary }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-panel mt-1" *ngIf="currentCallDetails.transcriptObject?.length > 0">
+          <div class="accordion-header">
+            <div
+              class="d-flex align-items-center gap-2 cursor-pointer"
+              (click)="togglePanel('transcript')"
+            >
+              <div class="accordion-icon" [class.rotated]="isPanelOpen('transcript')">
+                <app-icon
+                  iconType="arrowIcon"
+                  aria-label="preview"
+                  placement="right"
+                  class="preview-icon"
+                ></app-icon>
+              </div>
+              <div>Transcript</div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <div>
+                <app-icon
+                  (click)="downloadContent('transcript')"
+                  iconType="allDownload"
+                  aria-label="preview"
+                  placement="right"
+                  class="preview-icon"
+                ></app-icon>
+              </div>
+
+              <div>
+                <app-icon
+                  (click)="copyContent('transcript')"
+                  iconType="allCopy"
+                  aria-label="preview"
+                  placement="right"
+                  class="preview-icon"
+                ></app-icon>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-content" [class.open]="isPanelOpen('transcript')">
+            <div class="accordion-body">
+              <div class="transcript-body">
+                <div *ngFor="let record of currentCallDetails?.transcriptObject; let i = index">
+                  <div class="d-flex gap-2" [ngClass]="{ 'mt-4': i !== 0 }">
+                    <div class="object-role">{{ record?.role | titlecase }}:</div>
+                    <div class="object-content">{{ record?.content }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- <div class="accordion-panel mt-1">
+  <div class="accordion-header" >
+    <div class="d-flex align-items-center gap-2 cursor-pointer" (click)="togglePanel('costBreakdown')">
+        <div class="accordion-icon" [class.rotated]="isPanelOpen('costBreakdown')"><app-icon iconType="arrowIcon" aria-label="preview" placement="right" class="preview-icon"></app-icon></div>
+        <div>Cost Breakdown</div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <div>
+         <app-icon iconType="allDownload" aria-label="preview" placement="right" class="preview-icon"></app-icon>
+        </div>
+        <div>
+         <app-icon iconType="allCopy" aria-label="preview" placement="right" class="preview-icon"></app-icon>
+        </div>
+    </div>     
+  </div>
+  
+  <div class="accordion-content" [class.open]="isPanelOpen('costBreakdown')">
+    <div class="accordion-body">
+       <div>
+         <div class="d-flex align-items-center justify-content-between pb-1 costBreakdown-heading pt-1">
+            <div style="width: 40%;">Service</div>
+            <div style="width: 20%;">Unit Price</div>
+            <div style="width: 20%;">Duration</div>
+            <div style="width: 20%;">Cost</div>
+        </div>
+        <div class="d-flex align-items-center justify-content-between pt-1 pb-1 costBreakdown-text">
+            <div style="width: 40%;">
+               {{ currentCallDetails?.callCost?.productCosts[0]?.product
+   ? (currentCallDetails?.callCost?.productCosts[0]?.product === 'gpt_4o_mini_realtime' 
+      ? 'Gpt-4o Mini-Realtime'
+      : currentCallDetails?.callCost?.productCosts[0]?.product)
+   : '-' }}
+            </div>
+            <div style="width: 20%;">
+                {{ currentCallDetails?.callCost?.productCosts[0]?.unit_price != null
+             ? '$' + (currentCallDetails?.callCost?.productCosts[0]?.unit_price | number:'1.2-2')
+             : '-' }}
+            </div>
+            <div style="width: 20%;">
+                {{ currentCallDetails?.callCost?.totalDurationSeconds != null
+             ? (currentCallDetails?.callCost?.totalDurationSeconds) + ' ms'
+             : '-' }}
+            </div>
+            <div style="width: 20%;">
+                {{ currentCallDetails?.callCost?.productCosts[0]?.cost != null
+             ? '$' + (currentCallDetails?.callCost?.productCosts[0]?.cost | number:'1.2-2')
+             : '-' }}
+            </div>
+        </div>
+        <div class="d-flex align-items-center justify-content-between pt-1 pb-1 costBreakdown-footer">
+            <div style="width: 40%;">Total Cost</div>
+            <div style="width: 20%;">-</div>
+            <div style="width: 20%;">-</div>
+            <div style="width: 20%;">
+                 {{ currentCallDetails?.callCost?.combinedCost != null
+             ? '$' + (currentCallDetails?.callCost?.combinedCost | number:'1.2-2')
+             : '-' }}
+            </div>
+        </div>
+       </div>
+    </div>
+  </div>
+</div> -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #createBatchFromCallModal let-modal>
+  <app-create-batch-from-calls
+    [selectedCallIds]="selectedCallIds"
+    [selectedCallsData]="selectedCallsData"
+    (batchCallCreateEvent)="batchCallCreateEvent()"
+  >
+  </app-create-batch-from-calls>
+</ng-template>

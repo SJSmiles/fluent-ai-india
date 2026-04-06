@@ -1,0 +1,412 @@
+<div class="modal-header d-flex justify-content-between">
+  <div>
+    <h5 class="modal-title">{{ selectedCompanyData ? 'Edit Company' : 'Create Company' }}</h5>
+  </div>
+  <button type="button" class="btn-close" aria-label="Close" (click)="close()"></button>
+</div>
+
+<div class="modal-body create-batch-call">
+  <form [formGroup]="companyForm">
+    <!-- Name Field -->
+    <div class="mb-3">
+      <label for="name" class="form-label mb-1">Name *</label>
+      <input
+        type="text"
+        formControlName="name"
+        id="name"
+        class="form-control custom-input-field-class"
+        appTrimText
+        placeholder="Enter company name"
+        [ngClass]="{
+          'is-invalid':
+            (submitted || companyForm.get('name')?.touched) && companyForm.get('name')?.errors
+        }"
+      />
+      <div class="invalid-feedback" align="left">
+        <app-control-messages [control]="$any(companyForm.get('name'))"></app-control-messages>
+      </div>
+    </div>
+
+    <!-- Domain Field (Only in Create mode) -->
+    <div class="mb-3" *ngIf="!selectedCompanyData?._id">
+      <label for="domain" class="form-label mb-1">Domain *</label>
+      <input
+        type="text"
+        formControlName="domain"
+        id="domain"
+        maxlength="30"
+        class="form-control custom-input-field-class"
+        appTrimText
+        placeholder="Enter domain (e.g., example.com)"
+        [ngClass]="{
+          'is-invalid':
+            (submitted || companyForm.get('domain')?.touched) && companyForm.get('domain')?.errors
+        }"
+      />
+      <div class="invalid-feedback" align="left">
+        <app-control-messages [control]="$any(companyForm.get('domain'))"></app-control-messages>
+      </div>
+    </div>
+
+    <!-- Address Section -->
+    <div class="mb-3" formGroupName="address">
+      <label class="form-label mb-1">Address</label>
+
+      <div class="row">
+        <div class="col-6 mb-2">
+          <input
+            type="text"
+            formControlName="street"
+            class="form-control custom-input-field-class"
+            placeholder="Street"
+          />
+        </div>
+
+        <div class="col-6 mb-2">
+          <input
+            type="text"
+            formControlName="houseNo"
+            class="form-control custom-input-field-class"
+            placeholder="House No"
+          />
+        </div>
+
+        <div class="col-4 mb-2">
+          <input
+            type="text"
+            formControlName="zipCode"
+            class="form-control custom-input-field-class"
+            placeholder="ZIP Code"
+          />
+        </div>
+
+        <div class="col-4 mb-2">
+          <input
+            type="text"
+            formControlName="state"
+            class="form-control custom-input-field-class"
+            placeholder="State"
+          />
+        </div>
+
+        <div class="col-4 mb-2">
+          <ng-select
+            formControlName="countryId"
+            [items]="countries"
+            bindLabel="name"
+            bindValue="_id"
+            [clearable]="true"
+            [searchable]="true"
+            placeholder="Select Country"
+            class="select-input-type"
+          >
+          </ng-select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Description Field -->
+    <div class="mb-3">
+      <label for="description" class="form-label mb-1">Description</label>
+      <textarea
+        formControlName="description"
+        id="description"
+        class="form-control custom-input-text-class"
+        rows="7"
+        appTrimText
+        placeholder="Enter company description"
+        [ngClass]="{
+          'is-invalid':
+            (submitted || companyForm.get('description')?.touched) &&
+            companyForm.get('description')?.errors
+        }"
+      ></textarea>
+      <div class="invalid-feedback" align="left">
+        <app-control-messages
+          [control]="$any(companyForm.get('description'))"
+        ></app-control-messages>
+      </div>
+    </div>
+
+    <!-- Voice Providers Multi-Select -->
+    <div class="mb-3">
+      <label for="voiceProviders" class="form-label mb-1">Voice Providers *</label>
+      <ng-select
+        [items]="availableVoiceProviders"
+        bindLabel="label"
+        bindValue="value"
+        [multiple]="true"
+        [closeOnSelect]="false"
+        [searchable]="false"
+        [clearable]="false"
+        placeholder="Select voice providers"
+        [(ngModel)]="selectedVoiceProviders"
+        [ngModelOptions]="{ standalone: true }"
+        (change)="onVoiceProviderChange()"
+        class="select-input-type"
+        [ngClass]="{
+          'is-invalid': submitted && selectedVoiceProviders.length === 0
+        }"
+      >
+      </ng-select>
+      <div
+        class="invalid-feedback d-block"
+        *ngIf="submitted && selectedVoiceProviders.length === 0"
+      >
+        At least one voice provider is required
+      </div>
+    </div>
+
+    <!-- Dynamic API Key Fields based on selected providers -->
+    <div *ngFor="let provider of selectedVoiceProviders" class="mb-3">
+      <label [for]="'api_key_' + provider" class="form-label mb-1">
+        {{ getProviderLabel(provider) }} API Key *
+      </label>
+      <input
+        type="text"
+        [id]="'api_key_' + provider"
+        class="form-control custom-input-field-class"
+        appTrimText
+        [placeholder]="'Enter ' + getProviderLabel(provider) + ' API Key'"
+        [(ngModel)]="apiKeys[provider]"
+        [ngModelOptions]="{ standalone: true }"
+        [ngClass]="{
+          'is-invalid': submitted && !apiKeys[provider]
+        }"
+      />
+      <div class="invalid-feedback" *ngIf="submitted && !apiKeys[provider]">
+        {{ getProviderLabel(provider) }} API Key is required
+      </div>
+    </div>
+
+    <!-- Call Config Section -->
+    <div>
+      <div class="row">
+        <div class="col-12">
+          <h6 class="form-label mb-3 mt-3">
+            Call Config
+            <app-icon
+              iconType="info-icon"
+              class="text-warning cursor-pointer"
+              [ngbTooltip]="
+                'Set the waiting period (in days) before re-calling prospects based on their response'
+              "
+            ></app-icon>
+          </h6>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- NOT_INTERESTED -->
+        <div class="col-12 col-md-4">
+          <div class="mb-3">
+            <label for="notInterested" class="form-label mb-1">Not Interested (Days) *</label>
+            <input
+              type="number"
+              formControlName="notInterested"
+              id="notInterested"
+              min="1"
+              (input)="preventDecimal($event)"
+              class="form-control custom-input-field-class"
+              placeholder="Enter days"
+              [ngClass]="{
+                'is-invalid':
+                  (submitted || companyForm.get('notInterested')?.touched) &&
+                  companyForm.get('notInterested')?.errors
+              }"
+            />
+            <div class="invalid-feedback" align="left">
+              <app-control-messages
+                [control]="$any(companyForm.get('notInterested'))"
+              ></app-control-messages>
+            </div>
+          </div>
+        </div>
+
+        <!-- INTERESTED_TASK -->
+        <div class="col-12 col-md-4">
+          <div class="mb-3">
+            <label for="interestedTask" class="form-label mb-1">Interested Task (Days) *</label>
+            <input
+              type="number"
+              formControlName="interestedTask"
+              id="interestedTask"
+              min="1"
+              (input)="preventDecimal($event)"
+              class="form-control custom-input-field-class"
+              placeholder="Enter days"
+              [ngClass]="{
+                'is-invalid':
+                  (submitted || companyForm.get('interestedTask')?.touched) &&
+                  companyForm.get('interestedTask')?.errors
+              }"
+            />
+            <div class="invalid-feedback" align="left">
+              <app-control-messages
+                [control]="$any(companyForm.get('interestedTask'))"
+              ></app-control-messages>
+            </div>
+          </div>
+        </div>
+
+        <!-- INTERESTED_MEETING_BOOKED -->
+        <div class="col-12 col-md-4">
+          <div class="mb-3">
+            <label for="interestedMeetingBooked" class="form-label mb-1"
+              >Meeting Booked (Days) *</label
+            >
+            <input
+              type="number"
+              formControlName="interestedMeetingBooked"
+              id="interestedMeetingBooked"
+              min="1"
+              (input)="preventDecimal($event)"
+              class="form-control custom-input-field-class"
+              placeholder="Enter days"
+              [ngClass]="{
+                'is-invalid':
+                  (submitted || companyForm.get('interestedMeetingBooked')?.touched) &&
+                  companyForm.get('interestedMeetingBooked')?.errors
+              }"
+            />
+            <div class="invalid-feedback" align="left">
+              <app-control-messages
+                [control]="$any(companyForm.get('interestedMeetingBooked'))"
+              ></app-control-messages>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Default User Section (Only in Create mode) -->
+    <div *ngIf="!selectedCompanyData?._id">
+      <div class="row">
+        <div class="col-12">
+          <h6 class="form-label mb-3 mt-3">Default User</h6>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Email Field -->
+        <div class="col-12">
+          <div class="mb-3">
+            <label for="email" class="form-label mb-1">Email *</label>
+            <div class="d-flex custom-user-email">
+              <div class="w-100">
+                <input
+                  type="text"
+                  id="email"
+                  class="form-control custom-email-radius custom-input-field-class"
+                  placeholder="Enter Email"
+                  [value]="getEmailLocalPart()"
+                  (input)="onEmailLocalPartChange($event)"
+                  appTrimText
+                  [ngClass]="{
+                    'is-invalid':
+                      (submitted || companyForm.controls['email'].touched) &&
+                      companyForm.controls['email'].errors
+                  }"
+                />
+                <div class="invalid-feedback" align="left">
+                  <app-control-messages
+                    [control]="$any(companyForm.get('email'))"
+                  ></app-control-messages>
+                </div>
+              </div>
+              <span class="input-group-text custom-height-domain" id="basic-addon2">
+                &#64; {{ selectedDomain || 'domain.com' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Password Field -->
+        <div class="col-12">
+          <div class="mb-3">
+            <label for="password" class="form-label mb-1">Password *</label>
+            <div class="d-flex custom-user-email">
+              <div class="w-100">
+                <input
+                  [type]="showPassword ? 'text' : 'password'"
+                  formControlName="password"
+                  id="password"
+                  class="form-control custom-input-field-class"
+                  placeholder="Enter password (min 8 characters)"
+                  [ngClass]="{
+                    'is-invalid':
+                      (submitted || companyForm.get('password')?.touched) &&
+                      companyForm.get('password')?.errors
+                  }"
+                />
+                <div class="invalid-feedback" align="left">
+                  <app-control-messages
+                    [control]="$any(companyForm.get('password'))"
+                  ></app-control-messages>
+                </div>
+              </div>
+              <span
+                class="input-group-text custom-height-domain"
+                id="basic-addon2"
+                style="height: 38px"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  class="cursor-pointer"
+                  [ngClass]="{
+                    'icon-with-error':
+                      (submitted || companyForm.get('password')?.touched) &&
+                      companyForm.get('password')?.errors
+                  }"
+                  (click)="togglePasswordVisibility()"
+                  *ngIf="showPassword"
+                  fill="currentColor"
+                >
+                  <path fill="none" d="M0 0h24v24H0z" />
+                  <path
+                    d="M1.173 12C2.445 7.943 6.08 5 12 5s9.555 2.943 10.827 7c-1.272 4.057-4.907 7-10.827 7S2.445 16.057 1.173 12zm10.827 5a5 5 0 100-10 5 5 0 000 10zm0-2a3 3 0 110-6 3 3 0 010 6z"
+                  />
+                </svg>
+                <svg
+                  *ngIf="!showPassword"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="cursor-pointer"
+                  [ngClass]="{
+                    'icon-with-error':
+                      (submitted || companyForm.get('password')?.touched) &&
+                      companyForm.get('password')?.errors
+                  }"
+                  (click)="togglePasswordVisibility()"
+                >
+                  <path
+                    d="M17.94 17.94A10.94 10.94 0 0112 20C5 20 1 12 1 12a21.5 21.5 0 015.11-6.36M22.54 12.88A10.94 10.94 0 0023 12S19 4 12 4c-1.79 0-3.48.37-5.05 1.03"
+                  />
+                  <path d="M9.88 9.88a3 3 0 104.24 4.24" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="d-flex gap-2 button-section">
+    <button class="save-as-draft" (click)="close()">Cancel</button>
+    <button type="button" class="create-button" (click)="submit()">
+      {{ selectedCompanyData ? 'Update' : 'Create' }}
+    </button>
+  </div>
+</div>
