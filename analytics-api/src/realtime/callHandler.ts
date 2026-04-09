@@ -67,9 +67,12 @@ export async function callHandler(connection: any, req: any) {
                     deepgramSession = await startDeepgram({
                         agentConfig,
                         onTranscript: async (text: string) => {
-                            if (!text.trim() || isSpeaking) return;
-
                             console.log(`🗣 STT: ${text}`);
+
+                            if (isSpeaking) {
+                                console.log('🛑 User interrupted agent, clearing audio...');
+                                socket.send(JSON.stringify({ event: 'clearAudio' }));
+                            }
 
                             isSpeaking = true;
 
@@ -84,9 +87,11 @@ export async function callHandler(connection: any, req: any) {
                                 );
 
                                 socket.send(JSON.stringify({
-                                    event: 'media',
+                                    event: 'playAudio',
                                     media: {
                                         payload: audioBase64,
+                                        contentType: 'audio/x-mulaw',
+                                        sampleRate: 8000
                                     },
                                 }));
 

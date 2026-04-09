@@ -9,8 +9,7 @@ export function generatePlivoXml(ngrokUrl: string, agentId: string): string {
     bidirectional="true"
     keepCallAlive="true"
     streamTimeout="86400"
-    contentType="audio/x-mulaw;rate=8000"
-    audioTrack="inbound">
+    contentType="audio/x-mulaw;rate=8000">
     ${wsUrl}/realtime/${agentId}
   </Stream>
 </Response>`;
