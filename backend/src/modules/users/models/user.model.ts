@@ -38,14 +38,6 @@ const userSchema = new Schema<IUser>(
       type: Number,
       default: 1
     },
-    isHSAdmin: {
-      type: Boolean,
-      default: false
-    },
-    isSuperAdmin: {
-      type: Boolean,
-      default: false
-    },
     isAdmin: {
       type: Boolean,
       default: false
@@ -60,32 +52,6 @@ const userSchema = new Schema<IUser>(
       default: null
     },
     isArchived: {
-      type: Boolean,
-      default: false
-    },
-
-    profileCompletion: {
-      type: Boolean,
-      default: true
-    },
-    bmbyUserName: {
-      type: String,
-
-    },
-    bmbyPassword: {
-      type: String,
-    },
-    bmbyProjectId: {
-      type: String,
-    },
-    bmbyUserId: {
-      type: String,
-    },
-    bmbyConfig: {
-      type: Boolean,
-      default: false
-    },
-    sheetConfig: {
       type: Boolean,
       default: false
     },

@@ -1,24 +1,20 @@
 import { Schema, model } from 'mongoose';
-import { ICall } from '../interface/call.interface';
+// Call model — add to Backend
+const callSchema = new Schema({
+    callUUID: { type: String, required: true, unique: true, index: true },
+    agentId: { type: Schema.Types.ObjectId, ref: 'Agent', required: true },
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User' },
+    direction: { type: String, enum: ['inbound', 'outbound'], required: true },
+    fromNumber: { type: String },
+    toNumber: { type: String },
+    status: { type: String, default: 'initiated' },
+    recordingUrl: { type: String },
+    duration: { type: Number },
+    transcript: [{ role: { type: String }, text: { type: String }, ts: { type: Date } }],
+    analysis: { type: Schema.Types.Mixed },  // postCallAnalysisData result
+    startedAt: { type: Date },
+    endedAt: { type: Date },
+}, { timestamps: true });
 
-
-const CallSchema = new Schema<ICall>(
-    {
-      callId: String,
-      clientName: String,
-      status: Number,
-      recordingUrl: String,
-      duration: Number,
-      disconnectionReason: String,
-      direction: Number,
-      fromNumber: String,
-      toNumber: String,
-      agentId: String,
-      callLogs: [Object],
-    },
-    {
-      timestamps: true,
-    },
-  );
-  
-  export const Call = model<ICall>('Call', CallSchema, 'Calls');
+export const Call = model('Call', callSchema, 'Call');

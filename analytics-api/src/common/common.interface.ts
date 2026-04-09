@@ -10,16 +10,27 @@ export interface RequestSchemas {
   tags: string[];
   summary: string;
   description: string;
+
   schema?: {
-    querystring: {};
+    params?: {
+      type: string;
+      required?: string[];
+      properties: Record<string, any>;
+    };
+    querystring?: {
+      type: string;
+      properties?: Record<string, any>;
+    };
   };
+
   body?: {
-    title: string;
+    title?: string;
     type: string;
-    additionalProperties: boolean;
-    required: string[];
-    properties: any;
+    additionalProperties?: boolean;
+    required?: string[];
+    properties?: Record<string, any>;
   };
+
   consumes?: string[];
   response?: any;
 }

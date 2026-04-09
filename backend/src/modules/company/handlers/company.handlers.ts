@@ -115,26 +115,6 @@ export async function toggleCompanyStatusHandler(request: any, reply: FastifyRep
   }
 }
 
-export async function getCountryMasterListHandler(
-  request: FastifyRequest,
-  reply: FastifyReply
-) {
-  try {
-    Server.log.info('Get Country Master List request');
-
-    const result = await CompanyServiceInstance.getCountryMasterList();
-
-    Server.log.info(result, 'Get Country Master List response');
-    return result;
-  } catch (error: any) {
-    Server.log.error(error, 'Error in getCountryMasterListHandler');
-    return reply.code(error?.status || 500).send({
-      success: false,
-      message: error?.message || 'Failed to fetch country list'
-    });
-  }
-}
-
 export async function getCompanyFilterListHandler(
   request: FastifyRequest,
   reply: FastifyReply
@@ -161,31 +141,6 @@ export async function getCompanyFilterListHandler(
     return reply.code(error?.status || 500).send({
       success: false,
       message: error?.message || 'Failed to fetch company filter list'
-    });
-  }
-}
-
-export async function generateCompanyTokenHandler(request: any, reply: FastifyReply) {
-  try {
-    Server.log.info(request.body, 'Generate Company Token request payload');
-
-    const user = request.user as any;
-    const { companyId } = request.body;
-
-    // Validate user is admin
-    if (!user?.isAdmin) {
-      throw throwError('Access denied. Admin privileges required.', { status: 403 }, 'REMOTE_FORBIDDEN');
-    }
-
-    const result = await CompanyServiceInstance.generateCompanyToken(user, companyId);
-    Server.log.info(result, 'Generate Company Token response payload');
-
-    return result;
-  } catch (error: any) {
-    Server.log.error(error, 'Error in generateCompanyTokenHandler');
-    return reply.code(error?.status || 500).send({
-      success: false,
-      message: error?.message || 'Failed to generate webhook token'
     });
   }
 }

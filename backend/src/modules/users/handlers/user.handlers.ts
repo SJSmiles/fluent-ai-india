@@ -1,7 +1,6 @@
 import { UserService } from '../services/user.service';
 import { throwError } from '../../../common/app-helper';
 import { Server } from '../../../server';
-import { User } from '../models/user.model';
 
 const UserServiceInstance = new UserService();
 
@@ -106,33 +105,6 @@ export async function createUserHandler(request: any) {
   }
 }
 
-export async function registrationUserHandler(request: any) {
-  const isUserExists = await User.countDocuments({
-    email: { $regex: new RegExp(`^${request.body.email}$`, 'i') },
-    isArchived: false
-  });
-  if (isUserExists) {
-    return {
-      status: true,
-      statusCode: 200,
-      message: 'Registration request processed successfully.'
-    };
-  }
-
-  if (request.body.password !== request.body.confirmPassword) {
-    return {
-      status: false,
-      statusCode: 400,
-      message: 'Password and confirm password has to match.'
-    };
-  }
-
-  const result = await UserServiceInstance.register(request.body);
-  return {
-    result
-  };
-}
-
 export async function updateUserHandler(request: any) {
   try {
     if (!request.user?.isAdmin) {
@@ -180,95 +152,6 @@ export async function changePasswordHandler(request: any, reply: any) {
     Server.log.info(result, 'Change Password response payload');
     return result;
   } catch (error) {
-    throw error;
-  }
-}
-
-export async function createXSignatureHandler(request: any) {
-  try {
-    // Step 1: Validate that the requesting user is an admin
-    if (!request.user?.isAdmin) {
-      throw {
-        statusCode: 403,
-        message: 'Access denied. Only admin users can create API keys.'
-      };
-    }
-
-    Server.log.info({
-      requestUser: {
-        email: request.user?.email,
-        isAdmin: request.user?.isAdmin,
-        isSuperAdmin: request.user?.isSuperAdmin,
-        companyId: request.user?.companyId
-      },
-      body: request.body
-    }, 'Create X-Signature request');
-
-    // Step 2: Call service to create X-Signature
-    const result = await UserServiceInstance.createXSignature(
-      request.user,
-      request.body
-    );
-
-    Server.log.info(result, 'Create X-Signature response payload');
-    return result;
-  } catch (error: any) {
-    Server.log.error(error, 'Error creating X-Signature');
-    throw error;
-  }
-}
-
-export async function listXSignatureKeysHandler(request: any, reply: any) {
-  try {
-    if (!request.user?.isAdmin) {
-      throw {
-        statusCode: 403,
-        message: 'Access denied. Only admin users can list API keys.'
-      };
-    }
-
-    const query = request.query;
-    Server.log.info(query, 'List X-Signature query params');
-
-    const result = await UserServiceInstance.listXSignatureKeys(request.user, query);
-    return reply.send(result);
-  } catch (error: any) {
-    Server.log.error(error, 'Error listing X-Signature keys');
-    throw error;
-  }
-}
-
-export async function updateXSignatureKeyStatusHandler(request: any, reply: any) {
-  try {
-    const { _id, isActive } = request.body;
-
-    // Step 1: Validate admin access
-    if (!request.user?.isAdmin) {
-      throw {
-        statusCode: 403,
-        message: 'Access denied. Only admin users can update API key status.'
-      };
-    }
-
-    Server.log.info({
-      requestUser: {
-        email: request.user?.email,
-        isAdmin: request.user?.isAdmin,
-        isSuperAdmin: request.user?.isSuperAdmin,
-        companyId: request.user?.companyId
-      },
-      body: request.body
-    }, 'Update X-Signature key status request');
-
-    // Step 2: Call service to update status
-    const result = await UserServiceInstance.updateXSignatureKeyStatus(
-      request.user,
-      { _id, isActive }
-    );
-
-    return reply.send(result);
-  } catch (error: any) {
-    Server.log.error(error, 'Error updating X-Signature key status');
     throw error;
   }
 }

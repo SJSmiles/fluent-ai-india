@@ -1,13 +1,10 @@
 import { FastifyInstance } from 'fastify';
-import { webhookRequest } from '../schema/webhook.schema';
-import { webhookHandler } from '../controllers/webhook.controller';
+import {
+  incomingCallHandler,
+  callStatusHandler,
+} from '../controllers/webhook.controller';
 
-export default async function webhookRoutes(app: FastifyInstance) {
-  app.post('/create',
-    {
-      schema: webhookRequest,
-      handler: webhookHandler,
-      
-    }
-    );
+export default async function (app: FastifyInstance) {
+  app.post('/incoming-call/:agentId', incomingCallHandler);
+  app.post('/call-status/:agentId', callStatusHandler);
 }

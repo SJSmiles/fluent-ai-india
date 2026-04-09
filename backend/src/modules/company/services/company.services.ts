@@ -1,8 +1,6 @@
 import { Types } from 'mongoose';
 import { UserService } from '../../users/services/user.service';
 import { Company } from '../models/company.model';
-import { CompanyConfiguration } from '../../company-configuration/models/company-configuration.model';
-import { CONFIG_TYPES } from '../../../config/server-config';
 import { throwError } from '../../../common/app-helper';
 import { User } from '../../users/models/user.model';
 import { generateWebhookToken } from '../../users/helper/helper';
@@ -18,48 +16,21 @@ interface QueryParams {
 export class CompanyService {
   public async companyCreate(user: any, payload: any): Promise<any> {
     await this.validateCompany(payload);
-
-    // Resolve countryId if it's a country code
-    let countryObjectId = null;
-    if (payload?.address?.countryId) {
-      countryObjectId = await this.resolveCountryId(payload.address.countryId);
-    }
-
     // Create company
     const company: any = await Company.create({
       name: payload.name,
-      interestedMeetingBooked: payload.interestedMeetingBooked,
-      interestedTask: payload.interestedTask,
-      notInterested: payload.notInterested,
       domain: payload.domain,
       description: payload.description,
-      voiceProvider: payload.voiceProvider || 'vapi',
-      voiceProviders: payload.voiceProviders,
-      bmbyProfileActive: payload.bmbyProfileActive || false,
       address: {
         street: payload?.address?.street || '',
         houseNo: payload?.address?.houseNo || null,
         zipCode: payload?.address?.zipCode || null,
         state: payload?.address?.state || '',
-        countryId: countryObjectId
       },
-      api_key_id: payload?.api_key_id || null,
       createdBy: user._id
     });
 
     try {
-      // Create default company configurations
-      await this.createDefaultConfigurations(company._id, user._id);
-
-      // Generate and update webhook token
-      const webhookToken = generateWebhookToken(company._id.toString());
-
-      await Company.findByIdAndUpdate(
-        company._id,
-        { webhookToken: webhookToken },
-        { new: true }
-      );
-
       // Create admin user
       const adminPayload = {
         firstName: 'Admin',
@@ -68,10 +39,7 @@ export class CompanyService {
         userName: payload.email.split('@')[0],
         password: payload.password,
         isAdmin: true,
-        companyId: company._id,
-        api_key_id: payload?.api_key_id || null,
-        sheetConfig: true,
-        bmbyConfig: true
+        companyId: company._id
       };
 
       const userService = new UserService();
@@ -83,69 +51,15 @@ export class CompanyService {
         data: {
           companyId: company._id,
           companyName: company.name,
-          domain: company.domain,
-          webhookToken: webhookToken
+          domain: company.domain
         }
       };
     } catch (err: any) {
       console.log('error creating company', err);
       // Rollback: Remove company and configurations if user creation fails
       await this.removeCompany(company._id);
-      await CompanyConfiguration.deleteMany({ companyId: company._id });
       throw err;
     }
-  }
-
-  /**
-   * Resolve countryId - accepts either ObjectId or country code
-   */
-  private async resolveCountryId(countryIdOrCode: string): Promise<Types.ObjectId | null> {
-    try {
-      // Check if it's already a valid ObjectId
-      if (Types.ObjectId.isValid(countryIdOrCode) && countryIdOrCode.length === 24) {
-        return new Types.ObjectId(countryIdOrCode);
-      }
-
-      // Otherwise, treat it as a country code and look it up
-      const { CountryMaster } = require('../../country/models/country.model');
-      const country = await CountryMaster.findOne({
-        code: countryIdOrCode.toUpperCase(),
-        isArchived: false
-      }).select('_id').lean();
-
-      return country ? country._id : null;
-    } catch (err) {
-      console.log('Error resolving country:', err);
-      return null;
-    }
-  }
-
-  private async createDefaultConfigurations(companyId: Types.ObjectId, userId: Types.ObjectId): Promise<void> {
-    // Create sheet configuration
-    const sheetConfig = {
-      companyId: companyId,
-      type: CONFIG_TYPES.SHEET,
-      configuration: [
-        { fieldName: 'clientId', type: 'number' as const, required: true },
-        { fieldName: 'country', type: 'string' as const, required: false },
-        { fieldName: 'email', type: 'string' as const, required: false },
-      ],
-      queueProcessInMinutes: 5,
-      maximumAttempts: 3
-    };
-
-    // Create bmby configuration
-    const bmbyConfig = {
-      companyId: companyId,
-      type: CONFIG_TYPES.BMBY,
-      configuration: [
-        { fieldName: 'userId', type: 'number' as const, required: true },
-        { fieldName: 'projectId', type: 'number' as const, required: true }
-      ]
-    };
-
-    // Insert both configurations
-    await CompanyConfiguration.insertMany([sheetConfig, bmbyConfig]);
   }
 
   public async getCompanyList(queryParams: QueryParams): Promise<any> {
@@ -212,41 +126,8 @@ export class CompanyService {
         Company.countDocuments(query)
       ]);
 
-      // Fetch country details if needed
-      const countryIds = companies.map((c: any) => c.address?.countryId).filter(Boolean);
-
-      let countryMap: any = {};
-      if (countryIds.length > 0) {
-        try {
-          const { CountryMaster } = require('../../country/models/country.model');
-          const countries = await CountryMaster.find({
-            _id: { $in: countryIds }
-          })
-            .select('_id name code')
-            .lean();
-
-          countryMap = countries.reduce((acc: any, country: any) => {
-            acc[country._id.toString()] = {
-              _id: country._id,
-              name: country.name,
-              code: country.code
-            };
-            return acc;
-          }, {});
-        } catch (err) {
-          console.log('Error fetching countries:', err);
-        }
-      }
 
       const formattedCompanies = companies.map((company: any) => {
-        const countryData = countryMap[company.address?.countryId?.toString()];
-
-        // Format voice providers - mask API keys for security
-        const voiceProviders = (company.voiceProviders || []).map((vp: any) => ({
-          name: vp.name,
-          // Mask API key for security (show only first 8 characters)
-          api_key_id: vp.api_key_id ? `${vp.api_key_id}` : ''
-        }));
 
         return {
           _id: company._id,
@@ -255,8 +136,7 @@ export class CompanyService {
           interestedTask: company.interestedTask,
           notInterested: company.notInterested,
           domain: company.domain,
-          voiceProviders: voiceProviders, // ✅ Changed from singular to array
-          webhookToken: company.webhookToken || '',
+
           createdAt: company.createdAt,
           updatedAt: company.updatedAt,
           isActive: company.isActive ?? true,
@@ -266,13 +146,7 @@ export class CompanyService {
             houseNo: company.address?.houseNo?.toString() || '',
             zipCode: company.address?.zipCode?.toString() || '',
             state: company.address?.state || '',
-            country: countryData ? {
-              _id: countryData._id,
-              name: countryData.name,
-              code: countryData.code
-            } : null
           },
-          bmbyConfig: company.bmbyProfileActive || false,
           defaultUserName: company.createdBy
             ? `${company.createdBy.firstName} ${company.createdBy.lastName}`
             : ''
@@ -447,11 +321,6 @@ export class CompanyService {
           addressUpdate.state = address.state;
         }
 
-        if (address.countryId !== undefined) {
-          const countryObjectId = await this.resolveCountryId(address.countryId);
-          addressUpdate.countryId = countryObjectId;
-        }
-
         // Merge address updates
         if (Object.keys(addressUpdate).length > 0) {
           updateData.address = {
@@ -475,12 +344,6 @@ export class CompanyService {
         throw throwError('Failed to update company', { status: 500 });
       }
 
-      // Format response with masked API keys
-      const responseVoiceProviders = (updatedCompany.voiceProviders || []).map((vp: any) => ({
-        name: vp.name,
-        api_key_id: vp.api_key_id ? `${vp.api_key_id.substring(0, 8)}...` : ''
-      }));
-
       return {
         status: true,
         message: 'Company Updated Successfully',
@@ -489,7 +352,6 @@ export class CompanyService {
           companyName: updatedCompany.name,
           description: updatedCompany.description,
           isActive: updatedCompany.isActive,
-          voiceProviders: responseVoiceProviders,
           address: updatedCompany.address
         }
       };
@@ -629,49 +491,11 @@ export class CompanyService {
 
       const companyIds = companies.map((c) => c._id);
 
-      // Fetch configurations
-      const configurations = await CompanyConfiguration.find({
-        companyId: { $in: companyIds },
-        type: { $in: ['bmby-configuration', 'sheet-configuration'] }
-      })
-        .select('companyId type')
-        .lean();
-
-      // ✅ Create config map (FIXED)
-      const configMap = configurations.reduce((acc, config) => {
-        const cid = config.companyId.toString();
-
-        if (!acc[cid]) {
-          acc[cid] = { bmbyConfig: false, sheetConfig: false };
-        }
-
-        if (config.type === 'bmby-configuration') {
-          acc[cid].bmbyConfig = true;
-        }
-
-        if (config.type === 'sheet-configuration') {
-          acc[cid].sheetConfig = true;
-        }
-
-        return acc;
-      }, {} as Record<string, { bmbyConfig: boolean; sheetConfig: boolean }>);
-
-      // ✅ Merge with companies
       const resultCompanies = companies.map((company) => {
-        const cid = company._id.toString();
-
-        const config = configMap[cid] || {
-          bmbyConfig: false,
-          sheetConfig: false
-        };
-
         return {
           _id: company._id,
           name: company.name,
-          domain: company.domain?.toLowerCase() || '', // ✅ safe
-          // ✅ combine both conditions
-          bmbyConfig: config.bmbyConfig && !!company.bmbyProfileActive,
-          sheetConfig: config.sheetConfig
+          domain: company.domain?.toLowerCase() || '',
         };
       });
 
@@ -688,50 +512,6 @@ export class CompanyService {
     } catch (error: any) {
       console.error('Error fetching company filter list:', error);
       throw throwError(error?.message || 'Failed to fetch company list', { status: 500 });
-    }
-  }
-
-  public async generateCompanyToken(user: any, companyId: string): Promise<any> {
-    try {
-      const SUPER_ADMIN_COMPANY_ID = process.env.SUPER_ADMIN_COMPANY_ID;
-      const isSuperAdmin = user?.companyId?.toString() === SUPER_ADMIN_COMPANY_ID;
-
-      // Check if company exists
-      const company = await Company.findById(companyId);
-      if (!company) {
-        throw throwError('Company not found', { status: 404 });
-      }
-
-      // Authorization check: Super admin can update any company, regular admin can only update their own
-      if (!isSuperAdmin && user?.companyId?.toString() !== companyId) {
-        throw throwError('Access denied. You can only generate token for your own company.', { status: 403 });
-      }
-
-      // Generate new webhook token
-      const webhookToken = generateWebhookToken(companyId);
-
-      // Update company with new token
-      const updatedCompany = await Company.findByIdAndUpdate(
-        companyId,
-        { webhookToken: webhookToken },
-        { new: true }
-      );
-
-      if (!updatedCompany) {
-        throw throwError('Failed to update company with new token', { status: 404 });
-      }
-
-      return {
-        success: true,
-        message: 'Webhook token generated successfully',
-        data: {
-          companyId: updatedCompany._id,
-          companyName: updatedCompany.name,
-          webhookToken: webhookToken
-        }
-      };
-    } catch (error: any) {
-      throw throwError(error?.message || 'Failed to generate webhook token', { status: error?.status || 500 });
     }
   }
 }

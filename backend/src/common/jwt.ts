@@ -4,12 +4,10 @@ import { FastifyRequest } from 'fastify';
 import memoize from './memoize';
 import ms from 'ms';
 import { createSigner, createVerifier } from 'fast-jwt';
-import crypto from 'crypto';
 
 import { User } from '../modules/users/models/user.model';
 import { throwError } from './app-helper';
 import { Environment } from '../config/environment';
-import { UserApiKeys } from '../modules/users/models/userApiKeys.model';
 
 interface JWT {
   email: string;
@@ -51,9 +49,7 @@ const getUserByEmail = async (email: string) => {
           firstName: 1,
           lastName: 1,
           companyId: 1,
-          isHSAdmin: 1,
           isAdmin: 1,
-          profileCompletion: 1
         }
       );
     },
@@ -82,128 +78,43 @@ const getUserByEmail = async (email: string) => {
   return user;
 };
 
-async function verifyXSignature(signature: string): Promise<{ email: string } | null> {
-  try {
-    // Direct database lookup - no payload parsing needed
-    const apiKeyRecord = await UserApiKeys.findOne({ 
-      token: signature,
-      isActive: true
-    });
-
-    if (!apiKeyRecord) {
-      console.error('❌ Token not found in database or is inactive');
-      return null;
-    }
-
-    // Check expiry time from database record
-    const expiryDate = new Date(apiKeyRecord.expiryTime);
-    const now = new Date();
-    console.log('🔍 Expiry:', expiryDate.toISOString(), 'Now:', now.toISOString());
-    
-    if (expiryDate < now) {
-      console.error('❌ Token expired');
-      return null;
-    }
-
-    console.log('✅ Token verification successful for:', apiKeyRecord.userEmail);
-    return { email: apiKeyRecord.userEmail };
-
-  } catch (error: any) {
-    console.error('❌ Error verifying signature:', error.message);
-    return null;
-  }
-}
-
 const validateToken = async (request: FastifyRequest) => {
 
-  const platform = detectPlatform(request);
-  const routeUrl = request.routeOptions?.url || request.url;
+  // Use standard JWT authentication for other routes
 
-  // Check if this is sheets-webhook route
-  const isSheetsWebhook = routeUrl.includes('/sheets-webhook');
-
-  console.log('🔍 Is sheets webhook?', isSheetsWebhook);
-  let user: any;
-
-  if (isSheetsWebhook) {
-    
-    const signature = (request.headers['authorization'] as string || '').trim();
-    if (!signature) {
-      throw throwError(
-        'Missing authorization header',
-        { status: 401, payload: { reason: 'authorization header required' } },
-        'REMOTE_UNAUTHORIZED'
-      );
-    }
-
-    const decoded = await verifyXSignature(signature);
-    if (!decoded) {
-      throw throwError(
-        'Invalid authorization',
-        { status: 401, payload: { reason: 'Invalid or expired authorization' } },
-        'REMOTE_UNAUTHORIZED'
-      );
-    }
-
-    const { email } = decoded;
-    const userDetails: any = await getUserByEmail(email);
-
-    if (!userDetails?.email) {
-      throw throwError(
-        'User not found',
-        { status: 401, payload: { reason: 'User is not allowed to access' } },
-        'REMOTE_UNAUTHORIZED'
-      );
-    }
-
-    user = {
-      email: userDetails.email,
-      userId: userDetails._id.toString(),
-      companyId: userDetails.companyId?.toString() || '',
-      isHSAdmin: userDetails.isHSAdmin || false,
-      isAdmin: userDetails.isAdmin || false,
-      profileCompletion: userDetails.profileCompletion || 0,
-      isMobile: false, // sheets webhook is not mobile
-      tokenVersion: 0
-    };
-
-
-  } else {
-    // Use standard JWT authentication for other routes
-
-    const token = request?.headers?.authorization?.split(' ')[1];
-    if (!token) {
-      throw new Error('Authorization token not found');
-    }
-
-    const jwt: JWT = await request.jwtVerify();
-    const { email } = jwt;
-
-    const userDetails: any = await getUserByEmail(email);
-
-    if (!userDetails?.email) {
-      throw throwError(
-        'Login disabled',
-        { status: 401, payload: { reason: 'User is not allowed to login' } },
-        'REMOTE_UNAUTHORIZED'
-      );
-    }
-
-    const userDetail = {
-      email: userDetails?.email,
-      userId: userDetails?._id,
-      companyId: userDetails?.companyId,
-      isHSAdmin: userDetails?.isHSAdmin,
-      isAdmin: userDetails?.isAdmin,
-      profileCompletion: userDetails?.profileCompletion
-    };
-
-    user = { 
-      ...userDetail, 
-      isMobile: platform === 'app' ? true : false, 
-      tokenVersion: jwt.tokenVersion || 0 
-    };
+  const token = request?.headers?.authorization?.split(' ')[1];
+  console.log('token', token);
+  if (!token) {
+    throw new Error('Authorization token not found');
   }
+
+  const jwt: JWT = await request.jwtVerify();
+  const { email } = jwt;
+
+  const userDetails: any = await getUserByEmail(email);
+
+  if (!userDetails?.email) {
+    throw throwError(
+      'Login disabled',
+      { status: 401, payload: { reason: 'User is not allowed to login' } },
+      'REMOTE_UNAUTHORIZED'
+    );
+  }
+
+  const userDetail = {
+    email: userDetails?.email,
+    userId: userDetails?._id,
+    companyId: userDetails?.companyId,
+    isHSAdmin: userDetails?.isHSAdmin,
+    isAdmin: userDetails?.isAdmin,
+    profileCompletion: userDetails?.profileCompletion
+  };
+
+  const user = {
+    ...userDetail,
+    tokenVersion: jwt.tokenVersion || 0
+  };
+
 
   request.user = user;
   return user;

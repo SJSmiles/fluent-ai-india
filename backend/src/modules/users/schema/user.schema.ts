@@ -122,46 +122,6 @@ export const createUserRequest: RequestSchemas = {
       companyId: {
         type: 'string',
         description: 'Target company ID (SuperAdmin only - optional)'
-      },
-      bmbyProjectId: {
-        type: 'string',
-        description: 'BMBY Project ID (optional)',
-        default: ''
-      },
-      bmbyUserId: {
-        type: 'string',
-        description: 'BMBY User ID (optional)',
-        default: ''
-      },
-      profileCompletion: {
-        type: 'boolean',
-        description: 'Profile completion status (auto-calculated based on BMBY fields)',
-        default: true
-      }
-    }
-  }
-};
-
-export const userRegistrationRequest: RequestSchemas = {
-  tags: ['User'],
-  summary: 'Registration User',
-  description: `<h3> This API Registration User </h3>`,
-  body: {
-    title: 'User Registration',
-    type: 'object',
-    additionalProperties: false,
-    required: ['email', 'password', 'confirmPassword'],
-    properties: {
-      email: { type: 'string', format: 'email' },
-      password: {
-        type: 'string',
-        minLength: 8,
-        maxLength: 128
-      },
-      confirmPassword: {
-        type: 'string',
-        minLength: 8,
-        maxLength: 128
       }
     }
   }
@@ -201,25 +161,6 @@ export const updateUserRequest: RequestSchemas = {
         type: 'number',
         enum: [0, 1],
         description: '0 = Inactive, 1 = Active'
-      },
-      // bmbyUserName: {
-      //   type: 'string',
-      //   description: 'BMBY Username (optional)'
-      // },
-      // bmbyPassword: {
-      //   type: 'string',
-      //   description: 'BMBY Password (optional)'
-      // },
-      bmbyProjectId: {
-        type: 'string',
-        description: 'BMBY Project ID (optional)'
-      },
-      bmbyUserId: {
-        type: 'string',
-        description: 'BMBY User ID (optional)'
-      },
-      profileCompletion: {
-        type: 'boolean'
       }
     }
   }
@@ -262,103 +203,6 @@ export const changePasswordRequest: RequestSchemas = {
       _id: { type: 'string' },
       currentPassword: { type: 'string' },
       newPassword: { type: 'string' }
-    }
-  }
-};
-
-export const createXSignatureKeyRequest: RequestSchemas = {
-  tags: ['Agent'],
-  summary: 'XSignatureKey',
-  description: `<h3>This API creates XSignatureKey for API authentication</h3>
-    <p>Regular admins can only create keys for their own company users.</p>
-    <p>Super admins can create keys for users from any company.</p>`,
-  body: {
-    title: 'XSignatureKey',
-    type: 'object',
-    additionalProperties: false,
-    required: ['email', 'expiryTime'],
-    properties: {
-      email: { 
-        type: 'string', 
-        format: 'email',
-        description: 'Email of the user for whom the API key is being created'
-      },
-      expiryTime: { 
-        type: 'string',
-        format: 'date-time',
-        description: 'Expiry time in ISO 8601 format (must be a future date)'
-      }
-    }
-  }
-};
-
-export const listXSignatureKeysRequest: RequestSchemas = {
-  tags: ['Agent'],
-  summary: 'List XSignature Keys',
-  description: `<h3>Fetch paginated list of XSignature API Keys</h3>
-    <p>Regular admins can only view keys for their company.</p>
-    <p>Super admins can view keys for all companies or filter by specific companyId.</p>`,
-  schema: {
-    querystring: {
-      type: 'object',
-      additionalProperties: false,
-      properties: {
-        companyId: { 
-          type: 'string',
-          description: 'Filter by company ID (optional for Super Admin, ignored for regular admin)'
-        },
-        skip: { 
-          type: 'integer', 
-          minimum: 0, 
-          default: 0,
-          description: 'Number of records to skip (for pagination)'
-        },
-        limit: { 
-          type: 'integer', 
-          minimum: 1,
-          maximum: 100,
-          default: 10,
-          description: 'Number of records to return'
-        },
-        isActive: { 
-          type: 'boolean', 
-          description: 'Filter by active/inactive keys (optional)'
-        },
-        userEmail: { 
-          type: 'string',
-          description: 'Search by user email (optional)'
-        },
-        sortBy: {
-          type: 'string',
-          default: 'createdAt desc',
-          description: 'Sort field and order, e.g. "createdAt desc" or "expiryTime asc"'
-        }
-      },
-      required: [] // companyId is now optional
-    }
-  }
-};
-
-export const updateXSignatureKeyStatusRequest: RequestSchemas = {
-  tags: ['Agent'],
-  summary: 'Update XSignature Key Status',
-  description: `<h3>Activate or deactivate an XSignature API Key</h3>
-    <p>Regular admins can only update keys for their own company.</p>
-    <p>Super admins can update keys for any company.</p>`,
-  body: {
-    title: 'UpdateXSignatureKeyStatus',
-    type: 'object',
-    additionalProperties: false,
-    required: ['_id', 'isActive'],
-    properties: {
-      _id: { 
-        type: 'string', 
-        description: 'ID of the API key record to update' 
-      },
-      isActive: { 
-        type: 'boolean', 
-        description: 'Set to true to activate, false to deactivate' 
-      }
     }
   }
 };

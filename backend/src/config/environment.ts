@@ -20,36 +20,8 @@ export const Environment = {
   jwt: {
     secret: process.env.JWT_TOKEN_SECRET
   },
-  DEFAULT_PASSWORD: process.env.DEFAULT_PASSWORD || '',
-  WEBHOOK_SECRET: process.env.WEBHOOK_SECRET,
   JWT_EXPIRE_TIME: process.env.JWT_EXPIRE_TIME || '7d',
   JWT_REFRESH_TOKEN_EXPIRE_TIME: process.env.JWT_REFRESH_TOKEN_EXPIRE_TIME || '1h',
-  WEBHOOK_SECRET_SALT: process.env.WEBHOOK_SECRET_SALT,
-  baseUrl: process.env.BASE_URL,
-
-
-  // Consolidated Retell AI Configuration
-  retell: {
-    apiKey: process.env.RETELL_API_KEY,
-    baseUrl: process.env.RETELL_BASE_URL
-  },
-  vapi: {
-    apiKey: process.env.VAPI_API_KEY,
-  },
-  dynamicCronApis: {
-    start: process.env.START_CRON || '',
-    setupCrons: process.env.SETUP_CRON || '',
-    stop: process.env.STOP_CRON || '',
-    stopCrons: process.env.STOP_MULTIPLE_CRON || '',
-    processPendingCalls: process.env.PROCESS_PENDING_CALL || '',
-  },
-
-  bmbyCredentials: {
-    username: process.env.BMBY_USERNAME,
-    password: process.env.BMBY_PASSWORD,
-    projectId: process.env.BMBY_PROJECT_ID,
-    userId: process.env.BMBY_USER_ID
-  },
 
   // JWT Configuration from environment
   JWT_CONFIG: {
@@ -79,7 +51,6 @@ export const Environment = {
     maxAge: 30 * 24 * 60 * 60 * 1000       // 30 days in milliseconds
   },
   COOKIE_SECRET: process.env.COOKIE_SECRET,
-  WEBHOOK_SECRET_KEY: process.env.WEBHOOK_SECRET_KEY,
   redis: {
     host: process.env.REDIS_HOST,
     port: parseInt(process.env.REDIS_PORT || '6379', 10),
@@ -87,10 +58,6 @@ export const Environment = {
     username: process.env.REDIS_USERNAME,
     db: parseInt(process.env.REDIS_DB || '0', 10),
   },
-
-  API_ENCRYPTION_KEY: process.env.API_ENCRYPTION_KEY,
-  SIGNATURE_EXPIRY: process.env.SIGNATURE_EXPIRY_MINUTES || '5minutes',
-  AUTO_CHECK_IN_EVERY: process.env.AUTO_CHECK_IN_EVERY || 60000
 };
 
 

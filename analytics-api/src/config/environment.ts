@@ -13,7 +13,6 @@ export const Environment = {
     connector: process.env.DATABASE_CONNECTOR,
     mongoUri: process.env.DATABASE_URI,
   },
-  WEBHOOK_SECRET: process.env.WEBHOOK_SECRET,
   redis: {
     host: process.env.REDIS_HOST,
     port: parseInt(process.env.REDIS_PORT || '6379', 10),

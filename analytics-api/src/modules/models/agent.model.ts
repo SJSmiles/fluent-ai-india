@@ -1,63 +1,21 @@
+// src/modules/models/agent.model.ts
 import { Schema, model } from 'mongoose';
 import { IAgent } from '../interface/agent.interface';
 
 const agentSchema = new Schema<IAgent>(
   {
-    agentName: {
-      type: String,
-      required: true
-    },
-    retellAgentId: {
-      type: String
-    },
-    retellLlmId: {
-      type: String
-    },
-    phone: {
-      type: String,
-      required: true
-    },
-    agentPromptType: {
-      type: String,
-      enum: ['Single Prompt', 'Multi Prompt', 'Conversation Flow', 'Custom LLM'],
-      default: 'Multi Prompt'
-    },
-    agentPrompt: {
-      type: String,
-      required: true
-    },
-    postCallAnalysisData: {
-      type: Array
-    },
-    analysisPrompt: {
-      type: String,
-    },
-    callType: {
-      type: String,
-      enum: ['inbound', 'outbound'],
-      required: true
-    },
-    isArchived: {
-      type: Boolean,
-      default: false
-    },
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    updatedBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
-    }
+    name: { type: String, required: true },
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    voiceId: { type: String },
+    prompt: { type: String, required: true },
+    postCallAnalysisData: { type: [], default: [] },  // ← just []
+    postCallStatus: { type: [], default: [] },          // ← just []
+    version: { type: Schema.Types.Mixed },
+    isArchived: { type: Boolean, default: false },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
-  {
-    timestamps: true
-  }
+  { timestamps: true }
 );
 
-// Create a Model
 export const Agent = model<IAgent>('Agent', agentSchema, 'Agent');

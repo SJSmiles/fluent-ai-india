@@ -4,7 +4,6 @@ export interface IUserAgent {
   agentId?: string;
   createdBy?: string;
   updatedBy?: string;
-  voiceProvider?: string;
   createdAt?: Date;
   updatedAt?: Date;
   isArchived?: boolean;

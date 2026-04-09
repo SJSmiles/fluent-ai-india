@@ -15,10 +15,6 @@ const agentSchema = new Schema<IUserAgent>(
       type: Schema.Types.ObjectId,
       ref: 'Agent'
     },
-    voiceProvider: {
-      type: String,
-      default: 'vapi'
-    },
     isArchived: {
       type: Boolean,
       default: false

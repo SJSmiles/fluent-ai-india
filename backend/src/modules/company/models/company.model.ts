@@ -1,19 +1,7 @@
 import { Schema, model, Types } from 'mongoose';
 import { ICompany } from '../interface/company.interface';
 
-const voiceProviderSchema = new Schema(
-  {
-    name: {
-      type: String,
-      required: true
-    },
-    api_key_id: {
-      type: String,
-      required: true
-    }
-  },
-  { _id: false } // Disable auto _id for subdocuments if not needed
-);
+
 
 const companySchema = new Schema<ICompany>(
   {
@@ -29,25 +17,6 @@ const companySchema = new Schema<ICompany>(
       type: String,
       default: ''
     },
-    interestedMeetingBooked: {
-      type: String,
-      required: true
-    },
-    interestedTask: {
-      type: String,
-      required: true
-    },
-    notInterested: {
-      type: String,
-      required: true
-    },
-    webhookToken: {
-      type: String
-    },
-    voiceProviders: {
-      type: [voiceProviderSchema],
-      default: []
-    },
     address: {
       street: {
         type: String
@@ -61,11 +30,6 @@ const companySchema = new Schema<ICompany>(
       state: {
         type: String
       },
-      countryId: {
-        type: Types.ObjectId,
-        ref: 'CountryMaster',
-        default: null
-      }
     },
     isArchived: {
       type: Boolean,
@@ -75,9 +39,21 @@ const companySchema = new Schema<ICompany>(
       type: Boolean,
       default: true
     },
-    bmbyProfileActive: {
-      type: Boolean,
-      default: false
+    plivoAuthId: {
+      type: String,
+      required: true
+    },
+    plivoAuthToken: {
+      type: String,
+      required: true
+    },
+    elevenLabsApiKey: {
+      type: String,
+      required: true
+    },
+    deepgramApiKey: {
+      type: String,
+      required: true
     },
     createdBy: {
       type: Schema.Types.ObjectId,

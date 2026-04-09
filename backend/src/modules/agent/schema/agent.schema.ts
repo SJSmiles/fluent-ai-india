@@ -8,21 +8,18 @@ export const createAgentRequest: RequestSchemas = {
     title: 'Agent create',
     type: 'object',
     additionalProperties: false,
-    required: ['agentName', 'agentPrompt', 'phone'],
+    required: ['name', 'prompt', 'voiceId'],
     properties: {
-      agentName: { type: 'string', minLength: 3, maxLength: 100, pattern: '^(?!\\s*$).+' },
-      phone: { type: 'string', pattern: PHONE_REGEX },
-      agentPromptType: {
-        type: 'string',
-        enum: ['Single Prompt', 'Multi Prompt', 'Conversation Flow', 'Custom LLM'],
-        default: 'Multi Prompt'
+      name: { type: 'string', minLength: 3, maxLength: 100, pattern: '^(?!\\s*$).+' },
+      prompt: { type: 'string', pattern: '^(?!\\s*$).+' },
+      voiceId: { type: 'string' },
+      postCallAnalysisData: {
+        type: 'array',
       },
-      agentPrompt: { type: 'string', pattern: '^(?!\\s*$).+', maxLength: 5000 },
-      callType: {
-        type: 'string',
-        enum: ['inbound', 'outbound'],
-        description: 'Type of calls this agent will handle'
-      }
+      postCallStatus: {
+        type: 'array',
+      },
+      companyId: { type: 'string' },
     }
   }
 };
@@ -35,18 +32,21 @@ export const updateAgentRequest: RequestSchemas = {
     title: 'Agent update',
     type: 'object',
     additionalProperties: false,
-    required: ['agentName', 'agentPrompt', 'phone'],
+    required: ['name', 'prompt', 'voiceId'],
     properties: {
-      agentName: { type: 'string', minLength: 3, maxLength: 100, pattern: '^(?!\\s*$).+' },
-      phone: { type: 'string', pattern: PHONE_REGEX },
-      agentPrompt: { type: 'string', maxLength: 5000 },
-      callType: { type: 'string', enum: ['inbound', 'outbound'] }
+      name: { type: 'string', minLength: 3, maxLength: 100, pattern: '^(?!\\s*$).+' },
+      prompt: { type: 'string', pattern: '^(?!\\s*$).+' },
+      voiceId: { type: 'string' },
+      postCallAnalysisData: {
+        type: 'array',
+      },
+      postCallStatus: {
+        type: 'array',
+      },
+      companyId: { type: 'string' },
     }
   }
 };
-
-
-
 
 
 export const getAllAgentsRequest: RequestSchemas = {
@@ -67,7 +67,6 @@ export const getAllAgentsRequest: RequestSchemas = {
         },
         sortOrder: { type: 'string', enum: ['asc', 'desc'], default: 'desc' },
         search: { type: 'string' },
-        callType: { type: 'string', enum: ['inbound', 'outbound'] },
         userId: { type: 'string', description: 'User ID filter (Admin only)' },
         companyId: { type: 'string', description: 'Company ID filter (Super Admin only)' }
       }
@@ -75,29 +74,6 @@ export const getAllAgentsRequest: RequestSchemas = {
   }
 };
 
-export const getAllRetellAgentsRequest: RequestSchemas = {
-  tags: ['Agent'],
-  summary: 'Get All Agents',
-  description: `<h3> This API retrieves all agents with search and filtering capabilities </h3>`,
-  schema: {
-    querystring: {
-      type: 'object',
-      additionalProperties: false,
-      properties: {
-        skip: { type: 'number', default: 0 },
-        limit: { type: 'number', default: 10 },
-        sortBy: {
-          type: 'string',
-          enum: ['createdAt', 'agentName', 'updatedAt'],
-          default: 'createdAt'
-        },
-        sortOrder: { type: 'string', enum: ['asc', 'desc'], default: 'desc' },
-        search: { type: 'string' },
-        callType: { type: 'string', enum: ['inbound', 'outbound'] }
-      }
-    }
-  }
-};
 
 export const getAllAgentsForBatchCallRequest: RequestSchemas = {
   tags: ['Agent'],
@@ -133,58 +109,7 @@ export const getAgentDetailsRequest: RequestSchemas = {
   description: `<h3> This API get details of  an existing agent </h3>`
 };
 
-export const getAgentPromptRequest: RequestSchemas = {
-  tags: ['Agent'],
-  summary: 'Agent Prompt',
-  description: `<h3> This API get prompt of  an existing agent </h3>`
-};
-
-export const updateCustomAgentRequest: RequestSchemas = {
-  tags: ['Agent'],
-  summary: 'Update Agent',
-  description: `<h3> This API updates an existing custom agent </h3>`,
-  body: {
-    title: 'Agent update',
-    type: 'object',
-    additionalProperties: false,
-    required: [],
-    properties: {
-      agentPrompt: { type: 'string', maxLength: 10000 },
-      postCallAnalysisData: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            name: { type: 'string' },
-            description: { type: 'string' },
-            type: { type: 'string' },
-            examples: { type: 'array' }
-          }
-        }
-      }
-    }
-  }
-};
-
-export const agentPullRequest: RequestSchemas = {
-  tags: ['Agent'],
-  summary: 'Pull Agents from Voice Provider (Vapi or Retell)',
-  description: `<h3> This API pulls all agents from Vapi or Retell for a company </h3>`,
-  body: {
-    title: 'Agent Pull',
-    type: 'object',
-    additionalProperties: false,
-    required: ['companyId', 'voiceProvider'],
-    properties: {
-      companyId: { type: 'string', description: 'Company ID to pull agents for' },
-      voiceProvider: {
-        type: 'string',
-        enum: ['vapi', 'retell'],
-        description: 'Optional: Specific voice provider to pull from. If not provided, uses primary provider.'
-      }
-    }
-  }
-};
+;
 
 export const mapUserAgentsRequest: RequestSchemas = {
   tags: ['UserAgent'],
@@ -296,126 +221,6 @@ export const getAllAgentsForSuperAdminRequest: RequestSchemas = {
   }
 };
 
-export const updateAgentPhoneRequest: RequestSchemas = {
-  tags: ['Agent'],
-  summary: 'Update Agent Phone Details',
-  description: `<h3>This API updates the agent's phone number ID and outbound number</h3>
-    <p>Updates multiple fields in the Agent document:</p>
-    <ul>
-      <li><strong>phoneNumberId:</strong> Updates vapiPhoneNumberId <strong>only if the agent's voiceProvider is 'vapi'</strong> in UserAgent collection</li>
-      <li><strong>outboundNumber:</strong> Updates outboundNumber, primaryPhone, primaryCallType, phoneMapping.outbound, and phoneBindings array</li>
-    </ul>
-    <p>When outboundNumber is provided, it automatically:</p>
-    <ul>
-      <li>Sets primaryCallType to "outbound"</li>
-      <li>Updates or creates phoneMapping.outbound object</li>
-      <li>Updates or creates outbound entry in phoneBindings array</li>
-      <li>Formats the phone number (adds + if missing)</li>
-    </ul>
-    <p><strong>Important:</strong></p>
-    <ul>
-      <li>vapiPhoneNumberId will only be updated if the agent uses VAPI as voiceProvider</li>
-      <li>Setting outboundNumber to null will remove outbound configuration from all places</li>
-      <li>phoneNumberId update is skipped for non-VAPI agents</li>
-    </ul>`,
-  schema: {
-    body: {
-      type: 'object',
-      additionalProperties: false,
-      required: ['agentId'],
-      properties: {
-        agentId: {
-          type: 'string',
-          description: 'Agent ID (MongoDB ObjectId)'
-        },
-        phoneNumberId: {
-          type: ['string', 'null'],
-          description: 'Phone number ID to update (optional). Set to null to clear.'
-        },
-        outboundNumber: {
-          type: ['string', 'null'],
-          description: 'Outbound phone number (optional). Set to null to clear. Will be auto-formatted with + prefix.'
-        },
-        twilioAccountSid: {
-          type: ['string', 'null'],
-          description: 'Twilio Account SID for the phone number (optional)'
-        }
-      }
-    }
-  },
-  response: {
-    200: {
-      type: 'object',
-      properties: {
-        status: { type: 'boolean' },
-        message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            _id: { type: 'string' },
-            agentName: { type: 'string' },
-            agentId: { type: 'string' },
-            phoneNumberId: { type: ['string', 'null'] },
-            vapiPhoneNumberId: { type: ['string', 'null'] },
-            outboundNumber: { type: ['string', 'null'] },
-            primaryPhone: { type: 'string' },
-            primaryCallType: { type: 'string' },
-            phoneMapping: {
-              type: 'object',
-              properties: {
-                inbound: {
-                  type: ['object', 'null'],
-                  properties: {
-                    number: { type: 'string' },
-                    formatted: { type: 'string' },
-                    callType: { type: 'string' }
-                  }
-                },
-                outbound: {
-                  type: ['object', 'null'],
-                  properties: {
-                    number: { type: 'string' },
-                    formatted: { type: 'string' },
-                    callType: { type: 'string' }
-                  }
-                }
-              }
-            },
-            phoneBindings: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string' },
-                  number: { type: 'string' },
-                  direction: { type: 'string' },
-                  formatted: { type: 'string' },
-                  twilioAccountSid: { type: ['string', 'null'] },
-                  twilioAuthToken: { type: ['string', 'null'] }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    400: {
-      type: 'object',
-      properties: {
-        status: { type: 'boolean' },
-        message: { type: 'string' },
-        error: { type: 'string' }
-      }
-    },
-    404: {
-      type: 'object',
-      properties: {
-        status: { type: 'boolean' },
-        message: { type: 'string' }
-      }
-    }
-  }
-};
 
 export const currentMappingsRequest: RequestSchemas = {
   tags: ['Currently Mapped Agent'],
@@ -449,34 +254,21 @@ export const setPrimaryAgentRequest: RequestSchemas = {
 };
 
 
-export const updateAgentPromptRequest: RequestSchemas = {
-  tags: ['Agent'],
-  summary: 'Update Agent Prompt + First Message + Structured Output',
-  description: `<h3>This API updates system prompt, first message and structured output schema</h3>`,
+
+export const makeCallRequest: RequestSchemas = {
+  tags: ['Ag'],
+  summary: 'Make Call',
+  description: `<h3>This API makes a call to the specified user</h3>`,
   body: {
-    title: 'Agent update',
+    title: 'Make Call',
     type: 'object',
+    required: ['agentId', 'phoneNumber', 'toPhoneNumber'],
     additionalProperties: false,
-    required: ['agentName', 'systemPrompt', 'firstMessage', 'postCallAnalysisData'],
     properties: {
-      agentName: { type: 'string' },
-      systemPrompt: { type: 'string' },
-      firstMessage: { type: 'string' },
-      postCallAnalysisData: {
-        type: 'array',
-        items: {
-          type: 'object',
-          required: ['name', 'type', 'required'],
-          properties: {
-            name: { type: 'string' },
-            type: { type: 'string' },
-            description: { type: 'string' },
-            examples: { type: 'array', items: { type: 'string' } },
-            enum: { type: ['array', 'null'], items: { type: 'string' } },
-            required: { type: 'boolean' }
-          }
-        }
-      }
+      agentId: { type: 'string', description: 'Agent ID to set as primary' },
+      phoneNumber: { type: 'string', description: 'Phone number to call' },
+      toPhoneNumber: { type: 'string', description: 'Phone number to call' },
+      userId: { type: 'string', description: 'User ID to set as primary for' }
     }
   }
 };

@@ -1,109 +1,73 @@
-import { FastifyReply, FastifyRequest } from 'fastify';
-import { webhookService } from '../services/webhook.service';
-import { rebuildQueue } from '../event-queue/queue';
-import { userAgentValidationService } from '../services/user-agent-validation.service';
-import { decryptToken } from '../../helper/dateHelper';
+import { redis } from '../store/redis';
+import { getAgentConfig } from '../services/agent.service';
+import { callQueue } from '../queue/queue';
+import { generatePlivoXml } from '../../helper/plivo';
 
-export async function webhookHandler(request: FastifyRequest, reply: FastifyReply) {
-    console.log({ headers: request.headers, body: request.body }, 'Webhook received');
-
-    // Get signature from query or headers
-    const signatureFromQuery = (request.query as any)?.signature;
-    const signatureFromHeader = request.headers['x-signature'];
-    const signature = signatureFromQuery || signatureFromHeader;
-
-    if (!signature) {
-        console.log('Missing signature in webhook request');
-        return reply.code(401).send({ error: 'Signature is required' });
-    }
-
-    console.log('Webhook signature verified');
-
-    // Extract company ID from token
-    let companyId: string;
+export async function incomingCallHandler(req: any, reply: any) {
     try {
-        companyId = decryptToken(signature);
-        console.log('Company ID extracted:', companyId);
-    } catch (error) {
-        console.error('Error decrypting token:', error);
-        return reply.code(401).send({ error: 'Invalid token' });
-    }
+        const { agentId } = req.params;
+        const callSid = req.body?.CallUUID;
 
-    // Extract and validate agent ID
-    const body: any = request.body;
-    const agentId = body?.call?.agent_id;
-
-    if (!agentId) {
-        console.error('Agent ID not provided in webhook request');
-        return reply.code(400).send({
-            error: 'Agent ID is required',
-            code: 'AGENT_ID_REQUIRED'
-        });
-    }
-
-    // Validate Company-Agent mapping
-    try {
-        const validation = await userAgentValidationService.validateUserAgent(
-            companyId,
-            agentId
-        );
-
-        if (!validation.isValid) {
-            console.error('UserAgent validation failed - Company and Agent are not mapped:', {
-                companyId,
-                agentId,
-                event: body?.event,
-                message: 'Please bind the user to company first'
-            });
-
-            return reply.code(403).send({
-                error: 'Company and Agent are not mapped. Please bind the user to company first.',
-                code: 'INVALID_COMPANY_AGENT_MAPPING',
-                details: {
-                    companyId,
-                    agentId,
-                    event: body?.event
-                }
-            });
+        if (!agentId || !callSid) {
+            return reply.code(400).send('Missing agentId or CallUUID');
         }
 
-        console.log('UserAgent validation successful:', {
-            companyId,
-            agentId,
-            event: body?.event
-        });
+        const ngrokUrl = process.env.NGROK_URL!;
+        const config = await getAgentConfig(agentId);
 
-    } catch (error) {
-        console.error('Error validating UserAgent:', error);
-        return reply.code(500).send({
-            error: 'Internal server error during validation',
-            code: 'VALIDATION_ERROR'
-        });
-    }
-
-    // Validation successful - ab webhook process karo
-    try {
-        const callLog = await webhookService.saveCallLog(request.body, request.headers);
-        console.log('Call log saved successfully');
-
-        // await rebuildQueue.add(
-        //     { call_id: callLog.raw_data.call.call_id },
-        //     { jobId: `${callLog.raw_data.call.call_id}`, removeOnComplete: true }
-        // );
-        await rebuildQueue.add(
-            { call_id: callLog.raw_data.call.call_id, type: 'retell' },
-            {
-                jobId: `${callLog.raw_data.call.call_id}-retell`,
-                removeOnComplete: true
-            }
+        await redis.set(
+            `call:${callSid}`,
+            JSON.stringify({ ...config, agentId }),
+            'EX',
+            3600
         );
 
-        console.log('Enqueued rebuild job for', callLog.raw_data.call.call_id);
+        const xml = generatePlivoXml(ngrokUrl, agentId);
+        console.log('Generated XML:', xml);
 
-        console.log('Webhook processed');
-        reply.code(200).send({ status: 'success', message: 'Webhook processed' });
-    } catch (err) {
-        console.log(err, 'Webhook processing error');
-        reply.code(200).send({ status: 'error', message: 'Error occurred but webhook acknowledged' });
+        return reply.type('text/xml').send(xml);
+
+    } catch (error) {
+        console.error(error);
+        return reply
+            .code(500)
+            .type('text/xml')
+            .send('<Response><Speak>Error</Speak></Response>');
+    }
+}
+
+export async function callStatusHandler(req: any, reply: any) {
+    try {
+        console.log('req.params', req.params);
+        console.log('req.body', req.body);
+        const callSid = req.body?.CallUUID;
+        if (!callSid) return reply.send({ success: true });
+
+        if (req.body.CallStatus === 'completed') {
+            const metaData = await redis.get(`call:${callSid}`);
+            if (!metaData) {
+                console.log('⚠️ No metadata found for', callSid);
+                return reply.send({ success: true });
+            }
+
+            const meta = JSON.parse(metaData);
+
+            await callQueue.add('end-call', {
+                callSid,
+                agentId: meta.agentId,
+                companyId: meta.companyId,
+                duration: Number(req.body.Duration || 0),
+                recordingUrl: req.body.RecordingUrl || '',
+            });
+
+            await redis.del(`call:${callSid}`); // ✅ cleanup after queue
+            console.log('📦 Job queued for', callSid);
+        }
+
+        return reply.send({ success: true });
+
+    } catch (error) {
+        console.error('Call status error:', error);
+        return reply.send({ success: true });
     }
 }
