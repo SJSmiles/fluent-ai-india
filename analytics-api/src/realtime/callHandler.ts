@@ -3,6 +3,29 @@ import { startDeepgram } from '../integrations/deepgram';
 import { generateTtsAudio } from '../integrations/elevenlabs';
 import { getAgentReply } from './llm';
 
+// ✅ Helper to replace placeholders like {name}
+function replacePlaceholders(text: string, context: any) {
+    if (!text) return '';
+    return text.replace(/{(.*?)}/g, (match, key) => {
+        const value = context[key.trim()];
+        return value !== undefined ? value : match;
+    });
+}
+
+// ✅ Helper to clean LLM response (removes script markers, phase tags, brackets)
+function cleanReply(text: string) {
+    if (!text) return '';
+    return text
+        .replace(/\[.*?\]/g, '')        // Remove everything in brackets [Like This]
+        .replace(/\(.*?\)/g, '')        // Remove everything in parenthesis (Like This)
+        .replace(/Phase\s+\d+:/gi, '')  // Remove "Phase 1:" etc.
+        .replace(/\*\*/g, '')           // Remove bold markdown
+        .replace(/assistant:/gi, '')    // Remove prefix
+        .replace(/user:/gi, '')         // Remove prefix
+        .replace(/\s+/g, ' ')          // Normalize spaces
+        .trim();
+}
+
 export async function callHandler(connection: any, req: any) {
     const socket = connection;
 
@@ -24,7 +47,15 @@ export async function callHandler(connection: any, req: any) {
     let callSid: string | null = null;
     let agentConfig: any = null;
     let deepgramSession: any = null;
+
+    // 🔴 FIX 1: Two flags — isSpeaking (audio playing) + processingReply (LLM/TTS in progress)
     let isSpeaking = false;
+    let processingReply = false;
+
+    // 🔴 FIX 2: currentStep for conversation flow tracking
+    let currentStep = 1;
+
+    let history: any[] = []; // ✅ Conversation History
 
     // ✅ HEARTBEAT
     const interval = setInterval(() => {
@@ -45,6 +76,9 @@ export async function callHandler(connection: any, req: any) {
             }
 
             if (!msg.event) return;
+            if (msg.event !== 'media') {
+                console.log(`📩 Received event: ${msg.event}`);
+            }
 
             switch (msg.event) {
 
@@ -63,45 +97,121 @@ export async function callHandler(connection: any, req: any) {
                         agentConfig = { agentId };
                     }
 
+                    // ✅ Initialize step in Redis
+                    await redis.set(`step:${callSid}`, '1', 'EX', 3600);
+                    currentStep = 1;
+
                     // ✅ Start Deepgram WITH agentConfig
                     deepgramSession = await startDeepgram({
                         agentConfig,
                         onTranscript: async (text: string) => {
                             console.log(`🗣 STT: ${text}`);
 
+                            // 🔴 FIX 1: Skip if already processing a reply
+                            if (processingReply) {
+                                console.log('⏭ Skipping transcript — already processing reply');
+                                return;
+                            }
+
+                            // User interrupted — clear audio
                             if (isSpeaking) {
                                 console.log('🛑 User interrupted agent, clearing audio...');
                                 socket.send(JSON.stringify({ event: 'clearAudio' }));
+                                isSpeaking = false;
                             }
 
-                            isSpeaking = true;
+                            processingReply = true;
 
                             try {
-                                const reply = await getAgentReply(text, agentConfig);
+                                // 🔴 FIX 2: Add user message to history FIRST
+                                history.push({ role: 'user', content: text });
+
+                                // 🔴 FIX 2: Pass full history (getAgentReply will NOT re-add user message)
+                                const reply = await getAgentReply(agentConfig, history, currentStep);
                                 console.log(`🤖 LLM: ${reply}`);
 
-                                const audioBase64 = await generateTtsAudio(
-                                    reply,
-                                    agentConfig.voiceId,
-                                    agentConfig.elevenLabsKey
-                                );
+                                // ✅ Check for [[STOP_NOW]] BEFORE cleaning markers
+                                const shouldHangUp = reply.includes('[[STOP_NOW]]');
 
-                                socket.send(JSON.stringify({
-                                    event: 'playAudio',
-                                    media: {
-                                        payload: audioBase64,
-                                        contentType: 'audio/x-mulaw',
-                                        sampleRate: 8000
-                                    },
-                                }));
+                                // ✅ Clean all markers, brackets, and phase tags
+                                const cleanedReply = cleanReply(reply.replace('[[STOP_NOW]]', ''));
+
+                                if (cleanedReply) {
+                                    isSpeaking = true;
+                                    console.log(`🔊 Generating TTS for: ${cleanedReply}`);
+                                    const audioBase64 = await generateTtsAudio(
+                                        cleanedReply,
+                                        agentConfig.voiceId,
+                                        agentConfig.elevenLabsKey
+                                    );
+                                    console.log(`✅ TTS Generated (${audioBase64.length} chars)`);
+
+                                    socket.send(JSON.stringify({
+                                        event: 'playAudio',
+                                        media: {
+                                            payload: audioBase64,
+                                            contentType: 'audio/x-mulaw',
+                                            sampleRate: 8000
+                                        },
+                                    }));
+
+                                    // ✅ Add assistant reply to history
+                                    history.push({ role: 'assistant', content: cleanedReply });
+
+                                    // 🔴 FIX 3: Increment step after each successful reply
+                                    currentStep = Math.min(currentStep + 1, 10);
+                                    if (callSid) {
+                                        await redis.set(`step:${callSid}`, String(currentStep), 'EX', 3600);
+                                    }
+                                    console.log(`📍 Step advanced to: ${currentStep}`);
+                                }
+
+                                if (shouldHangUp) {
+                                    console.log('🏁 LLM requested [[STOP_NOW]]. Hanging up in 5s...');
+                                    // 🔴 FIX 4: 5s delay instead of 2s — gives TTS time to finish
+                                    setTimeout(() => {
+                                        socket.close();
+                                    }, 5000);
+                                }
 
                             } catch (err) {
                                 console.error('❌ TTS/LLM error:', err);
                             } finally {
+                                processingReply = false;
                                 isSpeaking = false;
                             }
                         },
                     });
+
+                    // 🚀 PLAY FIRST MESSAGE (if exists)
+                    if (agentConfig.firstMessage) {
+                        const welcomeText = replacePlaceholders(agentConfig.firstMessage, agentConfig);
+                        console.log(`👋 First Message: ${welcomeText}`);
+
+                        try {
+                            isSpeaking = true;
+                            const audioBase64 = await generateTtsAudio(
+                                welcomeText,
+                                agentConfig.voiceId,
+                                agentConfig.elevenLabsKey
+                            );
+
+                            socket.send(JSON.stringify({
+                                event: 'playAudio',
+                                media: {
+                                    payload: audioBase64,
+                                    contentType: 'audio/x-mulaw',
+                                    sampleRate: 8000
+                                },
+                            }));
+
+                            history.push({ role: 'assistant', content: welcomeText });
+                        } catch (err) {
+                            console.error('❌ First message TTS error:', err);
+                        } finally {
+                            isSpeaking = false;
+                        }
+                    }
 
                     break;
                 }
@@ -119,6 +229,8 @@ export async function callHandler(connection: any, req: any) {
                 case 'stop': {
                     console.log(`❌ Call stopped: ${callSid}`);
                     deepgramSession?.finish();
+                    // ✅ Cleanup step from Redis
+                    if (callSid) await redis.del(`step:${callSid}`);
                     break;
                 }
             }
@@ -132,6 +244,7 @@ export async function callHandler(connection: any, req: any) {
         console.log(`🔌 WS closed — ${callSid}`);
         clearInterval(interval);
         deepgramSession?.finish();
+        if (callSid) redis.del(`step:${callSid}`);
     });
 
     socket.on('error', (err: any) => {

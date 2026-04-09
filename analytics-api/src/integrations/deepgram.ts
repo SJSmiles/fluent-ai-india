@@ -9,7 +9,7 @@ export async function startDeepgram({
 }) {
 
     const ws = new WebSocket(
-        'wss://api.deepgram.com/v1/listen?model=nova-2&encoding=mulaw&sample_rate=8000&language=en-US',
+        'wss://api.deepgram.com/v1/listen?model=nova-3&encoding=mulaw&sample_rate=8000&language=hi',
         {
             headers: {
                 Authorization: `Token ${agentConfig.deepgramKey}`, // ✅ from agent

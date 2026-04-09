@@ -15,9 +15,12 @@ export async function incomingCallHandler(req: any, reply: any) {
         const ngrokUrl = process.env.NGROK_URL!;
         const config = await getAgentConfig(agentId);
 
+        // Store metadata from query params
+        const metadata = req.query || {};
+
         await redis.set(
             `call:${callSid}`,
-            JSON.stringify({ ...config, agentId }),
+            JSON.stringify({ ...config, ...metadata, agentId }),
             'EX',
             3600
         );

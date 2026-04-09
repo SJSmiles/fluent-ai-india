@@ -4,6 +4,9 @@ import { Types } from 'mongoose';
 export interface IAgent {
   name: string;
   prompt: string;
+  firstMessage?: string;
+  endCallMessage?: string;
+  endCallInvoke?: boolean;
   postCallAnalysisData?: any[];
   postCallStatus?: any[];
   version?: any;

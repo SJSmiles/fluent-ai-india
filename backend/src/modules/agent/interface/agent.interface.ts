@@ -10,5 +10,8 @@ export interface IAgent {
   createdAt?: Date;
   updatedAt?: Date;
   companyId?: string;
+  firstMessage?: string;
+  endCallMessage?: string;
+  endCallInvoke?: boolean;
   isArchived?: boolean;
 }

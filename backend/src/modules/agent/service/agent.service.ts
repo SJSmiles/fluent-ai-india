@@ -562,7 +562,7 @@ export class AgentService {
 
   public async makeCall(user: any, body: any): Promise<any> {
     try {
-      const { agentId, phoneNumber, toPhoneNumber, userId } = body;
+      const { agentId, phoneNumber, toPhoneNumber, userId, metadata } = body;
 
       if (!user?.userId) {
         user.userId = userId;
@@ -592,8 +592,15 @@ export class AgentService {
 
       const baseUrl = process.env.NGROK_URL;
 
+      let answerUrl = `${baseUrl}/webhook/incoming-call/${agentId}?direction=outbound`;
+      
+      // Append metadata to answerUrl as query params
+      if (metadata && typeof metadata === 'object') {
+        Object.keys(metadata).forEach(key => {
+          answerUrl += `&${key}=${encodeURIComponent(metadata[key])}`;
+        });
+      }
 
-      const answerUrl = `${baseUrl}/webhook/incoming-call/${agentId}?direction=outbound`;
       const statusUrl = `${baseUrl}/webhook/call-status/${agentId}`;
 
       const response = await plivoClient.calls.create(
