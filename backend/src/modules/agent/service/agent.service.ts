@@ -170,38 +170,6 @@ export class AgentService {
         );
         return { ...agent, isPrimary: userAgent?.isPrimary || false };
       });
-
-      // Enrich with user/company info for Super Admin
-      if (isSuperAdmin && data.length > 0) {
-        const agentUserMap = new Map<string, any>();
-        userAgents.forEach(ua => {
-          if (ua.agentId) agentUserMap.set(ua.agentId.toString(), ua.userId);
-        });
-
-        const userIds = Array.from(new Set(userAgents.map(ua => ua.userId)));
-        const users = await User.find({ _id: { $in: userIds } })
-          .select('_id firstName lastName email companyId')
-          .populate('companyId', 'name domain')
-          .lean();
-
-        const userMap = new Map(users.map(u => [u._id.toString(), u]));
-
-        enrichedData = enrichedData.map((agent: any) => {
-          const userId = agentUserMap.get(agent._id.toString());
-          const userInfo: any = userId ? userMap.get(userId.toString()) : null;
-
-          return {
-            ...agent,
-            user: userInfo
-              ? { _id: userInfo._id, firstName: userInfo.firstName, lastName: userInfo.lastName, email: userInfo.email }
-              : null,
-            company: userInfo?.companyId
-              ? { _id: userInfo.companyId._id, name: userInfo.companyId.name, domain: userInfo.companyId.domain }
-              : null
-          };
-        });
-      }
-
       return {
         status: true,
         message: 'Agent list retrieved successfully',
