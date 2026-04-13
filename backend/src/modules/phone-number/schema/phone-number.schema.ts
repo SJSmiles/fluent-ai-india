@@ -9,7 +9,7 @@ export const createPhoneNumberRequest: RequestSchemas = {
     title: 'Phone Number Create',
     type: 'object',
     additionalProperties: false,
-    required: ['name', 'phoneNumber', 'phoneNumberId'],
+    required: ['name', 'phoneNumber'],
     properties: {
       name: {
         type: 'string',
@@ -17,10 +17,6 @@ export const createPhoneNumberRequest: RequestSchemas = {
         maxLength: 100
       },
       phoneNumber: {
-        type: 'string',
-        minLength: 1
-      },
-      phoneNumberId: {
         type: 'string',
         minLength: 1
       },
@@ -100,10 +96,6 @@ export const updatePhoneNumberRequest: RequestSchemas = {
         maxLength: 100
       },
       phoneNumber: {
-        type: 'string',
-        minLength: 1
-      },
-      phoneNumberId: {
         type: 'string',
         minLength: 1
       }
@@ -191,8 +183,7 @@ export const filterPhoneNumberListRequest: RequestSchemas = {
             properties: {
               _id: { type: 'string' },
               name: { type: 'string' },
-              phoneNumber: { type: 'string' },
-              phoneNumberId: { type: 'string' }
+              phoneNumber: { type: 'string' }
             }
           }
         }

@@ -4,17 +4,14 @@ import { Types } from 'mongoose';
 import { ERROR_MESSAGE } from '../../../common/error-message';
 import { throwError } from '../../../common/app-helper';
 
-import { CompanyService } from '../../company/services/company.services';
 import { USER_STATUS } from '../../../config/server-config';
 
 import { User } from '../models/user.model';
 import { Company } from '../../company/models/company.model';
 import { generateRefreshToken, generateToken, validateToken, verifyRefreshToken } from '../../../common/jwt';
 import { Environment } from '../../../config/environment';
-import { generateWebhookToken, validatePhone } from '../helper/helper';
+import { validatePhone } from '../helper/helper';
 import { Server } from '../../../server';
-
-const crypto = require('crypto');
 
 export class UserService {
   // Hash a password
@@ -53,9 +50,8 @@ export class UserService {
 
         if (userData && parseInt(userData.tokenVersion) === parseInt(request.user.tokenVersion)) {
           return {
-            // isHSAdmin: userData.isHSAdmin,
             isAdmin: userData.isAdmin,
-            isSuperAdmin: isSuperAdmin,
+            superAdmin: isSuperAdmin,
             _id: userData._id,
             firstName: userData?.firstName,
             lastName: userData?.lastName,
@@ -157,26 +153,29 @@ export class UserService {
 
   public async create(user: any, payload: any): Promise<any> {
 
-    console.log(payload, 'Payload in user creation');
     const isUserExists = await User.countDocuments({
       email: { $regex: new RegExp(`^${payload.email}$`, 'i') },
       isArchived: false,
-      companyId: new Types.ObjectId(payload.companyId)
+      companyId: user?.isSuperAdmin ? new Types.ObjectId(payload.companyId) : new Types.ObjectId(user.companyId)
     });
     if (isUserExists) {
       throwError(ERROR_MESSAGE.REGISTRATION_FAILED, 400);
     }
-    if (!payload?.companyId) {
+    if (!payload?.companyId && !user?.isSuperAdmin) {
       throw new Error('Company ID is required');
     }
     const companyDetail: any = await Company.findOne({
-      _id: new Types.ObjectId(payload.companyId)
+      _id: new Types.ObjectId(user?.isSuperAdmin ? payload.companyId : user.companyId)
     });
     if (!companyDetail) {
       throw new Error('Company not found');
     }
     if (companyDetail?.isArchived) {
       throw new Error('Company is archived');
+    }
+
+    if (!companyDetail?.isActive) {
+      throw new Error('Company is not active');
     }
     const businessName = payload?.email.substring(payload?.email.lastIndexOf('@') + 1);
     if (companyDetail?.domain.toLocaleLowerCase() !== businessName.toLocaleLowerCase()) {
@@ -204,42 +203,10 @@ export class UserService {
     return { status: true };
   }
 
-  public async userOnBoard(user: any, payload: any) {
-    const CompanyServiceInstance: any = new CompanyService();
-
-    const domain = payload.email.split('@')[1];
-    let company = await Company.findOne({ domain });
-    if (!company) {
-      const companyPayload = {
-        name: payload.companyName || domain,
-        domain: domain,
-        description: 'Auto-created company',
-        address: {
-          street: payload.address?.street || '',
-          houseNo: payload.address?.houseNo || '',
-          zipCode: payload.address?.zipCode || '',
-          state: payload.address?.state || '',
-          countryId: payload.address?.countryId || null
-        },
-        users: [payload] // the user becomes the admin
-      };
-
-      const companyResponse = await CompanyServiceInstance.companyCreate(user, companyPayload);
-      return companyResponse;
-    } else {
-      // Company exists, create a user under it
-      payload.companyId = company._id;
-      payload.isAdmin = false;
-
-      await this.create(user, payload);
-      return { status: true, message: 'User onboarded to existing company' };
-    }
-  }
 
   public async generateRefreshToken(request: any, reply: any, user: any) {
     try {
       const refreshToken = request.isMobile ? request.body.refreshToken : await request.cookies.refreshToken;
-
 
       if (!refreshToken) {
         throwError('Refresh token is required', { status: 400 });
@@ -304,7 +271,7 @@ export class UserService {
     limit: number,
     searchString?: string,
     sortBy?: string,
-    companyId?: string  // NEW: Optional companyId filter
+    companyId?: string
   ) {
     try {
       const SUPER_ADMIN_COMPANY_ID = process.env.SUPER_ADMIN_COMPANY_ID;
@@ -373,9 +340,7 @@ export class UserService {
         {
           // Exclude sensitive fields
           $project: {
-            password: 0,
-            bmbyPassword: 0,
-            'company.webhookToken': 0
+            password: 0
           }
         },
         {

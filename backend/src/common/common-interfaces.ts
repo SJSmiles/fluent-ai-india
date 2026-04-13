@@ -6,6 +6,20 @@ export interface AppModule {
   modelName?: string;
 }
 
+export interface APIRoutes {
+  method: string;
+  url: string;
+  auth?: boolean;
+  modelName?: string;
+  label?: string;
+  schema: RequestSchemas;
+  permission?: string[];
+  handler: (request: any, reply: any) => Promise<any>;
+  isFileDownload?: boolean; // add here
+}
+
+
+
 export interface RequestSchemas {
   tags: string[];
   summary: string;

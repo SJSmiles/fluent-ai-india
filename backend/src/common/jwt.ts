@@ -60,16 +60,14 @@ const getUserByEmail = async (email: string) => {
   if (user == null) {
     console.log('finding user in DB', user);
     return await User.findOne(
-      { email: { $regex: email, $options: 'i' }, isArchived: false },
+      { email: { $regex: email, $options: 'i' }, isArchived: false, status: 1 },
       {
         projection: {
           email: 1,
           firstName: 1,
           lastName: 1,
           companyId: 1,
-          isHSAdmin: 1,
           isAdmin: 1,
-          profileCompletion: 1
         }
       }
     );
@@ -79,11 +77,7 @@ const getUserByEmail = async (email: string) => {
 };
 
 const validateToken = async (request: FastifyRequest) => {
-
-  // Use standard JWT authentication for other routes
-
   const token = request?.headers?.authorization?.split(' ')[1];
-  console.log('token', token);
   if (!token) {
     throw new Error('Authorization token not found');
   }
@@ -93,28 +87,31 @@ const validateToken = async (request: FastifyRequest) => {
 
   const userDetails: any = await getUserByEmail(email);
 
-  if (!userDetails?.email) {
+  if (!userDetails || !userDetails?.email) {
     throw throwError(
       'Login disabled',
       { status: 401, payload: { reason: 'User is not allowed to login' } },
       'REMOTE_UNAUTHORIZED'
     );
   }
+  let superAdmin = false;
+  if (userDetails?.companyId.toString() === process.env.SUPER_ADMIN_COMPANY_ID) {
+    superAdmin = true;
+  }
 
   const userDetail = {
     email: userDetails?.email,
+    isActive: userDetails?.isActive,
     userId: userDetails?._id,
     companyId: userDetails?.companyId,
-    isHSAdmin: userDetails?.isHSAdmin,
+    superAdmin: superAdmin,
     isAdmin: userDetails?.isAdmin,
-    profileCompletion: userDetails?.profileCompletion
   };
 
   const user = {
     ...userDetail,
     tokenVersion: jwt.tokenVersion || 0
   };
-
 
   request.user = user;
   return user;

@@ -1,6 +1,6 @@
 import { AppModule } from '../../common/common-interfaces';
 import { createCompanyHandler, getCompanyFilterListHandler, getCompanyListHandler, toggleCompanyStatusHandler, updateCompanyHandler } from './handlers/company.handlers';
-import { createCompanyRequest, generateCompanyTokenRequest, getCompanyFilterListRequest, getCompanyListRequest, getCountryMasterListRequest, toggleCompanyStatusRequest, updateCompanyRequest } from './schema/company.schema';
+import { createCompanyRequest, getCompanyFilterListRequest, getCompanyListRequest, toggleCompanyStatusRequest, updateCompanyRequest } from './schema/company.schema';
 
 export const module: AppModule = {
   name: 'Company module',
@@ -15,18 +15,18 @@ export const module: AppModule = {
       handler: createCompanyHandler
     },
     {
-      method: 'GET',
-      url: '/listing',
-      auth: true,
-      schema: getCompanyListRequest,
-      handler: getCompanyListHandler
-    },
-    {
       method: 'PUT',
       url: '/update',
       auth: true,
       schema: updateCompanyRequest,
       handler: updateCompanyHandler
+    },
+    {
+      method: 'GET',
+      url: '/listing',
+      auth: true,
+      schema: getCompanyListRequest,
+      handler: getCompanyListHandler
     },
     {
       method: 'PUT',

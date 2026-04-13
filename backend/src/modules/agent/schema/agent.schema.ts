@@ -1,5 +1,5 @@
 import { RequestSchemas } from '../../../common/common-interfaces';
-const PHONE_REGEX = '^\\+?[\\d\\s\\-\\(\\)]+$';
+
 export const createAgentRequest: RequestSchemas = {
   tags: ['Agent'],
   summary: 'Create Agent',
@@ -13,12 +13,9 @@ export const createAgentRequest: RequestSchemas = {
       name: { type: 'string', minLength: 3, maxLength: 100, pattern: '^(?!\\s*$).+' },
       prompt: { type: 'string', pattern: '^(?!\\s*$).+' },
       voiceId: { type: 'string' },
-      postCallAnalysisData: {
-        type: 'array',
-      },
-      postCallStatus: {
-        type: 'array',
-      },
+      firstMessage: { type: 'string' },
+      endCallMessage: { type: 'string' },
+      endCallInvoke: { type: 'boolean' },
       companyId: { type: 'string' },
     }
   }
@@ -37,17 +34,12 @@ export const updateAgentRequest: RequestSchemas = {
       name: { type: 'string', minLength: 3, maxLength: 100, pattern: '^(?!\\s*$).+' },
       prompt: { type: 'string', pattern: '^(?!\\s*$).+' },
       voiceId: { type: 'string' },
-      postCallAnalysisData: {
-        type: 'array',
-      },
-      postCallStatus: {
-        type: 'array',
-      },
-      companyId: { type: 'string' },
+      firstMessage: { type: 'string' },
+      endCallMessage: { type: 'string' },
+      endCallInvoke: { type: 'boolean' },
     }
   }
 };
-
 
 export const getAllAgentsRequest: RequestSchemas = {
   tags: ['Agent'],
@@ -62,7 +54,7 @@ export const getAllAgentsRequest: RequestSchemas = {
         limit: { type: 'number', default: 10 },
         sortBy: {
           type: 'string',
-          enum: ['createdAt', 'agentName', 'updatedAt'],
+          enum: ['createdAt', 'name', 'updatedAt'],
           default: 'createdAt'
         },
         sortOrder: { type: 'string', enum: ['asc', 'desc'], default: 'desc' },
@@ -74,11 +66,10 @@ export const getAllAgentsRequest: RequestSchemas = {
   }
 };
 
-
 export const getAllAgentsForBatchCallRequest: RequestSchemas = {
   tags: ['Agent'],
   summary: 'Get All Agents for Batch Call',
-  description: `<h3> This API retrieves all outbound agents with primary phone for batch calling </h3>`,
+  description: `<h3> This API retrieves all agents for batch calling </h3>`,
   schema: {
     querystring: {
       type: 'object',
@@ -94,28 +85,19 @@ export const getAllAgentsForBatchCallRequest: RequestSchemas = {
 export const deleteAgentRequest: RequestSchemas = {
   tags: ['Agent'],
   summary: 'Delete Agent',
-  description: `<h3> This API delete an existing agent </h3>`
-};
-
-export const duplicateAgentRequest: RequestSchemas = {
-  tags: ['Agent'],
-  summary: 'Duplicate Agent',
-  description: `<h3> This API duplicate an existing agent </h3>`
+  description: `<h3> This API soft deletes an existing agent (sets isArchived: true) </h3>`
 };
 
 export const getAgentDetailsRequest: RequestSchemas = {
   tags: ['Agent'],
   summary: 'Agent Details',
-  description: `<h3> This API get details of  an existing agent </h3>`
+  description: `<h3> This API gets details of an existing agent </h3>`
 };
-
-;
 
 export const mapUserAgentsRequest: RequestSchemas = {
   tags: ['UserAgent'],
   summary: 'Create User Agent Mappings',
-  description: `<h3>This API creates mappings between users and agents</h3>
-  <p>Identifier type (agentId / assistantId) will be decided automatically based on company.voiceProvider</p>`,
+  description: `<h3>This API creates mappings between users and agents</h3>`,
   schema: {
     body: {
       type: 'object',
@@ -135,97 +117,24 @@ export const mapUserAgentsRequest: RequestSchemas = {
               agentIds: {
                 type: 'array',
                 items: { type: 'string' },
-                description: 'Array of agent identifiers'
+                description: 'Array of agent IDs'
               }
             }
           }
         },
         skipUrlUpdate: {
           type: 'boolean',
-          default: false,
-          description: 'Skip updating Retell/Vapi URLs (default: false)'
+          default: false
         }
       }
     }
   }
 };
-
-export const getAllAgentsForSuperAdminRequest: RequestSchemas = {
-  tags: ['Agent'],
-  summary: 'Get All Agents for Super Admin',
-  description: `<h3>This API retrieves all agents with assigned user IDs for Super Admin only</h3>
-    <p>Returns agents filtered by companyId from UserAgent collection.</p>
-    <p>Includes phoneNumberId (for VAPI providers) and outboundNumber (primaryPhone from Agent).</p>`,
-  schema: {
-    querystring: {
-      type: 'object',
-      additionalProperties: false,
-      properties: {
-        search: {
-          type: 'string',
-          description: 'Search by agent name or agent ID'
-        },
-        companyId: {
-          type: 'string',
-          description: 'Filter agents by company ID'
-        }
-      }
-    }
-  },
-  response: {
-    200: {
-      type: 'object',
-      properties: {
-        status: { type: 'boolean' },
-        message: { type: 'string' },
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              _id: { type: 'string' },
-              agentName: { type: 'string' },
-              agentId: { type: 'string' },
-              companyId: { type: ['string', 'null'] },
-              userId: {
-                type: 'array',
-                items: { type: 'string' }
-              },
-              phoneNumberId: {
-                type: ['string', 'null'],
-                description: 'VAPI phone number ID (only populated when voiceProvider is vapi)'
-              },
-              outboundNumber: {
-                type: ['string', 'null'],
-                description: 'Primary phone number for outbound calls'
-              },
-              voiceProvider: {
-                type: ['string', 'null'],
-                description: 'Voice provider for the agent (vapi or retell)'
-              },
-              webhookUrl: { type: ['string', 'null'] },
-            }
-          }
-        },
-        totalCount: { type: 'integer' },
-        stats: {
-          type: 'object',
-          properties: {
-            totalAgents: { type: 'integer' },
-            agentsWithUsers: { type: 'integer' },
-            agentsWithoutUsers: { type: 'integer' }
-          }
-        }
-      }
-    }
-  }
-};
-
 
 export const currentMappingsRequest: RequestSchemas = {
   tags: ['Currently Mapped Agent'],
-  summary: 'Get All Mapped Agent for company',
-  description: `<h3> This API retrieves all mapped agents for a company with active user mappings </h3>`,
+  summary: 'Get All Mapped Agents for company',
+  description: `<h3> This API retrieves all mapped agents for a company </h3>`,
   schema: {
     querystring: {
       type: 'object',
@@ -248,27 +157,67 @@ export const setPrimaryAgentRequest: RequestSchemas = {
     additionalProperties: false,
     properties: {
       agentId: { type: 'string', description: 'Agent ID to set as primary' },
-      userId: { type: 'string', description: 'User ID to set as primary for' }
+      userId: { type: 'string', description: 'User ID' }
     }
   }
 };
 
 
-
 export const makeCallRequest: RequestSchemas = {
-  tags: ['Ag'],
+  tags: ['Agent'],
   summary: 'Make Call',
-  description: `<h3>This API makes a call to the specified user</h3>`,
+  description: `<h3>This API makes an outbound call</h3>`,
   body: {
     title: 'Make Call',
     type: 'object',
     required: ['agentId', 'phoneNumber', 'toPhoneNumber'],
     additionalProperties: false,
     properties: {
-      agentId: { type: 'string', description: 'Agent ID to set as primary' },
-      phoneNumber: { type: 'string', description: 'Phone number to call' },
-      toPhoneNumber: { type: 'string', description: 'Phone number to call' },
-      userId: { type: 'string', description: 'User ID to set as primary for' }
+      agentId: { type: 'string', description: 'Agent ID' },
+      phoneNumber: { type: 'string', description: 'From phone number' },
+      toPhoneNumber: { type: 'string', description: 'To phone number' },
+      userId: { type: 'string', description: 'User ID' },
+      metadata: {
+        type: 'object',
+        description: 'Additional metadata to pass to the webhook',
+        additionalProperties: true
+      }
+    }
+  }
+};
+
+export const getUserAgentMappingRequest: RequestSchemas = {
+  tags: ['UserAgent'],
+  summary: 'Get User Agent Mapping',
+  description: `<h3>This API returns all agents mapped to a specific user</h3>`,
+  schema: {
+    querystring: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        userId: {
+          type: 'string',
+          description: 'User ID to fetch agent mappings for'
+        }
+      }
+    }
+  }
+};
+
+export const downloadSampleExcelRequest: RequestSchemas = {
+  tags: ['Agent'],
+  summary: 'Download Sample Excel',
+  description: `<h3>This API generates and downloads a sample Excel file based on the company CSV column configuration</h3>`,
+  schema: {
+    querystring: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        companyId: {
+          type: 'string',
+          description: 'Company ID (Super Admin only)'
+        }
+      }
     }
   }
 };

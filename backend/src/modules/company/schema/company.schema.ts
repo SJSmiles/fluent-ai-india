@@ -1,5 +1,6 @@
 import { RequestSchemas } from '../../../common/common-interfaces';
 
+
 export const createCompanyRequest: RequestSchemas = {
   tags: ['Company'],
   summary: 'Create Company',
@@ -8,30 +9,114 @@ export const createCompanyRequest: RequestSchemas = {
     title: 'Company create',
     type: 'object',
     additionalProperties: false,
-    required: ['name', 'description', 'domain', 'email', 'password', 'voiceProviders', 'interestedMeetingBooked', 'interestedTask', 'notInterested'],
+    required: [
+      'name',
+      'description',
+      'domain',
+      'plivoAuthId',
+      'plivoAuthToken',
+      'elevenLabsApiKey',
+      'deepgramApiKey',
+      'email',
+      'password'
+    ],
     properties: {
       name: { type: 'string', maxLength: 50 },
-      interestedMeetingBooked: { type: 'string' },
-      interestedTask: { type: 'string' },
-      notInterested: { type: 'string' },
       description: { type: 'string' },
       domain: { type: 'string', maxLength: 30 },
-      voiceProviders: {
+      plivoAuthId: { type: 'string' },
+      plivoAuthToken: { type: 'string' },
+      elevenLabsApiKey: { type: 'string' },
+      deepgramApiKey: { type: 'string' },
+      callStatusPrompt: { type: 'string' },
+      callSummaryPrompt: { type: 'string' },
+      firstName: { type: 'string' },
+      lastName: { type: 'string' },
+      email: { type: 'string', format: 'email', maxLength: 50 },
+      password: { type: 'string', minLength: 8 },
+      address: {
+        type: 'object',
+        properties: {
+          street: { type: 'string' },
+          houseNo: { type: 'string' },
+          zipCode: { type: 'string' },
+          state: { type: 'string' }
+        }
+      },
+      // ── Call status labels (company-level custom list) ────────────────────
+      callStatus: {
         type: 'array',
-        minItems: 1,
+        items: { type: 'string', minLength: 1 },
+        default: []
+      },
+      // ── CSV column configuration ──────────────────────────────────────────
+      csvColumnConfig: {
+        type: 'array',
+        default: [],
         items: {
           type: 'object',
-          required: ['name', 'api_key_id'],
+          required: ['name', 'type'],
+          additionalProperties: false,
           properties: {
             name: {
               type: 'string',
-              enum: ['vapi', 'retell'] // Add your voice provider options
+              minLength: 1,
+              description: 'CSV header key exactly as it appears in uploaded files, e.g. phone_number'
             },
-            api_key_id: { type: 'string' }
-          },
-          additionalProperties: false
+            label: {
+              type: 'string',
+              description: 'Human-readable label shown in validation reports, e.g. Phone Number'
+            },
+            type: {
+              type: 'string',
+              enum: ['string', 'number', 'boolean', 'email', 'phone']
+            },
+            required: {
+              type: 'boolean',
+              default: false
+            },
+            enum: {
+              type: 'array',
+              items: { type: 'string' },
+              default: [],
+              description: 'Allowed values; empty means no restriction'
+            }
+          }
         }
-      },
+      }
+    }
+  }
+};
+
+
+export const updateCompanyRequest: RequestSchemas = {
+  tags: ['Company'],
+  summary: 'Update Company',
+  description: `<h3> This API updates Company information (Super Admin only) </h3>`,
+  body: {
+    title: 'Company create',
+    type: 'object',
+    additionalProperties: false,
+    required: [
+      '_id',
+      'name',
+      'description',
+      'domain',
+      'plivoAuthId',
+      'plivoAuthToken',
+      'elevenLabsApiKey',
+      'deepgramApiKey',
+    ],
+    properties: {
+      name: { type: 'string', maxLength: 50 },
+      description: { type: 'string' },
+      domain: { type: 'string', maxLength: 30 },
+      plivoAuthId: { type: 'string' },
+      plivoAuthToken: { type: 'string' },
+      elevenLabsApiKey: { type: 'string' },
+      deepgramApiKey: { type: 'string' },
+      callStatusPrompt: { type: 'string' },
+      callSummaryPrompt: { type: 'string' },
       address: {
         type: 'object',
         properties: {
@@ -39,12 +124,49 @@ export const createCompanyRequest: RequestSchemas = {
           houseNo: { type: 'string' },
           zipCode: { type: 'string' },
           state: { type: 'string' },
-          countryId: { type: 'string' }
         }
       },
-      email: { type: 'string', format: 'email', maxLength: 50 },
-      password: { type: 'string', minLength: 8 },
-      bmbyProfileActive: { type: 'boolean', default: false }
+      // ── Call status labels (company-level custom list) ────────────────────
+      callStatus: {
+        type: 'array',
+        items: { type: 'string', minLength: 1 },
+        default: []
+      },
+      // ── CSV column configuration ──────────────────────────────────────────
+      csvColumnConfig: {
+        type: 'array',
+        default: [],
+        items: {
+          type: 'object',
+          required: ['name', 'type'],
+          additionalProperties: false,
+          properties: {
+            name: {
+              type: 'string',
+              minLength: 1,
+              description: 'CSV header key exactly as it appears in uploaded files, e.g. phone_number'
+            },
+            label: {
+              type: 'string',
+              description: 'Human-readable label shown in validation reports, e.g. Phone Number'
+            },
+            type: {
+              type: 'string',
+              enum: ['string', 'number', 'boolean', 'email', 'phone']
+            },
+            required: {
+              type: 'boolean',
+              default: false
+            },
+            enum: {
+              type: 'array',
+              items: { type: 'string' },
+              default: [],
+              description: 'Allowed values; empty means no restriction'
+            }
+          }
+        }
+      }
     }
   }
 };
@@ -66,52 +188,6 @@ export const getCompanyListRequest: RequestSchemas = {
   }
 };
 
-export const updateCompanyRequest: RequestSchemas = {
-  tags: ['Company'],
-  summary: 'Update Company',
-  description: `<h3> This API updates Company information (Super Admin only) </h3>`,
-  body: {
-    title: 'Company update',
-    type: 'object',
-    additionalProperties: false,
-    required: ['_id'],
-    properties: {
-      _id: { type: 'string' },
-      name: { type: 'string', maxLength: 50 },
-      interestedMeetingBooked: { type: 'string' },
-      interestedTask: { type: 'string' },
-      notInterested: { type: 'string' },
-      description: { type: 'string' },
-      isActive: { type: 'boolean' },
-      voiceProviders: {
-        type: 'array',
-        items: {
-          type: 'object',
-          required: ['name', 'api_key_id'],
-          properties: {
-            name: {
-              type: 'string',
-              enum: ['vapi', 'retell'] // Add your voice provider options
-            },
-            api_key_id: { type: 'string' }
-          },
-          additionalProperties: false
-        }
-      },
-      address: {
-        type: 'object',
-        properties: {
-          street: { type: 'string' },
-          houseNo: { type: 'string' },
-          zipCode: { type: 'string' },
-          state: { type: 'string' },
-          countryId: { type: 'string' }
-        }
-      },
-      bmbyProfileActive: { type: 'boolean', default: false }
-    }
-  }
-};
 
 export const toggleCompanyStatusRequest: RequestSchemas = {
   tags: ['Company'],
@@ -136,51 +212,9 @@ export const toggleCompanyStatusRequest: RequestSchemas = {
   }
 };
 
-export const getCountryMasterListRequest: RequestSchemas = {
-  tags: ['Company'],
-  summary: 'Get Country Master List',
-  description: `<h3> This API returns list of all countries </h3>`
-};
 
 export const getCompanyFilterListRequest: RequestSchemas = {
   tags: ['Company'],
   summary: 'Get Company Filter List',
   description: `<h3> This API returns list of all companies with id and name only (Super Admin only) </h3>`
-};
-
-export const generateCompanyTokenRequest: RequestSchemas = {
-  tags: ['Company'],
-  summary: 'Generate/Update Company Webhook Token',
-  description: `<h3>This API generates or updates the webhook token for a company</h3>
-    <p>Super Admin: Can generate token for any company</p>
-    <p>Regular Admin: Can only generate token for their own company</p>`,
-  body: {
-    title: 'Generate Company Token',
-    type: 'object',
-    additionalProperties: false,
-    required: ['companyId'],
-    properties: {
-      companyId: {
-        type: 'string',
-        description: 'MongoDB ObjectId of the company'
-      }
-    }
-  },
-  response: {
-    200: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            companyId: { type: 'string' },
-            companyName: { type: 'string' },
-            webhookToken: { type: 'string' }
-          }
-        }
-      }
-    }
-  }
 };

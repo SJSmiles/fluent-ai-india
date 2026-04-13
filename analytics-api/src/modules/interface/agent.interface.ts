@@ -7,8 +7,6 @@ export interface IAgent {
   firstMessage?: string;
   endCallMessage?: string;
   endCallInvoke?: boolean;
-  postCallAnalysisData?: any[];
-  postCallStatus?: any[];
   version?: any;
   voiceId?: string;
   createdBy?: Types.ObjectId;   // ← was string

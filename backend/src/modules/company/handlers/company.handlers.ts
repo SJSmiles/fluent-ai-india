@@ -37,6 +37,32 @@ export async function createCompanyHandler(request: any, reply: FastifyReply) {
   }
 }
 
+
+export async function updateCompanyHandler(request: any, reply: FastifyReply) {
+  try {
+    Server.log.info(request.body, 'Update Company request payload');
+
+    const user = request.user as any;
+    const SUPER_ADMIN_COMPANY_ID = process.env.SUPER_ADMIN_COMPANY_ID;
+
+    // Check if user belongs to super admin company OR is HSAdmin
+    if (!user?.isHSAdmin && user?.companyId?.toString() !== SUPER_ADMIN_COMPANY_ID) {
+      throw throwError('Access denied. Super admin privileges required.', { status: 403 }, 'REMOTE_FORBIDDEN');
+    }
+
+    const result = await CompanyServiceInstance.updateCompany(request.user, request.body);
+    Server.log.info(result, 'Update Company response payload');
+
+    return result;
+  } catch (error: any) {
+    Server.log.error(error, 'Error in updateCompanyHandler');
+    return reply.code(error?.status || 500).send({
+      success: false,
+      message: error?.message || 'Failed to update company'
+    });
+  }
+}
+
 export async function getCompanyListHandler(
   request: FastifyRequest<{ Querystring: QueryParams }>,
   reply: FastifyReply
@@ -61,31 +87,6 @@ export async function getCompanyListHandler(
     return reply.code(error?.status || 500).send({
       success: false,
       message: error?.message || 'Failed to fetch companies'
-    });
-  }
-}
-
-export async function updateCompanyHandler(request: any, reply: FastifyReply) {
-  try {
-    Server.log.info(request.body, 'Update Company request payload');
-
-    const user = request.user as any;
-    const SUPER_ADMIN_COMPANY_ID = process.env.SUPER_ADMIN_COMPANY_ID;
-
-    // Check if user belongs to super admin company OR is HSAdmin
-    if (!user?.isHSAdmin && user?.companyId?.toString() !== SUPER_ADMIN_COMPANY_ID) {
-      throw throwError('Access denied. Super admin privileges required.', { status: 403 }, 'REMOTE_FORBIDDEN');
-    }
-
-    const result = await CompanyServiceInstance.updateCompany(request.user, request.body);
-    Server.log.info(result, 'Update Company response payload');
-
-    return result;
-  } catch (error: any) {
-    Server.log.error(error, 'Error in updateCompanyHandler');
-    return reply.code(error?.status || 500).send({
-      success: false,
-      message: error?.message || 'Failed to update company'
     });
   }
 }

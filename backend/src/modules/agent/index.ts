@@ -7,20 +7,22 @@ import {
   updateAgentHandler,
   setPrimaryAgentHandler,
   makeCallHandler,
+  mapUserAgentsHandler,
+  getUserAgentMappingHandler,
+  downloadSampleExcelHandler,
 } from './handler/agent.handler';
 import {
   createAgentRequest,
   currentMappingsRequest,
   deleteAgentRequest,
-  duplicateAgentRequest,
-  getAgentDetailsRequest,
   getAllAgentsForBatchCallRequest,
-  getAllAgentsForSuperAdminRequest,
   getAllAgentsRequest,
   mapUserAgentsRequest,
   updateAgentRequest,
   setPrimaryAgentRequest,
-  makeCallRequest
+  makeCallRequest,
+  getUserAgentMappingRequest,
+  downloadSampleExcelRequest
 } from './schema/agent.schema';
 
 export const module: AppModule = {
@@ -42,7 +44,6 @@ export const module: AppModule = {
       schema: updateAgentRequest,
       handler: updateAgentHandler
     },
-
     {
       method: 'GET',
       url: '/listing',
@@ -77,6 +78,28 @@ export const module: AppModule = {
       auth: true,
       schema: makeCallRequest,
       handler: makeCallHandler
+    },
+    {
+      method: 'POST',
+      url: '/map-user-agents',
+      auth: true,
+      schema: mapUserAgentsRequest,
+      handler: mapUserAgentsHandler
+    },
+    {
+      method: 'GET',
+      url: '/user-agent-mapping',
+      auth: true,
+      schema: getUserAgentMappingRequest,
+      handler: getUserAgentMappingHandler
+    },
+    {
+      method: 'GET',
+      url: '/download-sample',
+      auth: true,
+      schema: downloadSampleExcelRequest,
+      handler: downloadSampleExcelHandler,
+      isFileDownload: true
     }
   ]
 };

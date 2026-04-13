@@ -19,11 +19,6 @@ const PhoneNumberSchema = new Schema<IPhoneNumber>(
       required: true,
       trim: true
     },
-    phoneNumberId: {
-      type: String,
-      required: true,
-      trim: true
-    },
     isArchived: {
       type: Boolean,
       default: false,

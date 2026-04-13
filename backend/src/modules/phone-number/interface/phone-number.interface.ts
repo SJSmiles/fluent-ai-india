@@ -4,7 +4,6 @@ export interface IPhoneNumber extends Document {
   companyId: Types.ObjectId;
   name: string;
   phoneNumber: string;
-  phoneNumberId: string;
   isArchived: boolean;
   createdBy: Types.ObjectId;
   updatedBy?: Types.ObjectId | null;

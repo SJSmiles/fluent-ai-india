@@ -1,8 +1,6 @@
 export interface IAgent {
   name: string;
   prompt: string;
-  postCallAnalysisData?: any[];
-  postCallStatus?: any[];
   version?: any;
   voiceId?: string;
   createdBy?: string;

@@ -14,6 +14,8 @@ interface QueryParams {
 }
 
 export class CompanyService {
+
+
   public async companyCreate(user: any, payload: any): Promise<any> {
     await this.validateCompany(payload);
     // Create company
@@ -21,6 +23,14 @@ export class CompanyService {
       name: payload.name,
       domain: payload.domain,
       description: payload.description,
+      plivoAuthId: payload.plivoAuthId,
+      plivoAuthToken: payload.plivoAuthToken,
+      elevenLabsApiKey: payload.elevenLabsApiKey,
+      deepgramApiKey: payload.deepgramApiKey,
+      callStatusPrompt: payload.callStatusPrompt,
+      callSummaryPrompt: payload.callSummaryPrompt,
+      callStatus: payload.callStatus,
+      csvColumnConfig: payload.csvColumnConfig,
       address: {
         street: payload?.address?.street || '',
         houseNo: payload?.address?.houseNo || null,
@@ -33,10 +43,9 @@ export class CompanyService {
     try {
       // Create admin user
       const adminPayload = {
-        firstName: 'Admin',
-        lastName: company.name,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
         email: payload.email,
-        userName: payload.email.split('@')[0],
         password: payload.password,
         isAdmin: true,
         companyId: company._id
@@ -62,6 +71,160 @@ export class CompanyService {
     }
   }
 
+
+
+  public async updateCompany(user: any, payload: any): Promise<any> {
+    try {
+      const {
+        _id,
+        name,
+        description,
+        domain,
+        plivoAuthId,
+        plivoAuthToken,
+        elevenLabsApiKey,
+        deepgramApiKey,
+        isActive,
+        address,
+        callStatus,
+        csvColumnConfig,
+        callStatusPrompt,
+        callSummaryPrompt,
+      } = payload;
+
+      // Check company exists
+      const existingCompany = await Company.findOne({
+        _id: new Types.ObjectId(_id),
+        isArchived: false
+      });
+
+      if (!existingCompany) {
+        throw throwError('Company not found', { status: 404 });
+      }
+
+      // Validate name uniqueness if name is being changed
+      if (name && name !== existingCompany.name) {
+        const nameExists = await Company.findOne({
+          name,
+          _id: { $ne: new Types.ObjectId(_id) },
+          isArchived: false
+        });
+        if (nameExists) {
+          throw throwError('Company Name Already Exists');
+        }
+      }
+
+      // Validate domain uniqueness if domain is being changed
+      if (domain && domain !== existingCompany.domain) {
+        const domainExists = await Company.findOne({
+          domain,
+          _id: { $ne: new Types.ObjectId(_id) },
+          isArchived: false
+        });
+        if (domainExists) {
+          throw throwError('Company Domain Already Exists');
+        }
+      }
+
+      // Validate csvColumnConfig if provided
+      if (csvColumnConfig && csvColumnConfig.length > 0) {
+        const phoneColumns = csvColumnConfig.filter((c: any) => c.type === 'phone');
+        if (phoneColumns.length !== 1) {
+          throw throwError(
+            `csvColumnConfig must contain exactly one column with type 'phone' (found ${phoneColumns.length})`
+          );
+        }
+
+        const columnNames = csvColumnConfig.map((c: any) => c.name.toLowerCase());
+        const duplicates = columnNames.filter(
+          (name: string, idx: number) => columnNames.indexOf(name) !== idx
+        );
+        if (duplicates.length > 0) {
+          throw throwError(
+            `csvColumnConfig contains duplicate column names: ${[...new Set(duplicates)].join(', ')}`
+          );
+        }
+      }
+
+      // Build update object — only include fields present in the payload
+      const updateData: any = {
+        updatedAt: new Date(),
+        updatedBy: user._id
+      };
+
+      if (name !== undefined) updateData.name = name;
+      if (description !== undefined) updateData.description = description;
+      if (domain !== undefined) updateData.domain = domain;
+      if (plivoAuthId !== undefined) updateData.plivoAuthId = plivoAuthId;
+      if (plivoAuthToken !== undefined) updateData.plivoAuthToken = plivoAuthToken;
+      if (elevenLabsApiKey !== undefined) updateData.elevenLabsApiKey = elevenLabsApiKey;
+      if (deepgramApiKey !== undefined) updateData.deepgramApiKey = deepgramApiKey;
+      if (callStatusPrompt !== undefined) updateData.callStatusPrompt = callStatusPrompt;
+      if (callSummaryPrompt !== undefined) updateData.callSummaryPrompt = callSummaryPrompt;
+      if (isActive !== undefined) updateData.isActive = isActive;
+
+      if (callStatus !== undefined) {
+        updateData.callStatus = callStatus
+          .map((s: string) => s.trim())
+          .filter(Boolean);
+      }
+
+      if (csvColumnConfig !== undefined) {
+        updateData.csvColumnConfig = csvColumnConfig.map((col: any) => ({
+          name: col.name.trim().toLowerCase(),
+          label: col.label?.trim() || col.name.trim(),
+          type: col.type,
+          required: col.required ?? false,
+          enum: Array.isArray(col.enum) ? col.enum.map((v: string) => v.trim()) : []
+        }));
+      }
+
+      // Merge address fields — preserve existing values for keys not in payload
+      if (address) {
+        const addressUpdate: any = {};
+        if (address.street !== undefined) addressUpdate.street = address.street;
+        if (address.houseNo !== undefined) addressUpdate.houseNo = address.houseNo;
+        if (address.zipCode !== undefined) addressUpdate.zipCode = address.zipCode;
+        if (address.state !== undefined) addressUpdate.state = address.state;
+
+        if (Object.keys(addressUpdate).length > 0) {
+          updateData.address = { ...existingCompany.address, ...addressUpdate };
+        }
+      }
+
+      const updatedCompany = await Company.findByIdAndUpdate(
+        new Types.ObjectId(_id),
+        { $set: updateData },
+        { new: true, runValidators: true }
+      ).lean();
+
+      if (!updatedCompany) {
+        throw throwError('Failed to update company', { status: 500 });
+      }
+
+      return {
+        status: true,
+        message: 'Company Updated Successfully',
+        data: {
+          companyId: updatedCompany._id,
+          companyName: updatedCompany.name,
+          description: updatedCompany.description,
+          domain: updatedCompany.domain,
+          isActive: updatedCompany.isActive,
+          address: updatedCompany.address,
+          callStatus: updatedCompany.callStatus,
+          csvColumnConfig: updatedCompany.csvColumnConfig,
+          callStatusPrompt: updatedCompany.callStatusPrompt,
+          callSummaryPrompt: updatedCompany.callSummaryPrompt,
+        }
+      };
+    } catch (err: any) {
+      console.log('Error updating company:', err);
+      throw err;
+    }
+  }
+
+
   public async getCompanyList(queryParams: QueryParams): Promise<any> {
     try {
       const { skip = 0, limit = 10, search, sortBy = 'createdAt desc' } = queryParams;
@@ -83,16 +246,13 @@ export class CompanyService {
       let sortField = 'createdAt';
       let sortOrder: 1 | -1 = -1;
 
-      // Parse sortBy similar to User service
       if (sortBy) {
         const sortParts = sortBy.trim().split(' ');
 
         if (sortParts.length > 1) {
-          // Format: "fieldName asc" or "fieldName desc"
           sortField = sortParts[0];
           sortOrder = sortParts[1].toLowerCase() === 'asc' ? 1 : -1;
         } else {
-          // Single field, check for prefix
           if (sortBy.startsWith('-')) {
             sortField = sortBy.substring(1);
             sortOrder = -1;
@@ -105,7 +265,6 @@ export class CompanyService {
           }
         }
 
-        // Validate sort field
         if (!allowedSortFields.includes(sortField)) {
           sortField = 'createdAt';
           sortOrder = -1;
@@ -114,11 +273,8 @@ export class CompanyService {
 
       const sortObject: any = { [sortField]: sortOrder };
 
-      console.log('Sort configuration:', { sortBy, sortField, sortOrder, sortObject });
-
       const [companies, total] = await Promise.all([
         Company.find(query)
-          .populate('createdBy', 'firstName lastName userName')
           .skip(Number(skip))
           .limit(Number(limit))
           .sort(sortObject)
@@ -126,20 +282,11 @@ export class CompanyService {
         Company.countDocuments(query)
       ]);
 
-
       const formattedCompanies = companies.map((company: any) => {
-
         return {
           _id: company._id,
           name: company.name,
-          interestedMeetingBooked: company.interestedMeetingBooked,
-          interestedTask: company.interestedTask,
-          notInterested: company.notInterested,
           domain: company.domain,
-
-          createdAt: company.createdAt,
-          updatedAt: company.updatedAt,
-          isActive: company.isActive ?? true,
           description: company.description || '',
           address: {
             street: company.address?.street || '',
@@ -147,9 +294,18 @@ export class CompanyService {
             zipCode: company.address?.zipCode?.toString() || '',
             state: company.address?.state || '',
           },
-          defaultUserName: company.createdBy
-            ? `${company.createdBy.firstName} ${company.createdBy.lastName}`
-            : ''
+          isActive: company.isActive ?? true,
+          isArchived: company.isArchived ?? false,
+          plivoAuthId: company.plivoAuthId || '',
+          plivoAuthToken: company.plivoAuthToken || '',
+          elevenLabsApiKey: company.elevenLabsApiKey || '',
+          deepgramApiKey: company.deepgramApiKey || '',
+          csvColumnConfig: company.csvColumnConfig || [],
+          callStatus: company.callStatus || [],
+          callStatusPrompt: company.callStatusPrompt || '',
+          callSummaryPrompt: company.callSummaryPrompt || '',
+          createdAt: company.createdAt,
+          updatedAt: company.updatedAt,
         };
       });
 
@@ -169,6 +325,8 @@ export class CompanyService {
       throw throwError(error?.message || 'Failed to fetch companies', { status: 500 });
     }
   }
+
+
 
   public async validateCompany(payload: any) {
     const query: any = {
@@ -201,165 +359,18 @@ export class CompanyService {
   }
 
   public async removeCompany(companyId: any) {
-    await Company.deleteOne({ _id: new Types.ObjectId(companyId) });
-    await User.deleteMany({ companyId: new Types.ObjectId(companyId) });
+    await Company.updateOne(
+      { _id: new Types.ObjectId(companyId), isArchived: false },
+      { $set: { isArchived: true } }
+    );
+    await User.updateMany(
+      { companyId: new Types.ObjectId(companyId), isArchived: false },
+      { $set: { isArchived: true } }
+    );
     return true;
   }
 
-  public async updateCompany(user: any, payload: any): Promise<any> {
-    try {
-      const { _id, name, description, address, voiceProviders, isActive, interestedMeetingBooked, interestedTask, notInterested } = payload;
 
-      // Check if company exists
-      const existingCompany = await Company.findOne({
-        _id: new Types.ObjectId(_id),
-        isArchived: false
-      });
-
-      if (!existingCompany) {
-        throw throwError('Company not found', { status: 404 });
-      }
-
-      // Validate name uniqueness if name is being changed
-      if (name && name !== existingCompany.name) {
-        const nameExists = await Company.findOne({
-          name: name,
-          _id: { $ne: new Types.ObjectId(_id) },
-          isArchived: false
-        });
-
-        if (nameExists) {
-          throw throwError('Company Name Already Exists');
-        }
-      }
-
-      // Prepare update object
-      const updateData: any = {};
-
-      if (name !== undefined) {
-        updateData.name = name;
-      }
-
-      if (interestedMeetingBooked !== undefined) {
-        updateData.interestedMeetingBooked = interestedMeetingBooked;
-      }
-      if (interestedTask !== undefined) {
-        updateData.interestedTask = interestedTask;
-      }
-      if (notInterested !== undefined) {
-        updateData.notInterested = notInterested;
-      }
-
-      if (description !== undefined) {
-        updateData.description = description;
-      }
-
-      if (isActive !== undefined) {
-        updateData.isActive = isActive;
-      }
-      if (payload.bmbyProfileActive !== undefined) {
-        updateData.bmbyProfileActive = payload.bmbyProfileActive;
-      }
-
-      // Handle voiceProviders update
-      if (voiceProviders !== undefined && Array.isArray(voiceProviders)) {
-        // Validate voice providers
-        if (voiceProviders.length === 0) {
-          throw throwError('At least one voice provider is required', { status: 400 });
-        }
-
-        // Validate each provider
-        for (const provider of voiceProviders) {
-          if (!provider.name || !provider.api_key_id) {
-            throw throwError(
-              'Each voice provider must have a name and api_key_id',
-              { status: 400 }
-            );
-          }
-
-          // Validate provider name
-          const validProviders = ['vapi', 'retell'];
-          if (!validProviders.includes(provider.name.toLowerCase())) {
-            throw throwError(
-              `Invalid voice provider: ${provider.name}. Allowed values: ${validProviders.join(', ')}`,
-              { status: 400 }
-            );
-          }
-        }
-
-        // Check for duplicate provider names
-        const providerNames = voiceProviders.map((p: any) => p.name.toLowerCase());
-        const uniqueNames = new Set(providerNames);
-        if (providerNames.length !== uniqueNames.size) {
-          throw throwError('Duplicate voice provider names are not allowed', { status: 400 });
-        }
-
-        // Format voice providers
-        updateData.voiceProviders = voiceProviders.map((vp: any) => ({
-          name: vp.name.toLowerCase(),
-          api_key_id: vp.api_key_id
-        }));
-      }
-
-      // Handle address update
-      if (address) {
-        const addressUpdate: any = {};
-
-        if (address.street !== undefined) {
-          addressUpdate.street = address.street;
-        }
-
-        if (address.houseNo !== undefined) {
-          addressUpdate.houseNo = address.houseNo;
-        }
-
-        if (address.zipCode !== undefined) {
-          addressUpdate.zipCode = address.zipCode;
-        }
-
-        if (address.state !== undefined) {
-          addressUpdate.state = address.state;
-        }
-
-        // Merge address updates
-        if (Object.keys(addressUpdate).length > 0) {
-          updateData.address = {
-            ...existingCompany.address,
-            ...addressUpdate
-          };
-        }
-      }
-
-      updateData.updatedAt = new Date();
-      updateData.updatedBy = user._id;
-
-      // Update company
-      const updatedCompany = await Company.findByIdAndUpdate(
-        new Types.ObjectId(_id),
-        { $set: updateData },
-        { new: true, runValidators: true }
-      ).lean();
-
-      if (!updatedCompany) {
-        throw throwError('Failed to update company', { status: 500 });
-      }
-
-      return {
-        status: true,
-        message: 'Company Updated Successfully',
-        data: {
-          companyId: updatedCompany._id,
-          companyName: updatedCompany.name,
-          description: updatedCompany.description,
-          isActive: updatedCompany.isActive,
-          address: updatedCompany.address
-        }
-      };
-    } catch (err: any) {
-      console.log('Error updating company:', err);
-      throw err;
-    }
-  }
 
   // NEW: Toggle company status method
   public async toggleCompanyStatus(user: any, payload: any): Promise<any> {
@@ -454,42 +465,13 @@ export class CompanyService {
     }
   }
 
-  public async getCountryMasterList(): Promise<any> {
-    try {
-      const { CountryMaster } = require('../../country/models/country.model');
-
-      const countries = await CountryMaster.find({
-        isArchived: false
-      })
-        .select('_id code name')
-        .sort({ name: 1 })
-        .lean();
-
-      return {
-        success: true,
-        data: {
-          countries: countries.map((country: any) => ({
-            _id: country._id,
-            code: country.code,
-            name: country.name
-          })),
-          total: countries.length
-        }
-      };
-    } catch (error: any) {
-      console.log('Error fetching country master list:', error);
-      throw throwError(error?.message || 'Failed to fetch country list', { status: 500 });
-    }
-  }
 
   public async getCompanyFilterList(): Promise<any> {
     try {
       const companies = await Company.find({ isArchived: false })
-        .select('_id name domain bmbyProfileActive')
+        .select('_id name domain')
         .sort({ name: 1 })
         .lean();
-
-      const companyIds = companies.map((c) => c._id);
 
       const resultCompanies = companies.map((company) => {
         return {

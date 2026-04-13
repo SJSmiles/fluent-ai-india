@@ -22,10 +22,6 @@ export class PhoneNumberService {
         throw throwError('Phone number is required', { status: 400 }, 'MISSING_PHONE_NUMBER');
       }
 
-      if (!body.phoneNumberId || !body.phoneNumberId.trim()) {
-        throw throwError('Phone number ID is required', { status: 400 }, 'MISSING_PHONE_NUMBER_ID');
-      }
-
       // Prevent duplicate phone number name per company
       const existingPhoneNumber = await PhoneNumber.findOne({
         companyId: new Types.ObjectId(targetCompanyId),
@@ -47,7 +43,6 @@ export class PhoneNumberService {
       const newPhoneNumber = new PhoneNumber({
         name: body.name.trim(),
         phoneNumber: body.phoneNumber.trim(),
-        phoneNumberId: body.phoneNumberId.trim(),
         companyId: new Types.ObjectId(targetCompanyId),
         createdBy: new Types.ObjectId(currentUserId)
       });
@@ -214,10 +209,6 @@ export class PhoneNumberService {
           );
         }
         updateData.phoneNumber = body.phoneNumber.trim();
-      }
-
-      if (body.phoneNumberId && body.phoneNumberId.trim()) {
-        updateData.phoneNumberId = body.phoneNumberId.trim();
       }
 
       updateData.updatedBy = new Types.ObjectId(currentUserId);

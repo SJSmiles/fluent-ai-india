@@ -12,7 +12,8 @@ const callSchema = new Schema({
     recordingUrl: { type: String },
     duration: { type: Number },
     transcript: [{ role: { type: String }, text: { type: String }, ts: { type: Date } }],
-    analysis: { type: Schema.Types.Mixed },  // postCallAnalysisData result
+    analysis: { type: Schema.Types.Mixed },
+    summary: { type: String },
     startedAt: { type: Date },
     endedAt: { type: Date },
 }, { timestamps: true });
