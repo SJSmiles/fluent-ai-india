@@ -1,14 +1,14 @@
 import { batchCallService } from '../services/batchCall.service';
 import { Server } from '../../../server';
-import { uploadDir } from '../../../common/app-helper';
+import { throwError, uploadDir } from '../../../common/app-helper';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
 import { pipeline as _pipeline } from 'stream';
 import moment from 'moment-timezone';
-import { Agent } from '../../agent/model/agent.model';
+import { Agent } from '../../agent/models/agent.model';
 import { Company } from '../../company/models/company.model';
-import { UserAgent } from '../../agent/model/user-agent.model';
+import { UserAgent } from '../../agent/models/user-agent.model';
 import { BlackList } from '../../black-list/models/black-list.model';
 import * as XLSX from 'xlsx';
 
@@ -487,5 +487,21 @@ export async function createBatchCall(request: any, reply: any) {
 function cleanup(filePath: string | null) {
   if (filePath && fs.existsSync(filePath)) {
     try { fs.unlinkSync(filePath); } catch (_) { }
+  }
+}
+
+
+// Rest of the handlers remain unchanged
+export async function listBatchCallsHandler(request: any, reply: any) {
+  try {
+    request.query.skip = parseInt(request.query.skip) || 0;
+    request.query.limit = parseInt(request.query.limit) || 10;
+    const result = await batchCallService.listing(
+      request.user,
+      request.query
+    );
+    return reply.send(result);
+  } catch (error) {
+    throwError('Error listing batch calls', error);
   }
 }

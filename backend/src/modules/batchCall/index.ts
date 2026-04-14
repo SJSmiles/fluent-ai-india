@@ -1,6 +1,6 @@
 import { AppModule } from '../../common/common-interfaces';
-import { createBatchCall } from './handlers/batchCall.handlers';
-import { createBatchCallRequest } from './schema/batchCall.schema';
+import { createBatchCall, listBatchCallsHandler } from './handlers/batchCall.handlers';
+import { createBatchCallRequest, listBatchCallsRequest } from './schema/batchCall.schema';
 
 export const module: AppModule = {
   name: 'Batch Call module',
@@ -13,7 +13,14 @@ export const module: AppModule = {
       auth: true,
       schema: createBatchCallRequest,
       handler: createBatchCall
-    }
+    },
+    {
+      method: 'GET',
+      url: '/listing',
+      auth: true,
+      schema: listBatchCallsRequest,
+      handler: listBatchCallsHandler
+    },
   ],
 };
 

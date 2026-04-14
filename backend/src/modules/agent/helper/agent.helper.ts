@@ -1,6 +1,6 @@
 import { throwError } from '../../../common/app-helper';
 import { IAgent } from '../interface/agent.interface';
-import { Agent } from '../model/agent.model';
+import { Agent } from '../models/agent.model';
 export const validateAgent = async (payload: IAgent): Promise<void> => {
   // Check if agent name already exists
   const existingAgentByName = await Agent.findOne({

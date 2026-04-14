@@ -1,6 +1,6 @@
-import { Agent } from '../model/agent.model';
+import { Agent } from '../models/agent.model';
 import { IAgent } from '../interface/agent.interface';
-import { UserAgent } from '../model/user-agent.model';
+import { UserAgent } from '../models/user-agent.model';
 import { Company } from '../../company/models/company.model';
 import { Types } from 'mongoose';
 import { User } from '../../users/models/user.model';
