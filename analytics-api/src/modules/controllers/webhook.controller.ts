@@ -1,76 +1,219 @@
 import { redis } from '../store/redis';
 import { getAgentConfig } from '../services/agent.service';
-import { callQueue } from '../queue/queue';
-import { generatePlivoXml } from '../../helper/plivo';
+import jwt from 'jsonwebtoken';
 
-export async function incomingCallHandler(req: any, reply: any) {
+import { testCallQueue } from 'modules/queue/testCall';
+import { generateTestPlivoXml } from '@helper/plivo-test-call';
+
+import { TestCallLogs } from '../models/testCallLogs';
+import { TestCalls } from 'modules/models/testCalls.model';
+
+
+
+
+export async function incomingTestCallHandler(req: any, reply: any) {
     try {
-        const { agentId } = req.params;
-        const callSid = req.body?.CallUUID;
+        const token = req.query.token as string;
+        if (!token) throw new Error('TOKEN_MISSING');
 
-        if (!agentId || !callSid) {
-            return reply.code(400).send('Missing agentId or CallUUID');
-        }
-
-        const ngrokUrl = process.env.NGROK_URL!;
-        const config = await getAgentConfig(agentId);
-
-        // Store metadata from query params
-        const metadata = req.query || {};
-
-        await redis.set(
-            `call:${callSid}`,
-            JSON.stringify({ ...config, ...metadata, agentId }),
-            'EX',
-            3600
+        const decoded: any = jwt.verify(
+            token,
+            process.env.JWT_TOKEN_SECRET as string
         );
 
-        const xml = generatePlivoXml(ngrokUrl, agentId);
-        console.log('Generated XML:', xml);
+        const callUUID = req.body?.CallUUID;
+        if (!callUUID) {
+            return reply.code(400).type('text/xml')
+                .send('<Response><Speak>Missing CallUUID</Speak></Response>');
+        }
+
+        const { agentId, userId, companyId } = decoded;
+
+        const config = await getAgentConfig(agentId);
+
+        console.log('📡 [incomingTestCallHandler] Body:', req.body);
+
+        // ✅ Store metadata in Redis
+        await redis.set(
+            `call:${callUUID}`,
+            JSON.stringify({
+                ...config,
+                agentId,
+                userId,
+                companyId,
+                direction: req.query?.direction || 'outbound',
+                fromNumber: req.body?.From || null,
+                toNumber: req.body?.To || null,
+                startedAt: new Date().toISOString(),
+            }),
+            'EX',
+            7200
+        );
+
+        // ✅ Create CallLogs (ONLY ONCE)
+        await TestCallLogs.updateOne(
+            { callUUID },
+            {
+                $setOnInsert: { callUUID },
+                $push: {
+                    logs: {
+                        event: req.body?.Event || 'IncomingCall',
+                        details: req.body,
+                        timestamp: new Date(),
+                    },
+                },
+            },
+            { upsert: true }
+        );
+
+        // ✅ FIX: Pass BOTH token + callUUID
+        const xml = generateTestPlivoXml(
+            process.env.NGROK_URL!,
+            agentId,
+            token
+        );
 
         return reply.type('text/xml').send(xml);
 
-    } catch (error) {
-        console.error(error);
-        return reply
-            .code(500)
-            .type('text/xml')
-            .send('<Response><Speak>Error</Speak></Response>');
+    } catch (err: any) {
+        return handleError(err, reply, 'incomingTestCallHandler');
     }
 }
 
-export async function callStatusHandler(req: any, reply: any) {
+
+export async function testCallStatusHandler(req: any, reply: any) {
     try {
-        console.log('req.params', req.params);
-        console.log('req.body', req.body);
-        const callSid = req.body?.CallUUID;
-        if (!callSid) return reply.send({ success: true });
+        console.log('📡 [testCallStatusHandler] Body:', req.body);
+        const event = req.body?.Event;
 
-        if (req.body.CallStatus === 'completed') {
-            const metaData = await redis.get(`call:${callSid}`);
-            if (!metaData) {
-                console.log('⚠️ No metadata found for', callSid);
-                return reply.send({ success: true });
-            }
+        const token = req.query.token as string;
+        const callUUID = req.query.callUUID || req.body?.CallUUID;
 
-            const meta = JSON.parse(metaData);
+        if (!callUUID) return reply.send({ ok: false });
 
-            await callQueue.add('end-call', {
-                callSid,
-                agentId: meta.agentId,
-                companyId: meta.companyId,
-                duration: Number(req.body.Duration || 0),
-                recordingUrl: req.body.RecordingUrl || '',
-            });
+        console.log(`📡 Event: ${event}`);
 
-            await redis.del(`call:${callSid}`); // ✅ cleanup after queue
-            console.log('📦 Job queued for', callSid);
+        // =====================================================
+        // ✅ 1. UPSERT CALL LOGS
+        // =====================================================
+        const callLogs = await TestCallLogs.findOneAndUpdate(
+            { callUUID },
+            {
+                $setOnInsert: { callUUID },
+                $push: {
+                    logs: {
+                        event,
+                        timestamp: new Date(),
+                        details: req.body,
+                    },
+                },
+            },
+            { upsert: true, new: true }
+        );
+
+        // =====================================================
+        // ✅ 2. RECORDING
+        // =====================================================
+        if (event === 'Recording') {
+            await TestCalls.updateOne(
+                { callUUID },
+                {
+                    $set: {
+                        recordingUrl: req.body?.RecordUrl || null,
+                    },
+                }
+            );
         }
 
-        return reply.send({ success: true });
+        // =====================================================
+        // ✅ 3. HANGUP (FINAL SAVE)
+        // =====================================================
+        if (event === 'Hangup') {
+            console.log(`⚙️ Processing call end: ${callUUID}`);
 
-    } catch (error) {
-        console.error('Call status error:', error);
-        return reply.send({ success: true });
+            const redisData = await redis.get(`call:${callUUID}`);
+            const transcriptList = await redis.lrange(`transcript:${callUUID}`, 0, -1);
+
+            const parsedMeta = redisData ? JSON.parse(redisData) : {};
+
+            // ✅ Parse transcript safely
+            const transcript = transcriptList.map((t: string) => {
+                try {
+                    const parsed = JSON.parse(t);
+
+                    if (!parsed.text || parsed.text.trim().length < 2) return null;
+
+                    return {
+                        role: parsed.role || null,
+                        text: parsed.text || null,
+                        ts: parsed.ts ? new Date(parsed.ts) : null,
+                    };
+                } catch {
+                    return null;
+                }
+            }).filter(Boolean);
+
+            await TestCalls.updateOne(
+                { callUUID },
+                {
+                    $set: {
+                        callUUID,
+
+                        agentId: parsedMeta.agentId || null,
+                        companyId: parsedMeta.companyId || null,
+                        userId: parsedMeta.userId || null,
+
+                        direction: parsedMeta.direction || null,
+
+                        callLogsId: callLogs?._id || null,
+
+                        fromNumber: req.body?.From || null,
+                        toNumber: req.body?.To || null,
+
+                        callStatus: req.body?.CallStatus || 'completed',
+                        event: event || null,
+
+                        duration: Number(req.body?.Duration) || null,
+
+                        startedAt: parsedMeta.startedAt
+                            ? new Date(parsedMeta.startedAt)
+                            : null,
+
+                        endedAt: new Date(),
+
+                        transcript: transcript || [],
+
+                        recordingUrl: req.body?.RecordUrl || null,
+
+                        summary: null,
+                        leadStatus: null,
+                    },
+                },
+                { upsert: true }
+            );
+
+            // ✅ Cleanup
+            await redis.del(`call:${callUUID}`);
+            await redis.del(`transcript:${callUUID}`);
+
+            console.log(`✅ Call saved: ${callUUID}`);
+        }
+
+        return reply.send({ ok: true });
+
+    } catch (err) {
+        console.error('❌ webhook error:', err);
+        return reply.send({ ok: false });
     }
+}
+// =======================================================
+// ❌ ERROR HANDLER (FIXED)
+// =======================================================
+function handleError(error: any, reply: any, context: string) {
+    console.error(`❌ [${context}]`, error);
+
+    return reply.code(500).send({
+        success: false,
+        message: error.message || 'Internal Server Error',
+    });
 }

@@ -6,6 +6,7 @@ import { Types } from 'mongoose';
 import { User } from '../../users/models/user.model';
 import { throwError } from '../../../common/app-helper';
 const plivo = require('plivo');
+import jwt from 'jsonwebtoken';
 
 export class AgentService {
 
@@ -352,13 +353,20 @@ export class AgentService {
     }
   }
 
+
+
+
   public async makeCall(user: any, body: any): Promise<any> {
     try {
-      const { agentId, phoneNumber, toPhoneNumber, userId, metadata } = body;
+      const { agentId, phoneNumber, toPhoneNumber, userId } = body;
 
       if (!user?.userId) user.userId = userId;
 
-      const userAgent = await UserAgent.findOne({ userId: user.userId, agentId, isArchived: false });
+      const userAgent = await UserAgent.findOne({
+        userId: user.userId,
+        agentId,
+        isArchived: false,
+      });
       if (!userAgent) {
         throw throwError('Agent not found or not assigned to user', { status: 404 }, 'NOT_FOUND');
       }
@@ -372,16 +380,22 @@ export class AgentService {
 
       const plivoClient = new plivo.Client(company.plivoAuthId, company.plivoAuthToken);
 
-      const baseUrl = process.env.NGROK_URL;
-      let answerUrl = `${baseUrl}/webhook/incoming-call/${agentId}?direction=outbound`;
+      const baseUrl = process.env.NGROK_URL!;
+      const jwtSecret = process.env.JWT_TOKEN_SECRET;
+      if (!jwtSecret) throw new Error('JWT secret missing');
 
-      if (metadata && typeof metadata === 'object') {
-        Object.keys(metadata).forEach(key => {
-          answerUrl += `&${key}=${encodeURIComponent(metadata[key])}`;
-        });
-      }
+      const payload = {
+        agentId: agentId.toString(),
+        userId: (userId || user.userId)?.toString(),
+        companyId: user.companyId?.toString(),
+      };
 
-      const statusUrl = `${baseUrl}/webhook/call-status/${agentId}`;
+      const token = jwt.sign(payload, jwtSecret, { expiresIn: '2h' });
+
+      const answerUrl = `${baseUrl}/webhook/incoming-test-call?token=${encodeURIComponent(token)}&direction=outbound`;
+
+      // ✅ Single status URL handles BOTH call hangup AND recording callback
+      const statusUrl = `${baseUrl}/webhook/test-call-status?token=${encodeURIComponent(token)}`;
 
       const response = await plivoClient.calls.create(
         phoneNumber,
@@ -389,22 +403,23 @@ export class AgentService {
         answerUrl,
         {
           answerMethod: 'POST',
-          record: 'mp3',
-          recordCallbackUrl: statusUrl,
+          record: 'true',
+          recordCallbackUrl: statusUrl,   // Plivo POSTs RecordUrl here when ready
           recordCallbackMethod: 'POST',
-          statusCallback: statusUrl,
-          statusCallbackMethod: 'POST'
+          hangupUrl: statusUrl,           // Plivo POSTs Duration + CallStatus here on end
+          hangupMethod: 'POST',
         }
       );
 
       return {
         success: true,
-        callId: response.requestUuid
+        callId: response.requestUuid,
       };
     } catch (error: any) {
       throw new Error(error.message || 'Call failed');
     }
   }
+
 
   // Add this method inside AgentService class in agent.service.ts
 

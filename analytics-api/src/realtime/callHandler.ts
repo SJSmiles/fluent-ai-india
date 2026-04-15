@@ -26,6 +26,19 @@ function cleanReply(text: string) {
         .trim();
 }
 
+// ✅ Helper to save a transcript turn to Redis list
+async function saveTranscriptTurn(callSid: string, role: string, text: string) {
+    try {
+        await redis.rpush(
+            `transcript:${callSid}`,
+            JSON.stringify({ role, text, ts: new Date().toISOString() })
+        );
+        await redis.expire(`transcript:${callSid}`, 3600);
+    } catch (err) {
+        console.error('❌ Failed to save transcript turn to Redis:', err);
+    }
+}
+
 export async function callHandler(connection: any, req: any) {
     const socket = connection;
 
@@ -48,11 +61,8 @@ export async function callHandler(connection: any, req: any) {
     let agentConfig: any = null;
     let deepgramSession: any = null;
 
-    // 🔴 FIX 1: Two flags — isSpeaking (audio playing) + processingReply (LLM/TTS in progress)
     let isSpeaking = false;
     let processingReply = false;
-
-    // 🔴 FIX 2: currentStep for conversation flow tracking
     let currentStep = 1;
 
     let history: any[] = []; // ✅ Conversation History
@@ -97,9 +107,11 @@ export async function callHandler(connection: any, req: any) {
                         agentConfig = { agentId };
                     }
 
+
                     // ✅ Initialize step in Redis
                     await redis.set(`step:${callSid}`, '1', 'EX', 3600);
                     currentStep = 1;
+
 
                     // ✅ Start Deepgram WITH agentConfig
                     deepgramSession = await startDeepgram({
@@ -107,7 +119,7 @@ export async function callHandler(connection: any, req: any) {
                         onTranscript: async (text: string) => {
                             console.log(`🗣 STT: ${text}`);
 
-                            // 🔴 FIX 1: Skip if already processing a reply
+                            // Skip if already processing a reply
                             if (processingReply) {
                                 console.log('⏭ Skipping transcript — already processing reply');
                                 return;
@@ -123,10 +135,14 @@ export async function callHandler(connection: any, req: any) {
                             processingReply = true;
 
                             try {
-                                // 🔴 FIX 2: Add user message to history FIRST
+                                // Add user message to history
                                 history.push({ role: 'user', content: text });
 
-                                // 🔴 FIX 2: Pass full history (getAgentReply will NOT re-add user message)
+                                // ✅ Save user turn to Redis transcript
+                                if (callSid) {
+                                    await saveTranscriptTurn(callSid, 'user', text);
+                                }
+
                                 const reply = await getAgentReply(agentConfig, history, currentStep);
                                 console.log(`🤖 LLM: ${reply}`);
 
@@ -155,10 +171,15 @@ export async function callHandler(connection: any, req: any) {
                                         },
                                     }));
 
-                                    // ✅ Add assistant reply to history
+                                    // Add assistant reply to history
                                     history.push({ role: 'assistant', content: cleanedReply });
 
-                                    // 🔴 FIX 3: Increment step after each successful reply
+                                    // ✅ Save assistant turn to Redis transcript
+                                    if (callSid) {
+                                        await saveTranscriptTurn(callSid, 'assistant', cleanedReply);
+                                    }
+
+                                    // Increment step after each successful reply
                                     currentStep = Math.min(currentStep + 1, 10);
                                     if (callSid) {
                                         await redis.set(`step:${callSid}`, String(currentStep), 'EX', 3600);
@@ -168,7 +189,6 @@ export async function callHandler(connection: any, req: any) {
 
                                 if (shouldHangUp) {
                                     console.log('🏁 LLM requested [[STOP_NOW]]. Hanging up in 5s...');
-                                    // 🔴 FIX 4: 5s delay instead of 2s — gives TTS time to finish
                                     setTimeout(() => {
                                         socket.close();
                                     }, 5000);
@@ -206,6 +226,12 @@ export async function callHandler(connection: any, req: any) {
                             }));
 
                             history.push({ role: 'assistant', content: welcomeText });
+
+                            // ✅ Save first message to Redis transcript
+                            if (callSid) {
+                                await saveTranscriptTurn(callSid, 'assistant', welcomeText);
+                            }
+
                         } catch (err) {
                             console.error('❌ First message TTS error:', err);
                         } finally {
@@ -229,7 +255,7 @@ export async function callHandler(connection: any, req: any) {
                 case 'stop': {
                     console.log(`❌ Call stopped: ${callSid}`);
                     deepgramSession?.finish();
-                    // ✅ Cleanup step from Redis
+                    // ✅ Cleanup step from Redis (transcript key cleaned by queue worker)
                     if (callSid) await redis.del(`step:${callSid}`);
                     break;
                 }

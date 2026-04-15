@@ -4,6 +4,8 @@ import { BATCH_CALL_STATUS, RECIPIENTS_CALL_STATUS } from "./helper.js";
 import dotenv from 'dotenv';
 dotenv.config();
 import plivo from 'plivo';
+import jwt from 'jsonwebtoken';
+
 
 
 // ============================================================
@@ -680,7 +682,6 @@ class JobFinder {
 
     private async findEligibleBatches(now: Date): Promise<any[]> {
         return this.collections.BatchCall.find({
-            callFrom: 'plivo',
             isArchived: false,
             utcDateTime: { $lte: now },
             status: { $in: [BATCH_CALL_STATUS.CREATED, BATCH_CALL_STATUS.IN_PROCESS] },
@@ -694,7 +695,6 @@ class JobFinder {
     private async findEligibleFollowUps(now: Date): Promise<any[]> {
         return this.collections.BatchCallFollowUps.find({
             isArchived: false,
-            callFrom: 'plivo',
             utcDateTime: { $lte: now },
             status: {
                 $in: [
@@ -990,19 +990,22 @@ class PlivoCallDispatcher {
         const baseUrl = process.env.NGROK_URL;
         if (!baseUrl) throw new Error('NGROK_URL env variable not set');
 
-        // Build answer URL with recipient metadata
-        const metadata: Record<string, any> = {
+        const payload = {
+            agentId: agentId,
+            userId: batchCall.createdBy?.toString(),
             recipientId: rec?._id?.toString(),
             batchCallId: mainBatchCallData._id.toString(),
-            followupBatchCallId: batchCall.followupNumber ? batchCall._id.toString() : ''
+            followupBatchCallId: batchCall.followupNumber
+                ? batchCall._id.toString()
+                : ''
         };
-
-        let answerUrl = `${baseUrl}/webhook/incoming-call/${agentId}?direction=outbound`;
-        Object.keys(metadata).forEach(key => {
-            answerUrl += `&${key}=${encodeURIComponent(metadata[key])}`;
+        const token = jwt.sign(payload, process.env.JWT_SECRET as string, {
+            expiresIn: '1h' // optional but recommended
         });
 
-        const statusUrl = `${baseUrl}/webhook/call-status/${agentId}`;
+        let answerUrl = `${baseUrl}/webhook/incoming-call/${token}?direction=outbound`;
+
+        const statusUrl = `${baseUrl}/webhook/call-status/${token}`;
 
         const fromNumber = batchCall.phoneNumber || mainBatchCallData.phoneNumber;
         if (!fromNumber) throw new Error('No from-number (phoneNumber) configured for this batch');

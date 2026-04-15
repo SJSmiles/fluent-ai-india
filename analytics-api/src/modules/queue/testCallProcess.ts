@@ -1,6 +1,6 @@
 import Queue from 'bull';
 
-export const rebuildQueue = new Queue('rebuild-calls', {
+export const testCallProcessQueue = new Queue('test-call-process', {
     redis: {
         host: process.env.REDIS_HOST,
         port: Number(process.env.REDIS_PORT),

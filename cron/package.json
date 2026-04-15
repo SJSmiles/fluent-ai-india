@@ -12,6 +12,7 @@
         "axios": "^1.6.8",
         "dayjs": "^1.11.13",
         "dotenv": "^16.3.1",
+        "jsonwebtoken": "^9.0.3",
         "mongoose": "^8.3.2",
         "node-cron": "^3.0.3",
         "retell-sdk": "^4.42.0",

@@ -1,6 +1,6 @@
 import { Schema, model } from 'mongoose';
 // Call model — add to Backend
-const callSchema = new Schema({
+const callsSchema = new Schema({
     callUUID: { type: String, required: true, unique: true, index: true },
     agentId: { type: Schema.Types.ObjectId, ref: 'Agent', required: true },
     companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
@@ -18,4 +18,4 @@ const callSchema = new Schema({
     endedAt: { type: Date },
 }, { timestamps: true });
 
-export const Call = model('Call', callSchema, 'Call');
+export const Calls = model('Calls', callsSchema, 'Calls');

@@ -1,8 +1,6 @@
 import Queue, { Job } from 'bull';
 import dotenv from 'dotenv';
-import { vapiHandleCallUpdate } from '../services/vapi-logs-service';
-import { retellHandleCallUpdate } from '../services/retell.service';
-
+import { handleCallUpdate } from '../services/call-logs-service';
 dotenv.config();
 
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
@@ -23,11 +21,7 @@ rebuildQueue.process(async (job: Job<{ call_id: string, type: string }>) => {
     try {
         const { call_id, type } = job.data;
         console.log(`Worker received job for call_id: ${call_id}, type: ${type}`);
-        if (type === 'vapi') {
-            await vapiHandleCallUpdate(call_id);
-        } else {
-            await retellHandleCallUpdate(call_id);
-        }
+        await handleCallUpdate(call_id);
     } catch (err) {
         console.error('Worker job failed', err);
         throw err;
