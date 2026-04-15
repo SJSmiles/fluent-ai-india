@@ -6,17 +6,12 @@ import { MongoClient, Db, Collection, ObjectId } from 'mongodb';
 import {
     BATCH_CALL_PROCESS_STATUS,
     BATCH_CALL_STATUS,
-    CALL_DIRECTION,
-    CALL_STATUS,
-    LEAD_STATUS_FOR_SYNC,
-    meetingStatusesArray,
-    PM_QUALI_COMPANY_ID,
-    SMS,
-    SYNC_NOT_ALLOWED_AGENTS,
+    DEFAULT_ANALYSIS_PROMPT,
+    DEFAULT_LEAD_STATUS_PROMPT,
+    DEFAULT_SUMMARY_PROMPT
 } from '../config/server-config';
 
 import { generateChat } from './ai.service';
-import { call } from 'assert/strict';
 
 // ============================================================
 // LOGGING SYSTEM
@@ -145,12 +140,12 @@ const CONFIG = {
     BULK_WRITE_CHUNK_SIZE: 500
 } as const;
 
-const MONGO_URI: string = process.env.MONGO_URI || '';
+const MONGODB_URI: string = process.env.MONGODB_URI || '';
 const DB_NAME = process.env.DB_NAME || '';
 
-if (!MONGO_URI || !DB_NAME) {
+if (!MONGODB_URI || !DB_NAME) {
     Logger.error('Missing required environment variables', null, {
-        hasMongoUri: !!MONGO_URI,
+        hasMongoUri: !!MONGODB_URI,
         hasDbName: !!DB_NAME
     });
     process.exit(1);
@@ -166,6 +161,8 @@ class DatabaseConnection {
     private client: MongoClient | null = null;
 
     public calls!: Collection;
+    public Company!: Collection;
+    public callLogs!: Collection;
     public batchCall!: Collection;
     public user!: Collection;
     public batchCallFollowUps!: Collection;
@@ -191,11 +188,11 @@ class DatabaseConnection {
         const timer = Logger.startTimer();
         Logger.info('Initializing MongoDB connection...', {
             dbName: DB_NAME,
-            uri: MONGO_URI.substring(0, 20) + '...'
+            uri: MONGODB_URI.substring(0, 20) + '...'
         });
 
         try {
-            this.client = await MongoClient.connect(MONGO_URI, {
+            this.client = await MongoClient.connect(MONGODB_URI, {
                 useUnifiedTopology: true
             } as any);
 
@@ -203,6 +200,8 @@ class DatabaseConnection {
 
             // Initialize collections
             this.calls = this.db.collection('Calls');
+            this.Company = this.db.collection('Company');
+            this.callLogs = this.db.collection('CallLogs');
             this.batchCall = this.db.collection('BatchCall');
             this.batchCallFollowUps = this.db.collection('BatchCallFollowUps');
             this.recipients = this.db.collection('Recipients');
@@ -235,128 +234,7 @@ class DatabaseConnection {
     }
 }
 
-// ============================================================
-// CALL EVALUATION LOGIC
-// ============================================================
 
-class CallEvaluator {
-    static isCallSuccessful(disconnectionReason: string, durationMs: number): boolean {
-        const isSuccess = !!(
-            disconnectionReason &&
-            BATCH_CALL_PROCESS_STATUS.SUCCESS.includes(disconnectionReason) &&
-            durationMs >= CONFIG.MIN_SUCCESS_DURATION_MS
-        );
-
-        Logger.debug('Evaluating call success', {
-            disconnectionReason,
-            durationMs,
-            minDuration: CONFIG.MIN_SUCCESS_DURATION_MS,
-            isSuccess
-        });
-
-        return isSuccess;
-    }
-}
-
-
-// ============================================================
-// CALL UPSERT HANDLER
-// ============================================================
-
-class CallUpsertHandler {
-    private db: DatabaseConnection;
-
-    constructor(db: DatabaseConnection) {
-        this.db = db;
-    }
-
-    async upsert(
-        call_id: string,
-        call: any,
-        dynamicVars: any,
-        clientName: string,
-        status: number,
-        nextCallDate: Date | null,
-        taskType: string | null,
-        createdById: ObjectId | null,
-        logs: any,
-        updatedBatch: any
-    ): Promise<any> {
-        const timer = Logger.startTimer();
-
-        try {
-            const leadStatus = call.call_analysis?.custom_analysis_data?.lead_status || 'Unclassified';
-
-            const callData: any = {
-                callId: call_id,
-                clientName,
-                status,
-                recordingUrl: call.recording_url,
-                syncInBmby: false,
-                duration: call.duration_ms,
-                disconnectionReason: call.disconnection_reason,
-                direction: call.direction === 'outbound' ? CALL_DIRECTION.OUTBOUND : CALL_DIRECTION.INBOUND,
-                fromNumber: call.from_number,
-                toNumber: call.to_number,
-                leadStatus,
-                nextCallDate,
-                callInterestStatus: true,
-                taskType,
-                leadFrom: dynamicVars?.leadFrom || '',
-                agentId: call.agent_id,
-                callLogs: [{
-                    eventType: logs.raw_data.event,
-                    callLogId: logs._id.toString()
-                }],
-                batchCallId: call.batch_call_id || dynamicVars?.batchCallId || null,
-                followup_call_id: dynamicVars?.followupBatchCallId || null,
-                callCreatedFrom: dynamicVars?.sheet_id ? 'sheet' : 'batch-call',
-                updatedAt: new Date(),
-                createdAt: new Date(),
-                bmbyId: dynamicVars?.client_id,
-                createdBy: createdById,
-                availableInBmby: true,
-                firstName: dynamicVars?.firstName || '',
-                lastName: dynamicVars?.lastName || '',
-                email: dynamicVars?.email || '',
-                country: dynamicVars?.country || '',
-                gender: dynamicVars?.gender || '',
-                number: dynamicVars?.number || null,
-                companyId: updatedBatch?.companyId
-            };
-
-            await this.db.calls.updateOne(
-                { callId: call_id },
-                { $set: callData },
-                { upsert: true }
-            );
-
-            function getAgentSMS(agentId: string) {
-                const config = SMS.agents.find((a: any) =>
-                    a.agentIds.includes(agentId)
-                );
-
-                return config ? config.message : null;
-            }
-
-
-            performanceMetrics.track('upsertCall', timer());
-            Logger.success('Call record upserted', {
-                callId: call_id,
-                leadStatus,
-                status,
-                duration: call.duration_ms,
-                processingTime: timer()
-            });
-
-            return callData;
-        } catch (error) {
-            performanceMetrics.track('upsertCall', timer(), true);
-            Logger.error('Error upserting call', error, { callId: call_id });
-            throw error;
-        }
-    }
-}
 
 // ============================================================
 // BLACKLIST MANAGER
@@ -487,10 +365,10 @@ class BatchProcessor {
             await this.updateRecipient(recipient._id, callData, statusUpdate);
 
             // Update calls collection
-            await this.updateCallAttempts(callData?.batchCallId, callData?.toNumber, callData?.callId, statusUpdate.newAttemptLength);
+            await this.updateCallAttempts(callData, statusUpdate.newAttemptLength);
 
             // Update batch counters
-            await this.updateBatchCounters(callData?.batchCallId, callData?.followupCallId);
+            await this.updateBatchCounters(callData?.batchCallId, callData?.followupBatchCallId);
 
             // Check for completion
             await this.checkAndCompleteBatch(callData.batchCallId);
@@ -523,13 +401,11 @@ class BatchProcessor {
         let statusValue = BATCH_CALL_PROCESS_STATUS.UN_SUCCESS_VALUE;
 
         // Check for success
-        if (BATCH_CALL_PROCESS_STATUS.SUCCESS.includes(callData.disconnection_reason) &&
-            callData.duration_ms >= BATCH_CALL_PROCESS_STATUS.MIN_TIME_FOR_SUCCESS) {
+        if (callData.duration >= BATCH_CALL_PROCESS_STATUS.MIN_TIME_FOR_SUCCESS) {
             statusValue = BATCH_CALL_PROCESS_STATUS.SUCCESS_VALUE;
             Logger.debug('Call marked as successful', {
                 recipientId: recipient._id.toString(),
-                disconnectionReason: callData.disconnection_reason,
-                duration: callData.duration_ms
+                duration: callData.duration
             });
         }
         // Check for max attempts reached
@@ -582,25 +458,23 @@ class BatchProcessor {
     }
 
     private async updateCallAttempts(
-        batchCallId: any,
-        toNumber: string,
-        callId: string,
-        attemptLength: number
+        callData: any,
+        newAttemptLength: number
     ): Promise<void> {
         await this.db.calls.updateOne(
-            { batchCallId: batchCallId, toNumber: toNumber, callId: callId },
+            { batchCallId: callData.batchCallId, toNumber: callData.toNumber, callId: callData.callId },
             {
                 $set: {
                     updatedAt: new Date(),
-                    attemptLength: attemptLength
+                    attemptLength: newAttemptLength
                 }
             }
         );
 
         Logger.debug('Call attempts updated', {
-            callId,
-            toNumber,
-            attemptLength
+            callId: callData.callId,
+            toNumber: callData.toNumber,
+            attemptLength: newAttemptLength
         });
     }
 
@@ -836,112 +710,190 @@ class LeadStatusHistoryHandler {
 }
 
 
-// ============================================================
-// MAIN HANDLER
-// ============================================================
 
+
+// =====================================================
+// 🚀 MAIN FUNCTION
+// =====================================================
 export async function handleCallUpdate(call_id: string): Promise<void> {
-    const overallTimer = Logger.startTimer();
-
     try {
-        Logger.info('='.repeat(60));
+        Logger.info('='.repeat(50));
         Logger.info('📞 Processing call update', { callId: call_id });
-        Logger.info('='.repeat(60));
 
-        // Initialize database
         const db = DatabaseConnection.getInstance();
         await db.initialize();
-        // Get call details
-        const callData: any = await db.calls.findOne({ callId: call_id });
 
+        const callData: any = await db.calls.findOne({ callUUID: call_id });
         if (!callData) {
-            Logger.warn('Call not found in database', { callId: call_id });
+            Logger.warn('Call not found', { call_id });
             return;
         }
 
-        Logger.debug('Call details retrieved', {
-            callId: call_id,
-            fromNumber: callData.from_number,
-            toNumber: callData.to_number,
-            duration: callData.duration_ms,
-            disconnectionReason: callData.disconnection_reason
+        // ✅ Prevent duplicate processing
+        if (callData.aiProcessedAt) {
+            Logger.info('⚠️ Already processed, skipping AI');
+            return;
+        }
+
+        const callLogsData: any = await db.callLogs.findOne({ callUUID: call_id });
+        if (!callLogsData?.transcript) {
+            Logger.warn('Transcript not found', { call_id });
+            return;
+        }
+
+        const companyData: any = await db.Company.findOne({ _id: callData.companyId });
+        if (!companyData) {
+            Logger.warn('Company not found', { call_id });
+            return;
+        }
+
+        const transcript = callLogsData.transcript;
+
+        // =====================================================
+        // ✅ PROMPTS (company OR default)
+        // =====================================================
+        const summaryPrompt = companyData.callSummaryPrompt || DEFAULT_SUMMARY_PROMPT;
+        const leadPrompt = companyData.leadStatusPrompt || DEFAULT_LEAD_STATUS_PROMPT;
+
+        // =====================================================
+        // 🚀 PARALLEL AI CALLS
+        // =====================================================
+        const [summaryRes, leadRes, analysisRes] = await Promise.all([
+            runAI(summaryPrompt, transcript),
+            runAI(leadPrompt, transcript),
+            runAI(DEFAULT_ANALYSIS_PROMPT, transcript),
+        ]);
+
+        // =====================================================
+        // ✅ EXTRACT VALUES
+        // =====================================================
+        const rawLeadStatus = leadRes?.leadStatus || null;
+
+        const summary = summaryRes?.summary || null;
+        const leadStatus = mapLeadStatus(
+            rawLeadStatus,
+            companyData.leadStatus || []
+        );
+
+        const sentiment = analysisRes?.sentiment || null;
+        const nextAction = analysisRes?.nextAction || null;
+        const intent = analysisRes?.intent || null;
+
+        Logger.info('🧠 AI Results', {
+            summary,
+            rawLeadStatus,
+            finalLeadStatus: leadStatus,
+            sentiment,
+            nextAction,
+            intent,
         });
 
+        // =====================================================
+        // ✅ UPDATE CALL
+        // =====================================================
+        await db.calls.updateOne(
+            { callUUID: call_id },
+            {
+                $set: {
+                    summary,
+                    leadStatus,
+                    sentiment,
+                    nextAction,
+                    intent,
+                    aiProcessedAt: new Date(),
 
-        // if (!requestedMeeting && (custom_analysis_data?.lead_status === 'will join session' || custom_analysis_data?.lead_status === 'callback requested')) {
-        //     const call_summary = call?.call_analysis?.call_summary || '';
-        //     const prompt = `
-        //         You are extracting a meeting schedule from a call summary.
+                    // optional debug
+                    aiRaw: {
+                        summary: summaryRes,
+                        lead: leadRes,
+                        analysis: analysisRes,
+                    },
+                },
+            }
+        );
 
-        //         Analyze the summary and determine when the lead agreed to join a session.
+        // update local object
+        callData.summary = summary;
+        callData.leadStatus = leadStatus;
 
-        //         Rules:
-        //         1. Return ONLY a datetime in ISO format: YYYY-MM-DDTHH:MM
-        //         2. Convert natural phrases to time:
-
-        //         "tomorrow" → tomorrow at 10:00
-        //         "morning" → 10:00
-        //         "afternoon" → 14:00
-        //         "evening" → 18:00
-        //         "night" → 20:00
-
-        //         3. If only weekday is mentioned (Friday, Monday), return the next upcoming weekday at 10:00.
-        //         4. If the user said "anytime", "flexible", or no clear time is mentioned, return the next day at 10:00.
-        //         5. If absolutely no meeting intention exists, return exactly: unknown
-
-        //         Return ONLY the datetime or "unknown".
-
-        //         Call Summary:
-        //         ${call_summary}
-        //         `;
-        //     const response = await generateChat(prompt);
-        //     if (!isNaN(new Date(response).getTime())) {
-        //         nextCallDate = new Date(response);
-        //         taskType = 'Appointment';
-        //     }
-
-        // }
-
-
-        // Handle blacklist
-        if (callData.leadStatus === 'Do Not Contact') {
+        // =====================================================
+        // ✅ BLACKLIST
+        // =====================================================
+        if (leadStatus === 'Do Not Disturb') {
             const blacklistManager = new BlacklistManager(db);
             await blacklistManager.addToBlacklist(callData);
         }
 
-
-        //✅ Handle lead status history
+        // =====================================================
+        // ✅ LEAD STATUS HISTORY
+        // =====================================================
         const leadStatusHistoryHandler = new LeadStatusHistoryHandler(db);
-
-        console.log('Tracking lead status change for call:', callData.callId, 'with status:', callData.leadStatus);
         await leadStatusHistoryHandler.trackStatusChange(callData);
 
-        // Process batch call
-        if (callData) {
-            const batchProcessor = new BatchProcessor(db);
-            await batchProcessor.process(
-                callData,
-            );
-        }
+        // =====================================================
+        // ✅ BATCH PROCESS
+        // =====================================================
+        const batchProcessor = new BatchProcessor(db);
+        await batchProcessor.process(callData);
 
-
-
-        performanceMetrics.track('handleCallUpdate', overallTimer());
-        Logger.success('Call update processing complete', {
-            callId: call_id,
-            totalDuration: overallTimer()
-        });
-        // Logger.info(performanceMetrics.getReport());
-        Logger.info('='.repeat(60));
+        Logger.success('✅ Call update complete', { callId: call_id });
+        Logger.info('='.repeat(50));
 
     } catch (error) {
-        performanceMetrics.track('handleCallUpdate', overallTimer(), true);
-        Logger.error('Fatal error processing call update', error, {
+        Logger.error('❌ Fatal error in handleCallUpdate', error, {
             callId: call_id,
-            duration: overallTimer()
         });
-        Logger.info('='.repeat(60));
         throw error;
+    }
+}
+
+
+
+
+
+
+
+function normalize(text: string) {
+    return text?.toLowerCase().trim();
+}
+
+function mapLeadStatus(aiStatus: string, allowedStatuses: string[]) {
+    if (!aiStatus) return 'Unclassified';
+
+    const normalizedAI = normalize(aiStatus);
+
+    // exact match
+    const exactMatch = allowedStatuses.find(
+        s => normalize(s) === normalizedAI
+    );
+    if (exactMatch) return exactMatch;
+
+    // partial match
+    const partialMatch = allowedStatuses.find(
+        s =>
+            normalizedAI.includes(normalize(s)) ||
+            normalize(s).includes(normalizedAI)
+    );
+    if (partialMatch) return partialMatch;
+
+    return 'Unclassified';
+}
+
+async function runAI(prompt: string, transcript: any[]) {
+    const finalPrompt = `
+${prompt}
+
+Conversation:
+${transcript.map(t => `${t.role}: ${t.text}`).join('\n')}
+`;
+
+    const response = await generateChat(finalPrompt);
+
+    try {
+        return JSON.parse(response);
+    } catch (e) {
+        Logger.error('❌ AI parse failed', { response });
+        return {};
     }
 }
 

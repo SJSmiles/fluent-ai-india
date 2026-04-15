@@ -1,12 +1,12 @@
 import { redis } from '../store/redis';
 import { getAgentConfig } from '../services/agent.service';
 import jwt from 'jsonwebtoken';
-import { CallLogs } from 'modules/models/callLogs.';
-import { generatePlivoXml } from '@helper/plivo-call';
-import { Calls } from 'modules/models/calls.model';
-import { callProcessQueue } from 'modules/queue/queue';
 
+import { generateTestPlivoXml } from '@helper/plivo-test-call';
 
+import { TestCallLogs } from '../models/testCallLogs';
+import { TestCalls } from 'modules/models/testCalls.model';
+import { testCallProcessQueue } from 'modules/queue/queue';
 
 
 
@@ -50,7 +50,7 @@ export async function incomingTestCallHandler(req: any, reply: any) {
         );
 
         // ✅ Create CallLogs (ONLY ONCE)
-        await CallLogs.updateOne(
+        await TestCallLogs.updateOne(
             { callUUID },
             {
                 $setOnInsert: { callUUID },
@@ -66,7 +66,7 @@ export async function incomingTestCallHandler(req: any, reply: any) {
         );
 
         // ✅ FIX: Pass BOTH token + callUUID
-        const xml = generatePlivoXml(
+        const xml = generateTestPlivoXml(
             process.env.NGROK_URL!,
             agentId,
             token
@@ -94,7 +94,7 @@ export async function testCallStatusHandler(req: any, reply: any) {
         // =====================================================
         // ✅ 1. UPSERT LOGS (COMMON FOR ALL EVENTS)
         // =====================================================
-        const callLogs = await CallLogs.findOneAndUpdate(
+        const callLogs = await TestCallLogs.findOneAndUpdate(
             { callUUID },
             {
                 $setOnInsert: { callUUID },
@@ -108,7 +108,6 @@ export async function testCallStatusHandler(req: any, reply: any) {
             },
             { upsert: true, new: true }
         );
-
 
 
         // =====================================================
@@ -142,15 +141,17 @@ export async function testCallStatusHandler(req: any, reply: any) {
                 .filter(Boolean);
 
             // ✅ Save transcript in logs
-            await CallLogs.updateOne(
+            await TestCallLogs.updateOne(
                 { callUUID },
                 {
                     $set: { transcript },
                 }
             );
 
+
+
             // ✅ UPSERT FINAL CALL
-            await Calls.updateOne(
+            await TestCalls.updateOne(
                 { callUUID },
                 {
                     $set: {
@@ -181,7 +182,7 @@ export async function testCallStatusHandler(req: any, reply: any) {
             let recordingUrl = null;
 
             // 1. Try from logs
-            const callLogsFinal = await CallLogs.findOne({ callUUID });
+            const callLogsFinal = await TestCallLogs.findOne({ callUUID });
 
             const recordEvent = callLogsFinal?.logs
                 ?.filter((log: any) => log.event === 'RecordStop')
@@ -191,7 +192,7 @@ export async function testCallStatusHandler(req: any, reply: any) {
 
             // 2. Update only if exists
             if (recordingUrl) {
-                await Calls.updateOne(
+                await TestCalls.updateOne(
                     { callUUID },
                     {
                         $set: { recordingUrl },
@@ -204,7 +205,8 @@ export async function testCallStatusHandler(req: any, reply: any) {
             await redis.del(`call:${callUUID}`);
             await redis.del(`transcript:${callUUID}`);
 
-            const job = await callProcessQueue.add(
+            //Add Process to Queue for Summary and Lead Status (FUTURE IMPROVEMENT)
+            const job = await testCallProcessQueue.add(
                 {
                     call_id: callUUID,
                     type: 'finalize',
@@ -216,7 +218,6 @@ export async function testCallStatusHandler(req: any, reply: any) {
             );
 
             console.log('✅ Job added:', job.id);
-
             console.log(`✅ Call saved with transcript: ${callUUID}`);
         }
 

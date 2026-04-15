@@ -25,19 +25,21 @@ const callsSchema = new Schema(
         recordingUrl: { type: String, default: null },
         duration: { type: Number, default: null },
 
-        transcript: [
-            {
-                role: { type: String },
-                text: { type: String },
-                ts: { type: Date },
-            },
-        ],
-
         summary: { type: String, default: null },
         leadStatus: { type: String, default: null },
 
         startedAt: { type: Date, default: null },
         endedAt: { type: Date, default: null },
+        firstName: { type: String, default: null },
+        lastName: { type: String, default: null },
+        gender: {
+            type: String,
+            default: null
+        },
+        email: {
+            type: String,
+            default: null
+        },
     },
     { timestamps: true }
 );

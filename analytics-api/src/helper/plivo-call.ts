@@ -1,16 +1,30 @@
-export function generatePlivoXml(ngrokUrl: string, agentId: string): string {
-  const wsUrl = ngrokUrl
+export function generatePlivoXml(
+  baseUrl: string,
+  agentId: string,
+  token: string
+): string {
+  const wsUrl = baseUrl
     .replace('https://', 'wss://')
     .replace('http://', 'ws://');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
+  <Record
+    recordSession="true"
+    redirect="false"
+    callbackUrl="${baseUrl}/webhook/call-status?token=${encodeURIComponent(token)}"
+    callbackMethod="POST"
+  />
+
   <Stream
     bidirectional="true"
     keepCallAlive="true"
-    streamTimeout="86400"
-    contentType="audio/x-mulaw;rate=8000">
-    ${wsUrl}/realtime/${agentId}
+    contentType="audio/x-mulaw;rate=8000"
+    statusCallbackUrl="${baseUrl}/webhook/call-status?token=${encodeURIComponent(token)}"
+    statusCallbackMethod="POST"
+  >
+    ${wsUrl}/realtime/${agentId}?token=${encodeURIComponent(token)}
   </Stream>
+
 </Response>`;
 }

@@ -1,9 +1,7 @@
 // src/server.ts
 import 'dotenv/config';
 import { buildApp } from './app';  // ← relative import, not 'app'
-import { bootstrapWorkers } from 'modules/queue/workers';
 
-bootstrapWorkers();
 const PORT = Number(process.env.PORT) || 3001;
 
 buildApp().then((app) => {

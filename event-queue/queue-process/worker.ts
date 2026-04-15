@@ -1,35 +1,104 @@
-import Queue, { Job } from 'bull';
 import dotenv from 'dotenv';
-import { handleCallUpdate } from '../services/call-logs-service';
+import Queue, { Job } from 'bull';
+import { handleCallUpdate } from '../services/callProcess.service';
+import { handleTestCallUpdate } from '../services/testCallProcess.service';
+
 dotenv.config();
 
-const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
-const REDIS_PORT = process.env.REDIS_PORT ? Number(process.env.REDIS_PORT) : 6379;
-const REDIS_USERNAME = process.env.REDIS_USERNAME || 'default';
-const REDIS_PASSWORD = process.env.REDIS_PASSWORD || undefined;
+// ==============================
+// ✅ REDIS CONFIG (SHARED)
+// ==============================
+const REDIS_CONFIG = {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: process.env.REDIS_PORT ? Number(process.env.REDIS_PORT) : 6379,
+    username: process.env.REDIS_USERNAME || 'default',
+    password: process.env.REDIS_PASSWORD || undefined,
+};
 
-const rebuildQueue = new Queue('rebuild-calls', {
-    redis: {
-        host: REDIS_HOST, port: REDIS_PORT,
-        username: REDIS_USERNAME,
-        password: REDIS_PASSWORD,
-    },
+// ==============================
+// ✅ QUEUE INIT (MUST MATCH API)
+// ==============================
+const callProcessQueue = new Queue('call-process', {
+    redis: REDIS_CONFIG,
 });
 
+const testCallProcessQueue = new Queue('test-call-process', {
+    redis: REDIS_CONFIG,
+});
 
-rebuildQueue.process(async (job: Job<{ call_id: string, type: string }>) => {
-    try {
-        const { call_id, type } = job.data;
-        console.log(`Worker received job for call_id: ${call_id}, type: ${type}`);
-        await handleCallUpdate(call_id);
-    } catch (err) {
-        console.error('Worker job failed', err);
-        throw err;
+console.log('🚀 Worker started...');
+console.log('🔌 Redis:', REDIS_CONFIG.host + ':' + REDIS_CONFIG.port);
+
+// ==============================
+// ✅ CALL PROCESSOR
+// ==============================
+callProcessQueue.process(
+    async (job: Job<{ call_id: string; type: string }>) => {
+        try {
+            const { call_id, type } = job.data;
+
+            console.log(`📥 [CALL] Processing job: ${job.id}`);
+            console.log(`➡️ call_id: ${call_id}, type: ${type}`);
+
+            await handleCallUpdate(call_id);
+
+            console.log(`✅ [CALL] Done: ${call_id}`);
+        } catch (err) {
+            console.error('❌ [CALL] Job failed:', err);
+            throw err;
+        }
     }
+);
+
+// ==============================
+// ✅ TEST CALL PROCESSOR
+// ==============================
+testCallProcessQueue.process(
+    async (job: Job<{ call_id: string; type: string }>) => {
+        try {
+            const { call_id, type } = job.data;
+
+            console.log(`📥 [TEST CALL] Processing job: ${job.id}`);
+            console.log(`➡️ call_id: ${call_id}, type: ${type}`);
+
+            await handleTestCallUpdate(call_id);
+
+            console.log(`✅ [TEST CALL] Done: ${call_id}`);
+        } catch (err) {
+            console.error('❌ [TEST CALL] Job failed:', err);
+            throw err;
+        }
+    }
+);
+
+// ==============================
+// ✅ GLOBAL EVENTS (DEBUG)
+// ==============================
+callProcessQueue.on('waiting', (jobId) => {
+    console.log(`⏳ [CALL] Waiting: ${jobId}`);
 });
 
+callProcessQueue.on('active', (job) => {
+    console.log(`⚡ [CALL] Active: ${job.id}`);
+});
 
+callProcessQueue.on('completed', (job) => {
+    console.log(`🎉 [CALL] Completed: ${job.id}`);
+});
 
-console.log('Worker listening for jobs...');
+callProcessQueue.on('failed', (job, err) => {
+    console.error(`🔥 [CALL] Failed: ${job?.id}`, err);
+});
 
+// ==============================
+// ✅ TEST QUEUE EVENTS
+// ==============================
+testCallProcessQueue.on('completed', (job) => {
+    console.log(`🎉 [TEST CALL] Completed: ${job.id}`);
+});
 
+testCallProcessQueue.on('failed', (job, err) => {
+    console.error(`🔥 [TEST CALL] Failed: ${job?.id}`, err);
+});
+
+console.log('👂 Worker listening for jobs...');

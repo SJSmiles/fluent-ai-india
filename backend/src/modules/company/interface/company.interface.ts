@@ -25,8 +25,8 @@ export interface ICompany {
   elevenLabsApiKey: string;
   deepgramApiKey: string;
   csvColumnConfig: ICsvColumnConfig[];
-  callStatus?: any[];
-  callStatusPrompt: string;
+  leadStatus?: any[];
+  leadStatusPrompt: string;
   callSummaryPrompt: string;
   createdBy?: Types.ObjectId;
   updatedBy?: Types.ObjectId;

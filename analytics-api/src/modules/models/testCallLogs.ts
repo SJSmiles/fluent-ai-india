@@ -10,6 +10,13 @@ const testCallLogsSchema = new Schema(
                 details: { type: Schema.Types.Mixed },
             },
         ],
+        transcript: [
+            {
+                role: { type: String },
+                text: { type: String },
+                ts: { type: Date },
+            },
+        ],
     },
     { timestamps: true }
 );

@@ -82,11 +82,11 @@ const companySchema = new Schema<ICompany>(
       type: [csvColumnConfigSchema],
       default: [],
     },
-    callStatus: {
+    leadStatus: {
       type: [String],
       default: [],
     },
-    callStatusPrompt: {
+    leadStatusPrompt: {
       type: String,
       default: '',
     },

@@ -28,7 +28,7 @@ export const createCompanyRequest: RequestSchemas = {
       plivoAuthToken: { type: 'string' },
       elevenLabsApiKey: { type: 'string' },
       deepgramApiKey: { type: 'string' },
-      callStatusPrompt: { type: 'string' },
+      leadStatusPrompt: { type: 'string' },
       callSummaryPrompt: { type: 'string' },
       firstName: { type: 'string' },
       lastName: { type: 'string' },
@@ -44,7 +44,7 @@ export const createCompanyRequest: RequestSchemas = {
         }
       },
       // ── Call status labels (company-level custom list) ────────────────────
-      callStatus: {
+      leadStatus: {
         type: 'array',
         items: { type: 'string', minLength: 1 },
         default: []
@@ -115,7 +115,7 @@ export const updateCompanyRequest: RequestSchemas = {
       plivoAuthToken: { type: 'string' },
       elevenLabsApiKey: { type: 'string' },
       deepgramApiKey: { type: 'string' },
-      callStatusPrompt: { type: 'string' },
+      leadStatusPrompt: { type: 'string' },
       callSummaryPrompt: { type: 'string' },
       address: {
         type: 'object',
@@ -127,7 +127,7 @@ export const updateCompanyRequest: RequestSchemas = {
         }
       },
       // ── Call status labels (company-level custom list) ────────────────────
-      callStatus: {
+      leadStatus: {
         type: 'array',
         items: { type: 'string', minLength: 1 },
         default: []

@@ -9,7 +9,12 @@ export function generateTestPlivoXml(
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Speak>Connecting your call, please wait...</Speak>
+  <Record
+    recordSession="true"
+    redirect="false"
+    callbackUrl="${baseUrl}/webhook/test-call-status?token=${encodeURIComponent(token)}"
+    callbackMethod="POST"
+  />
 
   <Stream
     bidirectional="true"

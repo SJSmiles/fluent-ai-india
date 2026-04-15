@@ -27,9 +27,9 @@ export class CompanyService {
       plivoAuthToken: payload.plivoAuthToken,
       elevenLabsApiKey: payload.elevenLabsApiKey,
       deepgramApiKey: payload.deepgramApiKey,
-      callStatusPrompt: payload.callStatusPrompt,
+      leadStatusPrompt: payload.leadStatusPrompt,
       callSummaryPrompt: payload.callSummaryPrompt,
-      callStatus: payload.callStatus,
+      leadStatus: payload.leadStatus,
       csvColumnConfig: payload.csvColumnConfig,
       address: {
         street: payload?.address?.street || '',
@@ -86,9 +86,9 @@ export class CompanyService {
         deepgramApiKey,
         isActive,
         address,
-        callStatus,
+        leadStatus,
         csvColumnConfig,
-        callStatusPrompt,
+        leadStatusPrompt,
         callSummaryPrompt,
       } = payload;
 
@@ -159,12 +159,12 @@ export class CompanyService {
       if (plivoAuthToken !== undefined) updateData.plivoAuthToken = plivoAuthToken;
       if (elevenLabsApiKey !== undefined) updateData.elevenLabsApiKey = elevenLabsApiKey;
       if (deepgramApiKey !== undefined) updateData.deepgramApiKey = deepgramApiKey;
-      if (callStatusPrompt !== undefined) updateData.callStatusPrompt = callStatusPrompt;
+      if (leadStatusPrompt !== undefined) updateData.leadStatusPrompt = leadStatusPrompt;
       if (callSummaryPrompt !== undefined) updateData.callSummaryPrompt = callSummaryPrompt;
       if (isActive !== undefined) updateData.isActive = isActive;
 
-      if (callStatus !== undefined) {
-        updateData.callStatus = callStatus
+      if (leadStatus !== undefined) {
+        updateData.leadStatus = leadStatus
           .map((s: string) => s.trim())
           .filter(Boolean);
       }
@@ -212,9 +212,9 @@ export class CompanyService {
           domain: updatedCompany.domain,
           isActive: updatedCompany.isActive,
           address: updatedCompany.address,
-          callStatus: updatedCompany.callStatus,
+          leadStatus: updatedCompany.leadStatus,
           csvColumnConfig: updatedCompany.csvColumnConfig,
-          callStatusPrompt: updatedCompany.callStatusPrompt,
+          leadStatusPrompt: updatedCompany.leadStatusPrompt,
           callSummaryPrompt: updatedCompany.callSummaryPrompt,
         }
       };
