@@ -7,7 +7,7 @@ export interface IBlackList {
   clientName: string;
   email?: string;
   reason: string; // Why they were blacklisted (e.g., "Do Not Contact")
-  callId?: string; // Reference to the call that triggered blacklist
+  callUUID?: string; // Reference to the call that triggered blacklist
   isArchived: boolean;
   createdAt: Date;
   updatedAt: Date;

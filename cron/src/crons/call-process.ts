@@ -936,7 +936,7 @@ class PlivoCallDispatcher {
                             status: RECIPIENTS_CALL_STATUS.IN_PROCESS,
                             updatedAt: new Date()
                         },
-                        $push: { callResponse: { callUuid, dispatchedAt: new Date() } }
+                        $push: { callResponses: { callUuid, dispatchedAt: new Date() } }
                     }
                 );
 
@@ -992,6 +992,7 @@ class PlivoCallDispatcher {
         const payload = {
             agentId: agentId,
             userId: batchCall.createdBy?.toString(),
+            companyId: batchCall.companyId?.toString(),
             recipientId: rec?._id?.toString(),
             batchCallId: mainBatchCallData._id.toString(),
             followupBatchCallId: batchCall.followupNumber

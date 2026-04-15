@@ -30,7 +30,7 @@ export async function incomingTestCallHandler(req: any, reply: any) {
 
         const config = await getAgentConfig(agentId);
 
-        console.log('📡 [incomingTestCallHandler] Body:', req.body);
+        console.log('📡 [incomingTestCallHandler] Event:', req?.body?.Event);
 
         // ✅ Store metadata in Redis
         await redis.set(
@@ -82,14 +82,13 @@ export async function incomingTestCallHandler(req: any, reply: any) {
 
 export async function testCallStatusHandler(req: any, reply: any) {
     try {
-        console.log('📡 [testCallStatusHandler] Body:', req.body);
 
         const event = req.body?.Event;
         const callUUID = req.query.callUUID || req.body?.CallUUID;
 
         if (!callUUID) return reply.send({ ok: false });
 
-        console.log(`📡 Event: ${event}`);
+        console.log(`📡 testCallStatusHandler Event: ${event}`);
 
         // =====================================================
         // ✅ 1. UPSERT LOGS (COMMON FOR ALL EVENTS)

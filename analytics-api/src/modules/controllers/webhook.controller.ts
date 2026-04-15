@@ -5,12 +5,13 @@ import { CallLogs } from 'modules/models/callLogs.';
 import { generatePlivoXml } from '@helper/plivo-call';
 import { Calls } from 'modules/models/calls.model';
 import { callProcessQueue } from 'modules/queue/queue';
+import { Types } from 'mongoose';
 
 
 
 
 
-export async function incomingTestCallHandler(req: any, reply: any) {
+export async function incomingCallHandler(req: any, reply: any) {
     try {
         const token = req.query.token as string;
         if (!token) throw new Error('TOKEN_MISSING');
@@ -26,12 +27,10 @@ export async function incomingTestCallHandler(req: any, reply: any) {
                 .send('<Response><Speak>Missing CallUUID</Speak></Response>');
         }
 
-        const { agentId, userId, companyId } = decoded;
+        const { agentId, userId, companyId, recipientId, batchCallId, followupBatchCallId } = decoded;
 
         const config = await getAgentConfig(agentId);
-
-        console.log('📡 [incomingTestCallHandler] Body:', req.body);
-
+        console.log('📡 [incomingCallHandler] Event:', req?.body?.Event);
         // ✅ Store metadata in Redis
         await redis.set(
             `call:${callUUID}`,
@@ -40,6 +39,9 @@ export async function incomingTestCallHandler(req: any, reply: any) {
                 agentId,
                 userId,
                 companyId,
+                recipientId,
+                batchCallId,
+                followupBatchCallId,
                 direction: req.query?.direction || 'outbound',
                 fromNumber: req.body?.From || null,
                 toNumber: req.body?.To || null,
@@ -80,9 +82,16 @@ export async function incomingTestCallHandler(req: any, reply: any) {
 }
 
 
-export async function testCallStatusHandler(req: any, reply: any) {
+export async function callStatusHandler(req: any, reply: any) {
     try {
-        console.log('📡 [testCallStatusHandler] Body:', req.body);
+        console.log('📡 [callStatusHandler] Body:', req.body);
+        const token = req.query.token as string;
+        if (!token) throw new Error('TOKEN_MISSING');
+
+        const decoded: any = jwt.verify(
+            token,
+            process.env.JWT_TOKEN_SECRET as string
+        );
 
         const event = req.body?.Event;
         const callUUID = req.query.callUUID || req.body?.CallUUID;
@@ -115,7 +124,7 @@ export async function testCallStatusHandler(req: any, reply: any) {
         // ✅ 2. HANGUP (FINAL SAVE)
         // =====================================================
         if (event === 'Hangup') {
-            console.log(`⚙️ Processing call end: ${callUUID}`);
+            const { agentId, userId, companyId, recipientId, batchCallId, followupBatchCallId } = decoded;
 
             const redisData = await redis.get(`call:${callUUID}`);
             const transcriptList = await redis.lrange(`transcript:${callUUID}`, 0, -1);
@@ -155,9 +164,12 @@ export async function testCallStatusHandler(req: any, reply: any) {
                 {
                     $set: {
                         callUUID,
-                        agentId: parsedMeta.agentId || null,
-                        companyId: parsedMeta.companyId || null,
-                        userId: parsedMeta.userId || null,
+                        agentId: agentId ? new Types.ObjectId(agentId) : null,
+                        companyId: companyId ? new Types.ObjectId(companyId) : null,
+                        userId: userId ? new Types.ObjectId(userId) : null,
+                        batchCallId: batchCallId ? new Types.ObjectId(batchCallId) : null,
+                        followupBatchCallId: followupBatchCallId ? new Types.ObjectId(followupBatchCallId) : null,
+                        recipientId: recipientId ? new Types.ObjectId(recipientId) : null,
                         direction: parsedMeta.direction || null,
                         callLogsId: callLogs?._id || null,
                         fromNumber: req.body?.From || null,
@@ -215,9 +227,9 @@ export async function testCallStatusHandler(req: any, reply: any) {
                 }
             );
 
-            console.log('✅ Job added:', job.id);
+            console.log('✅ callStatusHandler Job added:', job.id);
 
-            console.log(`✅ Call saved with transcript: ${callUUID}`);
+            console.log(`✅ callStatusHandler Call saved with transcript: ${callUUID}`);
         }
 
         return reply.send({ ok: true });

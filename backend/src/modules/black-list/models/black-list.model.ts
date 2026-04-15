@@ -38,7 +38,7 @@ const BlackListSchema = new Schema<IBlackList>(
       required: true,
       default: 1
     },
-    callId: {
+    callUUID: {
       type: String,
       default: null
     },

@@ -26,7 +26,7 @@ enum LogLevel {
 }
 
 interface LogContext {
-    callId?: string;
+    callUUID?: string;
     batchId?: string;
     recipientId?: string;
     sheetId?: string;
@@ -253,7 +253,7 @@ class BlacklistManager {
         try {
             Logger.info('Adding number to blacklist', {
                 phoneNumber: callData.toNumber,
-                callId: callData.callId,
+                callUUID: callData.callUUID,
                 reason: 'Do Not Contact'
             });
 
@@ -298,7 +298,7 @@ class BlacklistManager {
                 bmbyId: callData.bmbyId || null,
                 email: callData.email || null,
                 reason: 'Do Not Contact',
-                callId: callData.callId,
+                callUUID: callData.callUUID,
                 isArchived: false,
                 createdAt: new Date(),
                 updatedAt: new Date()
@@ -365,7 +365,7 @@ class BatchProcessor {
             await this.updateRecipient(recipient._id, callData, statusUpdate);
 
             // Update calls collection
-            await this.updateCallAttempts(callData, statusUpdate.newAttemptLength);
+            await this.updateCallAttempts(callData, statusUpdate.newAttemptLength, recipient);
 
             // Update batch counters
             await this.updateBatchCounters(callData?.batchCallId, callData?.followupBatchCallId);
@@ -375,7 +375,7 @@ class BatchProcessor {
 
             performanceMetrics.track('processBatch', timer());
             Logger.success('Batch processing complete', {
-                callId: callData?.callId,
+                callUUID: callData?.callUUID,
                 recipientId: callData?.recipientId,
                 status: statusUpdate.statusValue,
                 duration: timer()
@@ -383,7 +383,7 @@ class BatchProcessor {
         } catch (error) {
             performanceMetrics.track('processBatch', timer(), true);
             Logger.error('Error processing batch', error, {
-                callId: callData?.callId,
+                callUUID: callData?.callUUID,
                 batchCallId: callData?.batchCallId,
                 recipientId: callData?.recipientId
             });
@@ -459,20 +459,25 @@ class BatchProcessor {
 
     private async updateCallAttempts(
         callData: any,
-        newAttemptLength: number
+        newAttemptLength: number,
+        recipient: any
     ): Promise<void> {
         await this.db.calls.updateOne(
-            { batchCallId: callData.batchCallId, toNumber: callData.toNumber, callId: callData.callId },
+            { batchCallId: callData.batchCallId, toNumber: callData.toNumber, callUUID: callData.callUUID },
             {
                 $set: {
                     updatedAt: new Date(),
+                    firstName: recipient.firstName || null,
+                    lastName: recipient.lastName || null,
+                    email: recipient.email || null,
+                    gender: recipient.gender || null,
                     attemptLength: newAttemptLength
                 }
             }
         );
 
         Logger.debug('Call attempts updated', {
-            callId: callData.callId,
+            callUUID: callData.callUUID,
             toNumber: callData.toNumber,
             attemptLength: newAttemptLength
         });
@@ -644,8 +649,8 @@ class LeadStatusHistoryHandler {
         console.log('callData:', callData);
 
         try {
-            console.log('Tracking lead status change inside method for call:', callData.callId, 'with status:', callData.leadStatus);
-            if (!callData?.callId || !callData?.leadStatus) {
+            console.log('Tracking lead status change inside method for call:', callData.callUUID, 'with status:', callData.leadStatus);
+            if (!callData?.callUUID || !callData?.leadStatus) {
                 Logger.debug('Missing required fields for status history');
                 return;
             }
@@ -661,12 +666,12 @@ class LeadStatusHistoryHandler {
                 }
             );
 
-            console.log('Previous call data retrieved for call:', callData.callId, 'is:', previousCall);
+            console.log('Previous call data retrieved for call:', callData.callUUID, 'is:', previousCall);
 
 
             const previousLeadStatus = previousCall?.leadStatus || null;
 
-            console.log('Previous lead status for call:', callData.callId, 'is:', previousLeadStatus);
+            console.log('Previous lead status for call:', callData.callUUID, 'is:', previousLeadStatus);
 
             // ✅ Skip if same status
             if (previousLeadStatus === callData.leadStatus) {
@@ -675,7 +680,7 @@ class LeadStatusHistoryHandler {
             }
 
             Logger.info('Creating lead status history', {
-                callId: callData.callId,
+                callUUID: callData.callUUID,
                 previousStatus: previousLeadStatus,
                 newStatus: callData.leadStatus
             });
@@ -687,7 +692,7 @@ class LeadStatusHistoryHandler {
                 phoneNumber: callData.toNumber,
                 companyId: callData.companyId,
                 leadStatus: callData.leadStatus,
-                callId: callData.callId,
+                callUUID: callData.callUUID,
                 createdBy: callData.createdBy,
                 createdByType: 'system',
                 changeReason: `Auto-updated via webhook from "${previousLeadStatus || 'Unclassified'}" to "${callData.leadStatus}"`,
@@ -695,7 +700,7 @@ class LeadStatusHistoryHandler {
                 updatedAt: new Date()
             };
 
-            console.log('Inserting lead status history entry for call:', callData.callId, 'Entry:', historyEntry);
+            console.log('Inserting lead status history entry for call:', callData.callUUID, 'Entry:', historyEntry);
 
             const newHistoryEntry = await this.db.leadStatusHistory.insertOne(historyEntry);
             console.log('Lead status history entry created with ID:', newHistoryEntry.insertedId.toString());
@@ -715,17 +720,17 @@ class LeadStatusHistoryHandler {
 // =====================================================
 // 🚀 MAIN FUNCTION
 // =====================================================
-export async function handleCallUpdate(call_id: string): Promise<void> {
+export async function handleCallUpdate(callUUID: string): Promise<void> {
     try {
         Logger.info('='.repeat(50));
-        Logger.info('📞 Processing call update', { callId: call_id });
+        Logger.info('📞 Processing call update', { callUUID: callUUID });
 
         const db = DatabaseConnection.getInstance();
         await db.initialize();
 
-        const callData: any = await db.calls.findOne({ callUUID: call_id });
+        const callData: any = await db.calls.findOne({ callUUID: callUUID });
         if (!callData) {
-            Logger.warn('Call not found', { call_id });
+            Logger.warn('Call not found', { callUUID });
             return;
         }
 
@@ -735,15 +740,15 @@ export async function handleCallUpdate(call_id: string): Promise<void> {
             return;
         }
 
-        const callLogsData: any = await db.callLogs.findOne({ callUUID: call_id });
+        const callLogsData: any = await db.callLogs.findOne({ callUUID: callUUID });
         if (!callLogsData?.transcript) {
-            Logger.warn('Transcript not found', { call_id });
+            Logger.warn('Transcript not found', { callUUID });
             return;
         }
 
         const companyData: any = await db.Company.findOne({ _id: callData.companyId });
         if (!companyData) {
-            Logger.warn('Company not found', { call_id });
+            Logger.warn('Company not found', { callUUID });
             return;
         }
 
@@ -792,7 +797,7 @@ export async function handleCallUpdate(call_id: string): Promise<void> {
         // ✅ UPDATE CALL
         // =====================================================
         await db.calls.updateOne(
-            { callUUID: call_id },
+            { callUUID: callUUID },
             {
                 $set: {
                     summary,
@@ -836,12 +841,12 @@ export async function handleCallUpdate(call_id: string): Promise<void> {
         const batchProcessor = new BatchProcessor(db);
         await batchProcessor.process(callData);
 
-        Logger.success('✅ Call update complete', { callId: call_id });
+        Logger.success('✅ Call update complete', { callUUID: callUUID });
         Logger.info('='.repeat(50));
 
     } catch (error) {
         Logger.error('❌ Fatal error in handleCallUpdate', error, {
-            callId: call_id,
+            callUUID: callUUID,
         });
         throw error;
     }
