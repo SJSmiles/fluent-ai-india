@@ -715,20 +715,18 @@ class LeadStatusHistoryHandler {
 }
 
 
-
-
 // =====================================================
 // 🚀 MAIN FUNCTION
 // =====================================================
 export async function handleCallUpdate(callUUID: string): Promise<void> {
     try {
         Logger.info('='.repeat(50));
-        Logger.info('📞 Processing call update', { callUUID: callUUID });
+        Logger.info('📞 Processing call update', { callUUID });
 
         const db = DatabaseConnection.getInstance();
         await db.initialize();
 
-        const callData: any = await db.calls.findOne({ callUUID: callUUID });
+        const callData: any = await db.calls.findOne({ callUUID });
         if (!callData) {
             Logger.warn('Call not found', { callUUID });
             return;
@@ -740,7 +738,7 @@ export async function handleCallUpdate(callUUID: string): Promise<void> {
             return;
         }
 
-        const callLogsData: any = await db.callLogs.findOne({ callUUID: callUUID });
+        const callLogsData: any = await db.callLogs.findOne({ callUUID });
         if (!callLogsData?.transcript) {
             Logger.warn('Transcript not found', { callUUID });
             return;
@@ -755,49 +753,68 @@ export async function handleCallUpdate(callUUID: string): Promise<void> {
         const transcript = callLogsData.transcript;
 
         // =====================================================
-        // ✅ PROMPTS (company OR default)
+        // ✅ DEFAULT VALUES (for empty transcript case)
         // =====================================================
-        const summaryPrompt = companyData.callSummaryPrompt || DEFAULT_SUMMARY_PROMPT;
-        const leadPrompt = companyData.leadStatusPrompt || DEFAULT_LEAD_STATUS_PROMPT;
+        let summary: string | null = null;
+        let leadStatus: string | null = null;
+        let sentiment: string | null = null;
+        let nextAction: string | null = null;
+        let intent: string | null = null;
+        let rawLeadStatus: any;
+
+        let summaryRes: any = null;
+        let leadRes: any = null;
+        let analysisRes: any = null;
 
         // =====================================================
-        // 🚀 PARALLEL AI CALLS
+        // 🤖 AI EXECUTION (ONLY IF TRANSCRIPT EXISTS)
         // =====================================================
-        const [summaryRes, leadRes, analysisRes] = await Promise.all([
-            runAI(summaryPrompt, transcript),
-            runAI(leadPrompt, transcript),
-            runAI(DEFAULT_ANALYSIS_PROMPT, transcript),
-        ]);
+        if (transcript.length === 0) {
+            Logger.warn('Transcript is empty → Skipping AI', { callUUID });
+        } else {
+            // ✅ PROMPTS
+            const summaryPrompt =
+                companyData.callSummaryPrompt || DEFAULT_SUMMARY_PROMPT;
+
+            const leadPrompt =
+                companyData.leadStatusPrompt || DEFAULT_LEAD_STATUS_PROMPT;
+
+            // 🚀 PARALLEL AI CALLS
+            [summaryRes, leadRes, analysisRes] = await Promise.all([
+                runAI(summaryPrompt, transcript),
+                runAI(leadPrompt, transcript),
+                runAI(DEFAULT_ANALYSIS_PROMPT, transcript),
+            ]);
+
+            // ✅ EXTRACT VALUES
+            rawLeadStatus = leadRes?.leadStatus || null;
+
+            summary = summaryRes?.summary || null;
+
+            leadStatus = mapLeadStatus(
+                rawLeadStatus,
+                companyData.leadStatus || []
+            );
+
+            sentiment = analysisRes?.sentiment || null;
+            nextAction = analysisRes?.nextAction || null;
+            intent = analysisRes?.intent || null;
+
+            Logger.info('🧠 AI Results', {
+                summary,
+                rawLeadStatus,
+                finalLeadStatus: leadStatus,
+                sentiment,
+                nextAction,
+                intent,
+            });
+        }
 
         // =====================================================
-        // ✅ EXTRACT VALUES
-        // =====================================================
-        const rawLeadStatus = leadRes?.leadStatus || null;
-
-        const summary = summaryRes?.summary || null;
-        const leadStatus = mapLeadStatus(
-            rawLeadStatus,
-            companyData.leadStatus || []
-        );
-
-        const sentiment = analysisRes?.sentiment || null;
-        const nextAction = analysisRes?.nextAction || null;
-        const intent = analysisRes?.intent || null;
-
-        Logger.info('🧠 AI Results', {
-            summary,
-            rawLeadStatus,
-            finalLeadStatus: leadStatus,
-            sentiment,
-            nextAction,
-            intent,
-        });
-
-        // =====================================================
-        // ✅ UPDATE CALL
+        // ✅ UPDATE CALL (RUNS IN BOTH CASES)
         // =====================================================
         await db.calls.updateOne(
-            { callUUID: callUUID },
+            { callUUID },
             {
                 $set: {
                     summary,
@@ -807,19 +824,23 @@ export async function handleCallUpdate(callUUID: string): Promise<void> {
                     intent,
                     aiProcessedAt: new Date(),
 
-                    // optional debug
-                    aiRaw: {
-                        summary: summaryRes,
-                        lead: leadRes,
-                        analysis: analysisRes,
-                    },
+                    aiRaw:
+                        transcript.length === 0
+                            ? null
+                            : {
+                                summary: summaryRes,
+                                lead: leadRes,
+                                analysis: analysisRes,
+                            },
+
+                    aiSkipped: transcript.length === 0, // ✅ optional debug flag
                 },
             }
         );
 
         // update local object
         callData.summary = summary;
-        callData.leadStatus = leadStatus;
+        callData.leadStatus = leadStatus || 'Unclassified';
 
         // =====================================================
         // ✅ BLACKLIST
@@ -841,12 +862,12 @@ export async function handleCallUpdate(callUUID: string): Promise<void> {
         const batchProcessor = new BatchProcessor(db);
         await batchProcessor.process(callData);
 
-        Logger.success('✅ Call update complete', { callUUID: callUUID });
+        Logger.success('✅ Call update complete', { callUUID });
         Logger.info('='.repeat(50));
 
     } catch (error) {
         Logger.error('❌ Fatal error in handleCallUpdate', error, {
-            callUUID: callUUID,
+            callUUID,
         });
         throw error;
     }

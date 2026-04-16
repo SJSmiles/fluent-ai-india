@@ -221,17 +221,17 @@ class DatabaseConnection {
 }
 
 
-export async function handleTestCallUpdate(call_id: string): Promise<void> {
+export async function handleTestCallUpdate(callUUID: string): Promise<void> {
     try {
         Logger.info('='.repeat(50));
-        Logger.info('📞 Processing call update', { callId: call_id });
+        Logger.info('📞 Processing call update', { callId: callUUID });
 
         const db = DatabaseConnection.getInstance();
         await db.initialize();
 
-        const callData: any = await db.calls.findOne({ callUUID: call_id });
+        const callData: any = await db.calls.findOne({ callUUID: callUUID });
         if (!callData) {
-            Logger.warn('Call not found', { call_id });
+            Logger.warn('Call not found', { callUUID });
             return;
         }
 
@@ -241,64 +241,83 @@ export async function handleTestCallUpdate(call_id: string): Promise<void> {
             return;
         }
 
-        const callLogsData: any = await db.callLogs.findOne({ callUUID: call_id });
+        const callLogsData: any = await db.callLogs.findOne({ callUUID: callUUID });
         if (!callLogsData?.transcript) {
-            Logger.warn('Transcript not found', { call_id });
+            Logger.warn('Transcript not found', { callUUID });
             return;
         }
 
         const companyData: any = await db.Company.findOne({ _id: callData.companyId });
         if (!companyData) {
-            Logger.warn('Company not found', { call_id });
+            Logger.warn('Company not found', { callUUID });
             return;
         }
 
         const transcript = callLogsData.transcript;
 
         // =====================================================
-        // ✅ PROMPTS (company OR default)
+        // ✅ DEFAULT VALUES (for empty transcript case)
         // =====================================================
-        const summaryPrompt = companyData.callSummaryPrompt || DEFAULT_SUMMARY_PROMPT;
-        const leadPrompt = companyData.leadStatusPrompt || DEFAULT_LEAD_STATUS_PROMPT;
+        let summary: string | null = null;
+        let leadStatus: string | null = null;
+        let sentiment: string | null = null;
+        let nextAction: string | null = null;
+        let intent: string | null = null;
+        let rawLeadStatus: any;
+
+        let summaryRes: any = null;
+        let leadRes: any = null;
+        let analysisRes: any = null;
 
         // =====================================================
-        // 🚀 PARALLEL AI CALLS
+        // 🤖 AI EXECUTION (ONLY IF TRANSCRIPT EXISTS)
         // =====================================================
-        const [summaryRes, leadRes, analysisRes] = await Promise.all([
-            runAI(summaryPrompt, transcript),
-            runAI(leadPrompt, transcript),
-            runAI(DEFAULT_ANALYSIS_PROMPT, transcript),
-        ]);
+        if (transcript.length === 0) {
+            Logger.warn('Transcript is empty → Skipping AI', { callUUID });
+        } else {
+            // ✅ PROMPTS
+            const summaryPrompt =
+                companyData.callSummaryPrompt || DEFAULT_SUMMARY_PROMPT;
 
-        // =====================================================
-        // ✅ EXTRACT VALUES
-        // =====================================================
-        const rawLeadStatus = leadRes?.leadStatus || null;
+            const leadPrompt =
+                companyData.leadStatusPrompt || DEFAULT_LEAD_STATUS_PROMPT;
 
-        const summary = summaryRes?.summary || null;
-        const leadStatus = mapLeadStatus(
-            rawLeadStatus,
-            companyData.leadStatus || []
-        );
+            // 🚀 PARALLEL AI CALLS
+            [summaryRes, leadRes, analysisRes] = await Promise.all([
+                runAI(summaryPrompt, transcript),
+                runAI(leadPrompt, transcript),
+                runAI(DEFAULT_ANALYSIS_PROMPT, transcript),
+            ]);
 
-        const sentiment = analysisRes?.sentiment || null;
-        const nextAction = analysisRes?.nextAction || null;
-        const intent = analysisRes?.intent || null;
+            // ✅ EXTRACT VALUES
+            rawLeadStatus = leadRes?.leadStatus || null;
 
-        Logger.info('🧠 AI Results', {
-            summary,
-            rawLeadStatus,
-            finalLeadStatus: leadStatus,
-            sentiment,
-            nextAction,
-            intent,
-        });
+            summary = summaryRes?.summary || null;
+
+            leadStatus = mapLeadStatus(
+                rawLeadStatus,
+                companyData.leadStatus || []
+            );
+
+            sentiment = analysisRes?.sentiment || null;
+            nextAction = analysisRes?.nextAction || null;
+            intent = analysisRes?.intent || null;
+
+            Logger.info('🧠 AI Results', {
+                summary,
+                rawLeadStatus,
+                finalLeadStatus: leadStatus,
+                sentiment,
+                nextAction,
+                intent,
+            });
+        }
 
         // =====================================================
         // ✅ UPDATE CALL
         // =====================================================
         await db.calls.updateOne(
-            { callUUID: call_id },
+            { callUUID: callUUID },
             {
                 $set: {
                     summary,
@@ -314,6 +333,7 @@ export async function handleTestCallUpdate(call_id: string): Promise<void> {
                         lead: leadRes,
                         analysis: analysisRes,
                     },
+                    aiSkipped: transcript.length === 0, // ✅ optional debug flag
                 },
             }
         );
@@ -323,12 +343,12 @@ export async function handleTestCallUpdate(call_id: string): Promise<void> {
         callData.leadStatus = leadStatus;
 
 
-        Logger.success('✅ Call update complete', { callId: call_id });
+        Logger.success('✅ Call update complete', { callId: callUUID });
         Logger.info('='.repeat(50));
 
     } catch (error) {
         Logger.error('❌ Fatal error in handleCallUpdate', error, {
-            callId: call_id,
+            callId: callUUID,
         });
         throw error;
     }
