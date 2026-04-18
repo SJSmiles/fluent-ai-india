@@ -7,6 +7,12 @@
         "build": "tsc",
         "start": "node dist/server.js"
     },
+    "_moduleAliases": {
+        "@helper": "dist/helper",
+        "@store": "dist/store",
+        "@realtime": "dist/realtime",
+        "@integrations": "dist/integrations"
+    },
     "dependencies": {
         "@deepgram/sdk": "3",
         "@fastify/cors": "^10.0.0",
@@ -22,6 +28,7 @@
         "fastify": "^5.0.0",
         "ioredis": "^5.10.1",
         "jsonwebtoken": "^9.0.3",
+        "module-alias": "^2.3.4",
         "mongoose": "^8.16.1",
         "openai": "^6.33.0",
         "ws": "^8.20.0"
