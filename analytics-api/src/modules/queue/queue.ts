@@ -1,4 +1,8 @@
+
+import dotenv from 'dotenv';
+dotenv.config();
 import Queue from 'bull';
+
 
 const REDIS_CONFIG = {
   host: process.env.REDIS_HOST || 'localhost',

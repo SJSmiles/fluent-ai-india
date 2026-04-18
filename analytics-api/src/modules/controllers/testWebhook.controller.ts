@@ -2,8 +2,6 @@ import { redis } from '../store/redis';
 import { getAgentConfig } from '../services/agent.service';
 import jwt from 'jsonwebtoken';
 
-import { generateTestPlivoXml } from '@helper/plivo-test-call';
-
 import { TestCallLogs } from '../models/testCallLogs';
 import { TestCalls } from 'modules/models/testCalls.model';
 import { testCallProcessQueue } from 'modules/queue/queue';
@@ -237,4 +235,36 @@ function handleError(error: any, reply: any, context: string) {
         success: false,
         message: error.message || 'Internal Server Error',
     });
+}
+
+
+export function generateTestPlivoXml(
+    baseUrl: string,
+    agentId: string,
+    token: string
+): string {
+    const wsUrl = baseUrl
+        .replace('https://', 'wss://')
+        .replace('http://', 'ws://');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Record
+    recordSession="true"
+    redirect="false"
+    callbackUrl="${baseUrl}/webhook/test-call-status?token=${encodeURIComponent(token)}"
+    callbackMethod="POST"
+  />
+
+  <Stream
+    bidirectional="true"
+    keepCallAlive="true"
+    contentType="audio/x-mulaw;rate=8000"
+    statusCallbackUrl="${baseUrl}/webhook/test-call-status?token=${encodeURIComponent(token)}"
+    statusCallbackMethod="POST"
+  >
+    ${wsUrl}/realtime/${agentId}?token=${encodeURIComponent(token)}
+  </Stream>
+
+</Response>`;
 }

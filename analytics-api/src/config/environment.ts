@@ -1,9 +1,7 @@
 // Import environment variables
 import dotenv from 'dotenv';
 
-if (process.env.NODE_ENV !== 'production') {
-  dotenv.config();
-}
+dotenv.config();
 
 export const Environment = {
   env: process.env.NODE_ENV,
