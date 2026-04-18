@@ -1,34 +1,36 @@
-# Stage 1: Build
+# ---------- Stage 1: Build ----------
 FROM node:20 AS builder
 
-# Create app directory
 WORKDIR /app
 
-# Install dependencies
+# Copy dependency files
 COPY package*.json ./
+
+# Install ALL deps (including dev for build tools like tsc-alias)
 RUN npm install
 
-# Copy source code
+# Copy source
 COPY . .
 
-# Build TypeScript
+# Build TypeScript + resolve path aliases
 RUN npm run build
 
-# Stage 2: Production image
+# ---------- Stage 2: Production ----------
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Install only production dependencies
+# Copy only package files
 COPY package*.json ./
+
+# Install ONLY production deps
 RUN npm install --omit=dev
 
-# Copy compiled app and environment file
+# Copy built files from builder
 COPY --from=builder /app/dist ./dist
-#COPY .env .env
 
-# Expose app port
-#EXPOSE 3000
+# Optional: if you need runtime configs
+# COPY .env .env
 
-# Start the app
+# Start app
 CMD ["node", "dist/server.js"]
