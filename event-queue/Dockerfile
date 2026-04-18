@@ -23,4 +23,4 @@ RUN npm install && npm run build
 ENV NODE_ENV=production
 
 # Set the command to run the production build
-CMD ["sh", "-c", "node dist/queue-process/worker.js & node dist/queue-process/batch-process.js & node dist/queue-process/bmby-process.js & node dist/queue-process/sheet-process.js & node dist/queue-process/sms-process.js && wait"]
+CMD ["sh", "-c", "node dist/queue-process/worker.js"]
