@@ -4,7 +4,7 @@
     "main": "dist/server.js",
     "scripts": {
         "dev": "ts-node-dev --respawn -r tsconfig-paths/register src/server.ts",
-        "build": "tsc",
+        "build": "tsc && tsc-alias",
         "start": "node dist/server.js"
     },
     "_moduleAliases": {
