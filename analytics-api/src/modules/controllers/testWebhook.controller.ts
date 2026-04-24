@@ -2,7 +2,7 @@ import { redis } from '../store/redis';
 import { getAgentConfig } from '../services/agent.service';
 import jwt from 'jsonwebtoken';
 
-import { TestCallLogs } from '../models/testCallLogs';
+import { TestCallLogs } from '../models/testCallLogs.model';
 import { TestCalls } from 'modules/models/testCalls.model';
 import { testCallProcessQueue } from 'modules/queue/queue';
 

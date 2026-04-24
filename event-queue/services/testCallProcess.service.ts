@@ -6,7 +6,8 @@ import { MongoClient, Db, Collection } from 'mongodb';
 import {
     DEFAULT_ANALYSIS_PROMPT,
     DEFAULT_LEAD_STATUS_PROMPT,
-    DEFAULT_SUMMARY_PROMPT
+    DEFAULT_SUMMARY_PROMPT,
+    enhanceLeadPrompt
 } from '../config/server-config';
 
 import { generateChat } from './ai.service';
@@ -279,8 +280,12 @@ export async function handleTestCallUpdate(callUUID: string): Promise<void> {
             const summaryPrompt =
                 companyData.callSummaryPrompt || DEFAULT_SUMMARY_PROMPT;
 
-            const leadPrompt =
+            const baseLeadPrompt =
                 companyData.leadStatusPrompt || DEFAULT_LEAD_STATUS_PROMPT;
+
+            const leadStatusArray = companyData.leadStatus || [];
+
+            const leadPrompt = enhanceLeadPrompt(baseLeadPrompt, leadStatusArray);
 
             // 🚀 PARALLEL AI CALLS
             [summaryRes, leadRes, analysisRes] = await Promise.all([

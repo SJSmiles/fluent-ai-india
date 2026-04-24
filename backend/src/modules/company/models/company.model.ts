@@ -94,6 +94,10 @@ const companySchema = new Schema<ICompany>(
       type: String,
       default: '',
     },
+    companyWorkPrompt: {
+      type: String,
+      default: '',
+    },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
