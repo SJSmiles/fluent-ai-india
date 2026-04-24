@@ -8,6 +8,9 @@ import {
   Menu,
   Cpu,
   KeyRound,
+  Phone,
+  Ban,
+  PhoneCall,
   X
 } from "lucide-react";
 import { useAuth } from "../../Helper/AuthContext";
@@ -61,6 +64,9 @@ const DashboardLayout: React.FC = () => {
       ? [
         { to: "/users", icon: Users as any, label: "Users" },
         { to: "/agents", icon: Cpu as any, label: "Agents" },
+        { to: "/phone-numbers", icon: Phone as any, label: "Phone Numbers" },
+        { to: "/blacklist", icon: Ban as any, label: "Blacklist" },
+        { to: "/batch-calls", icon: PhoneCall as any, label: "Batch Calls" },
       ]
       : []),
   ];

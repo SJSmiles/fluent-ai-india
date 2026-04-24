@@ -6,6 +6,9 @@ import Overview from "../pages/Overview";
 import Companies from "../pages/Companies";
 import Users from "../pages/Users";
 import Agents from "../pages/Agents";
+import PhoneNumbers from "../pages/PhoneNumbers";
+import Blacklist from "../pages/Blacklist";
+import BatchCalls from "../pages/BatchCalls";
 
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -78,7 +81,18 @@ function AppRoutes() {
                 />
 
                 {/* Core Modules - Accessible to All Authenticated Users */}
-               
+                <Route
+                    path="phone-numbers"
+                    element={user?.isAdmin ? <PhoneNumbers /> : <Navigate to="/dashboard" replace />}
+                />
+                <Route
+                    path="blacklist"
+                    element={user?.isAdmin ? <Blacklist /> : <Navigate to="/dashboard" replace />}
+                />
+                <Route
+                    path="batch-calls"
+                    element={user?.isAdmin ? <BatchCalls /> : <Navigate to="/dashboard" replace />}
+                />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
