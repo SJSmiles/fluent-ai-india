@@ -9,6 +9,7 @@ import Agents from "../pages/Agents";
 import PhoneNumbers from "../pages/PhoneNumbers";
 import Blacklist from "../pages/Blacklist";
 import BatchCalls from "../pages/BatchCalls";
+import BatchCallDetails from "../pages/BatchCallDetails";
 
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -92,6 +93,10 @@ function AppRoutes() {
                 <Route
                     path="batch-calls"
                     element={user?.isAdmin ? <BatchCalls /> : <Navigate to="/dashboard" replace />}
+                />
+                <Route
+                    path="batch-calls/:id/details"
+                    element={user?.isAdmin ? <BatchCallDetails /> : <Navigate to="/dashboard" replace />}
                 />
             </Route>
 

@@ -1,26 +1,64 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { batchCallService } from '../api/batchCallService';
 import { companyService } from '../api/companyService';
 import { useAuth } from '../Helper/AuthContext';
-import { PhoneCall, Plus, Search, Trash2, X, ChevronLeft, ChevronRight, ChevronDown, Play, RefreshCw } from 'lucide-react';
+import { PhoneCall, Plus, Search, Trash2, X, ChevronLeft, ChevronRight, ChevronDown, Play, RefreshCw, Calendar, Clock, Upload, Trash, Info } from 'lucide-react';
+import { agentService } from '../api/agentService';
+import { phoneNumberService } from '../api/phoneNumberService';
 import Toast from '../Component/toaster/Toast';
 
 const PAGE_LIMIT = 15;
 
-const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-    pending:    { bg: '#fff7ed', color: '#c2410c' },
-    running:    { bg: '#eff6ff', color: '#1d4ed8' },
-    completed:  { bg: '#f0fdf4', color: '#15803d' },
-    failed:     { bg: '#fef2f2', color: '#dc2626' },
-    stopped:    { bg: '#f9fafb', color: '#6b7280' },
+const STATUS_COLORS: Record<string, { bg: string; color: string; label: string }> = {
+    '1': { bg: '#f1f5f9', color: '#64748b', label: 'Draft' },
+    '3': { bg: '#fff7ed', color: '#c2410c', label: 'Scheduled' },
+    '4': { bg: '#eff6ff', color: '#1d4ed8', label: 'Running' },
+    '5': { bg: '#f0fdf4', color: '#15803d', label: 'Completed' },
+    '6': { bg: '#fef2f2', color: '#dc2626', label: 'Failed' },
+    '7': { bg: '#fef2f2', color: '#dc2626', label: 'Error' },
+    'pending':   { bg: '#f1f5f9', color: '#64748b', label: 'Draft' },
+    'running':   { bg: '#eff6ff', color: '#1d4ed8', label: 'Running' },
+    'completed': { bg: '#f0fdf4', color: '#15803d', label: 'Completed' },
+    'failed':    { bg: '#fef2f2', color: '#dc2626', label: 'Failed' },
+    'stopped':   { bg: '#f9fafb', color: '#6b7280', label: 'Stopped' },
 };
 
 const StatusBadge = ({ status }: { status: any }) => {
-    const s = STATUS_COLORS[String(status ?? '').toLowerCase()] || STATUS_COLORS.stopped;
+    const key = String(status ?? '').toLowerCase();
+    const s = STATUS_COLORS[key] || STATUS_COLORS.stopped;
     return (
-        <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, background: s.bg, color: s.color, textTransform: 'capitalize' }}>
-            {status || 'Unknown'}
+        <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, background: s.bg, color: s.color, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+            {s.label}
         </span>
+    );
+};
+
+const ProgressBar = ({ total, completed, failed }: { total: number; completed: number; failed: number }) => {
+    if (!total || total === 0) return (
+        <div style={{ width: '120px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#cbd5e1', marginBottom: '4px', fontWeight: 600 }}>
+                <span>0%</span>
+                <span>0/0</span>
+            </div>
+            <div style={{ height: '6px', width: '100%', background: '#f1f5f9', borderRadius: '3px' }} />
+        </div>
+    );
+    const progress = Math.round(((completed + failed) / total) * 100);
+    const completedWidth = Math.round((completed / total) * 100);
+    const failedWidth = Math.round((failed / total) * 100);
+
+    return (
+        <div style={{ width: '120px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#64748b', marginBottom: '4px', fontWeight: 600 }}>
+                <span>{progress}%</span>
+                <span>{completed + failed}/{total}</span>
+            </div>
+            <div style={{ height: '6px', width: '100%', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden', display: 'flex' }}>
+                <div style={{ width: `${completedWidth}%`, height: '100%', background: '#22c55e' }} />
+                <div style={{ width: `${failedWidth}%`, height: '100%', background: '#ef4444' }} />
+            </div>
+        </div>
     );
 };
 
@@ -50,6 +88,7 @@ const Pagination = ({ page, total, limit, onPage }: { page: number; total: numbe
 };
 
 const BatchCalls: React.FC = () => {
+    const navigate = useNavigate();
     const { user } = useAuth();
     const [records, setRecords] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -61,6 +100,14 @@ const BatchCalls: React.FC = () => {
     const [showModal, setShowModal] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+    const [statusFilter, setStatusFilter] = useState('');
+    const [agentFilter, setAgentFilter] = useState('');
+    const [agents, setAgents] = useState<any[]>([]);
+
+    const toggleRow = (id: string) => {
+        setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+    };
 
     const isSuperAdmin = user?.isAdmin && user?.isSuperAdmin;
 
@@ -80,7 +127,15 @@ const BatchCalls: React.FC = () => {
 
     useEffect(() => {
         fetchRecords();
-    }, [page, companyId]);
+    }, [page, companyId, statusFilter, agentFilter]);
+
+    useEffect(() => {
+        if (companyId) {
+            agentService.filterListing({ companyId }).then(res => {
+                setAgents(res.data.data || []);
+            }).catch(console.error);
+        }
+    }, [companyId]);
 
     const fetchRecords = async () => {
         setIsLoading(true);
@@ -88,6 +143,8 @@ const BatchCalls: React.FC = () => {
             const params: any = { skip: (page - 1) * PAGE_LIMIT, limit: PAGE_LIMIT };
             if (companyId) params.companyId = companyId;
             if (search) params.searchStr = search;
+            if (statusFilter) params.status = statusFilter;
+            if (agentFilter) params.agentId = agentFilter;
             const res = await batchCallService.listing(params);
             setRecords(res.data?.data || []);
             setTotal(res.data?.totalCount || 0);
@@ -132,32 +189,65 @@ const BatchCalls: React.FC = () => {
     };
 
     return (
-        <div>
+        <div style={{ width: '100%' }}>
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
                 <div>
-                    <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, color: '#0a0a0a' }}>Batch Calls</h1>
-                    <p style={{ color: '#888', fontSize: '14px', marginTop: '4px' }}>Upload contacts and run outbound batch call campaigns.</p>
+                    <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#1e293b', marginBottom: '4px' }}>Batch Calls</h1>
+                    <p style={{ color: '#64748b', fontSize: '15px' }}>Upload contacts and run outbound batch call campaigns.</p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <div style={{ position: 'relative' }}>
+                        <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                        <form onSubmit={handleSearch}>
+                            <input
+                                type="text"
+                                placeholder="Search campaigns..."
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                style={{ ...inputStyle, paddingLeft: '36px', width: '240px' }}
+                            />
+                        </form>
+                    </div>
+
                     {isSuperAdmin && companies.length > 0 && (
-                        <div style={{ position: 'relative' }}>
-                            <select value={companyId} onChange={e => { setCompanyId(e.target.value); setPage(1); }}
-                                style={{ ...inputStyle, paddingLeft: '32px', paddingRight: '28px', appearance: 'none', cursor: 'pointer', color: '#0a0a0a' }}>
-                                {companies.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-                            </select>
-                            <ChevronDown size={13} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#b0b4ba', pointerEvents: 'none' }} />
-                        </div>
+                        <select 
+                            value={companyId} 
+                            onChange={e => { setCompanyId(e.target.value); setPage(1); }}
+                            style={{ ...inputStyle, minWidth: '160px' }}
+                        >
+                            {companies.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                        </select>
                     )}
-                    <form onSubmit={handleSearch} style={{ position: 'relative' }}>
-                        <Search size={15} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#b0b4ba', pointerEvents: 'none' }} />
-                        <input type="text" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)}
-                            style={{ ...inputStyle, paddingLeft: '34px', width: '200px' }}
-                            onFocus={e => { e.target.style.borderColor = '#0a485e'; e.target.style.boxShadow = '0 0 0 3px rgba(10,72,94,0.08)'; }}
-                            onBlur={e => { e.target.style.borderColor = '#e2e4e9'; e.target.style.boxShadow = 'none'; }} />
-                    </form>
-                    <button className="btn-primary" onClick={() => setShowModal(true)}>
-                        <Plus size={16} /> New Batch
+
+                    <select 
+                        value={statusFilter} 
+                        onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+                        style={{ ...inputStyle, minWidth: '130px' }}
+                    >
+                        <option value="">All Status</option>
+                        <option value="1">Draft</option>
+                        <option value="3">Scheduled</option>
+                        <option value="4">Running</option>
+                        <option value="5">Completed</option>
+                        <option value="6">Failed</option>
+                    </select>
+
+                    <select 
+                        value={agentFilter} 
+                        onChange={e => { setAgentFilter(e.target.value); setPage(1); }}
+                        style={{ ...inputStyle, minWidth: '150px' }}
+                    >
+                        <option value="">All Agents</option>
+                        {agents.map(a => <option key={a._id} value={a.agentId}>{a.agentName}</option>)}
+                    </select>
+
+                    <button 
+                        onClick={() => setShowModal(true)}
+                        style={{ height: '40px', padding: '0 16px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+                    >
+                        <Plus size={18} />
+                        New Batch
                     </button>
                 </div>
             </div>
@@ -173,61 +263,123 @@ const BatchCalls: React.FC = () => {
                 ) : (
                     <>
                         <div style={{ overflowY: 'auto', flex: 1 }}>
-                            <table>
-                                <thead style={{ position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Total</th>
-                                        <th>Completed</th>
-                                        <th>Failed</th>
-                                        <th>Status</th>
-                                        <th style={{ width: '110px' }}>Actions</th>
+                            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+                                <thead style={{ position: 'sticky', top: 0, background: '#f9fafb', zIndex: 10 }}>
+                                    <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
+                                        <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Campaign</th>
+                                        <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Agent</th>
+                                        <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Progress</th>
+                                        <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Status</th>
+                                        <th style={{ padding: '12px 20px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {records.map(r => (
-                                        <tr key={r._id}>
-                                            <td style={{ fontWeight: 600, color: '#0a0a0a' }}>{r.name || '–'}</td>
-                                            <td>{r.totalContacts ?? r.total ?? '–'}</td>
-                                            <td>{r.completedCalls ?? r.completed ?? '–'}</td>
-                                            <td>{r.failedCalls ?? r.failed ?? '–'}</td>
-                                            <td><StatusBadge status={r.status} /></td>
-                                            <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                    {r.status === 'pending' && (
+                                        <React.Fragment key={r._id}>
+                                            <tr 
+                                                onClick={() => navigate(`/batch-calls/${r._id}/details`)}
+                                                style={{ cursor: 'pointer', transition: 'background 0.2s', borderBottom: '1px solid #f1f5f9' }}
+                                                onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                                            >
+                                                <td style={{ padding: '16px 20px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                        {r.followups?.length > 0 && (
+                                                            <div 
+                                                                onClick={(e) => { e.stopPropagation(); toggleRow(r._id); }}
+                                                                style={{ transform: expandedRows[r._id] ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s', display: 'flex', padding: '4px', borderRadius: '4px', background: '#f1f5f9' }}
+                                                            >
+                                                                <ChevronDown size={14} color="#94a3b8" />
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '14px' }}>{r.name || 'Untitled Campaign'}</div>
+                                                            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>ID: {r._id.slice(-8).toUpperCase()}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '16px 20px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700 }}>
+                                                            {String(r.agentName || 'A')[0].toUpperCase()}
+                                                        </div>
+                                                        <span style={{ fontSize: '13px', color: '#475569' }}>{r.agentName || 'Default Agent'}</span>
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '16px 20px' }}>
+                                                    <ProgressBar 
+                                                        total={r.totalContacts ?? r.total ?? 0} 
+                                                        completed={r.completedCalls ?? r.completed ?? 0} 
+                                                        failed={r.failedCalls ?? r.failed ?? 0} 
+                                                    />
+                                                </td>
+                                                <td style={{ padding: '16px 20px' }}>
+                                                    <StatusBadge status={r.status} />
+                                                </td>
+                                                <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end' }}>
+                                                        {(r.status === 'pending' || r.status === 1) && (
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleStartCall(r); }}
+                                                                disabled={actionLoading === r._id + '_start'}
+                                                                title="Start Campaign"
+                                                                style={{ padding: '6px', borderRadius: '8px', border: 'none', background: '#f0fdf4', color: '#15803d', cursor: 'pointer', display: 'flex' }}>
+                                                                <Play size={14} fill="currentColor" />
+                                                            </button>
+                                                        )}
+                                                        {(r.status === 'failed' || r.status === 6 || r.status === 'completed' || r.status === 5) && (
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleRetry(r); }}
+                                                                disabled={actionLoading === r._id + '_retry'}
+                                                                title="Retry Campaign"
+                                                                style={{ padding: '6px', borderRadius: '8px', border: 'none', background: '#eff6ff', color: '#1d4ed8', cursor: 'pointer', display: 'flex' }}>
+                                                                <RefreshCw size={14} />
+                                                            </button>
+                                                        )}
                                                         <button
-                                                            onClick={() => handleStartCall(r)}
-                                                            disabled={actionLoading === r._id + '_start'}
-                                                            title="Start Call"
-                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: '4px', display: 'flex' }}
-                                                            onMouseEnter={e => (e.currentTarget.style.color = '#15803d')}
-                                                            onMouseLeave={e => (e.currentTarget.style.color = '#ccc')}>
-                                                            <Play size={15} />
+                                                            onClick={(e) => { e.stopPropagation(); navigate(`/batch-calls/${r._id}/details`); }}
+                                                            title="View Details"
+                                                            style={{ padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', cursor: 'pointer', display: 'flex' }}>
+                                                            <Info size={14} />
                                                         </button>
-                                                    )}
-                                                    {(r.status === 'failed' || r.status === 'completed') && (
                                                         <button
-                                                            onClick={() => handleRetry(r)}
-                                                            disabled={actionLoading === r._id + '_retry'}
-                                                            title="Retry"
-                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: '4px', display: 'flex' }}
-                                                            onMouseEnter={e => (e.currentTarget.style.color = '#0a485e')}
-                                                            onMouseLeave={e => (e.currentTarget.style.color = '#ccc')}>
-                                                            <RefreshCw size={15} />
+                                                            onClick={(e) => { e.stopPropagation(); handleDelete(r); }}
+                                                            disabled={actionLoading === r._id + '_delete'}
+                                                            title="Delete"
+                                                            style={{ padding: '6px', borderRadius: '8px', border: 'none', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', display: 'flex' }}>
+                                                            <Trash2 size={14} />
                                                         </button>
-                                                    )}
-                                                    <button
-                                                        onClick={() => handleDelete(r)}
-                                                        disabled={actionLoading === r._id + '_delete'}
-                                                        title="Delete"
-                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: '4px', display: 'flex' }}
-                                                        onMouseEnter={e => (e.currentTarget.style.color = '#dc2626')}
-                                                        onMouseLeave={e => (e.currentTarget.style.color = '#ccc')}>
-                                                        <Trash2 size={15} />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {expandedRows[r._id] && r.followups?.map((f: any, idx: number) => (
+                                                <tr key={f._id} style={{ background: '#fcfdfe' }}>
+                                                    <td colSpan={5} style={{ padding: '0' }}>
+                                                        <div style={{ padding: '12px 20px 12px 52px', borderLeft: '3px solid #6366f1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                                                                <div style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>
+                                                                    Follow-up #{idx + 1}
+                                                                </div>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#94a3b8' }}>
+                                                                    <RefreshCw size={12} />
+                                                                    {f.date} at {f.time}
+                                                                </div>
+                                                                <StatusBadge status={f.status} />
+                                                            </div>
+                                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                                {f.status === 6 && (
+                                                                    <button
+                                                                        onClick={() => {/* TODO: handleRetryFollowup(r._id, f._id) */}}
+                                                                        style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#fff', fontSize: '11px', fontWeight: 600, color: '#475569', cursor: 'pointer' }}>
+                                                                        Retry This
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </React.Fragment>
                                     ))}
                                 </tbody>
                             </table>
@@ -238,18 +390,26 @@ const BatchCalls: React.FC = () => {
             </div>
 
             {showModal && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
-                    <div style={{ background: '#fff', width: '100%', maxWidth: '460px', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', padding: '32px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700 }}>New Batch Call</h2>
-                            <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', display: 'flex' }}><X size={20} /></button>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
+                    <div style={{ background: '#fff', width: '100%', maxWidth: '1000px', maxHeight: '90vh', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                        <div style={{ padding: '24px 32px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1e293b' }}>Create New Campaign</h2>
+                                <p style={{ fontSize: '14px', color: '#64748b', marginTop: '2px' }}>Configure your outbound batch call settings.</p>
+                            </div>
+                            <button onClick={() => setShowModal(false)} style={{ width: '40px', height: '40px', borderRadius: '12px', border: 'none', background: '#f1f5f9', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <X size={20} />
+                            </button>
                         </div>
-                        <BatchCallForm
-                            companyId={companyId}
-                            onClose={() => { setShowModal(false); fetchRecords(); }}
-                            onError={msg => setToast({ message: msg, type: 'error' })}
-                            onSuccess={msg => setToast({ message: msg, type: 'success' })}
-                        />
+                        
+                        <div style={{ flex: 1, overflowY: 'auto' }}>
+                            <BatchCallForm
+                                companyId={companyId}
+                                onClose={() => { setShowModal(false); fetchRecords(); }}
+                                onError={msg => setToast({ message: msg, type: 'error' })}
+                                onSuccess={msg => setToast({ message: msg, type: 'success' })}
+                            />
+                        </div>
                     </div>
                 </div>
             )}
@@ -266,47 +426,202 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
     const [name, setName] = useState('');
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
+    const [agents, setAgents] = useState<any[]>([]);
+    const [phoneNumbers, setPhoneNumbers] = useState<any[]>([]);
+    const [selectedAgent, setSelectedAgent] = useState('');
+    const [selectedPhone, setSelectedPhone] = useState('');
+    const [scheduledDate, setScheduledDate] = useState('');
+    const [scheduledTime, setScheduledTime] = useState('');
+    const [followups, setFollowups] = useState<any[]>([]);
+    const [isDragging, setIsDragging] = useState(false);
+
+    useEffect(() => {
+        if (companyId) {
+            agentService.filterListing({ companyId }).then(res => setAgents(res.data.data || []));
+            phoneNumberService.filterListing({ companyId }).then(res => setPhoneNumbers(res.data.data || []));
+        }
+    }, [companyId]);
+
+    const addFollowup = () => {
+        if (followups.length >= 10) return;
+        setFollowups([...followups, { date: '', time: '', phoneNumberId: selectedPhone }]);
+    };
+
+    const removeFollowup = (idx: number) => {
+        setFollowups(followups.filter((_, i) => i !== idx));
+    };
+
+    const updateFollowup = (idx: number, key: string, val: any) => {
+        const next = [...followups];
+        next[idx][key] = val;
+        setFollowups(next);
+    };
+
+    const handleFile = (f: File) => {
+        if (!f.name.endsWith('.csv') && !f.name.endsWith('.xlsx')) {
+            onError('Please upload a CSV or Excel file.');
+            return;
+        }
+        setFile(f);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!file) { onError('Please select a CSV file.'); return; }
+        if (!file) { onError('Please select a contacts file.'); return; }
+        if (!selectedAgent) { onError('Please select an agent.'); return; }
+        if (!selectedPhone) { onError('Please select a phone number.'); return; }
+        
         setLoading(true);
         try {
             const fd = new FormData();
             fd.append('file', file);
             fd.append('name', name);
             fd.append('companyId', companyId);
+            fd.append('agentId', selectedAgent);
+            fd.append('phoneNumberId', selectedPhone);
+            fd.append('schedule', 'true');
+            fd.append('date', scheduledDate);
+            fd.append('time', scheduledTime);
+            if (followups.length > 0) {
+                fd.append('followUpsDetails', JSON.stringify(followups));
+            }
+            
             await batchCallService.create(fd);
-            onSuccess('Batch call created successfully.');
+            onSuccess('Campaign created successfully.');
             onClose();
         } catch (err: any) {
-            onError(err.response?.data?.message || 'Failed to create batch call.');
+            onError(err.response?.data?.message || 'Failed to create campaign.');
         } finally { setLoading(false); }
     };
 
-    const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 12px', border: '1px solid #e2e4e9', borderRadius: '8px', fontSize: '13px', background: '#f9fafb', outline: 'none', fontFamily: 'inherit', color: '#0a0a0a' };
-    const labelStyle: React.CSSProperties = { display: 'block', fontSize: '12px', fontWeight: 600, color: '#555', marginBottom: '6px' };
+    const inputStyle: React.CSSProperties = { width: '100%', height: '42px', padding: '0 12px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', color: '#1e293b', outline: 'none', background: '#fff' };
 
     return (
-        <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '12px' }}>
-                <label style={labelStyle}>Batch Name *</label>
-                <input required style={inputStyle} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Campaign June 2025" />
+        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', padding: '32px' }}>
+            {/* Left Column: Configuration */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <section>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>Campaign Details</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
+                        <div>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '6px', display: 'block' }}>Campaign Name</label>
+                            <input required style={inputStyle} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Q4 Sales Outreach" />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Select Agent</label>
+                                <select required style={inputStyle} value={selectedAgent} onChange={e => setSelectedAgent(e.target.value)}>
+                                    <option value="">Select...</option>
+                                    {agents.map(a => <option key={a._id} value={a.agentId}>{a.agentName}</option>)}
+                                </select>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Phone Number</label>
+                                <select required style={inputStyle} value={selectedPhone} onChange={e => setSelectedPhone(e.target.value)}>
+                                    <option value="">Select...</option>
+                                    {phoneNumbers.map(p => <option key={p._id} value={p.phoneNumberId}>{p.phoneNumber}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>Scheduling</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={13} /> Date</label>
+                            <input type="date" required style={inputStyle} value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={13} /> Time</label>
+                            <input type="time" required style={inputStyle} value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} />
+                        </div>
+                    </div>
+                </section>
             </div>
-            <div style={{ marginBottom: '20px' }}>
-                <label style={labelStyle}>Contacts CSV *</label>
-                <input
-                    required
-                    type="file"
-                    accept=".csv"
-                    onChange={e => setFile(e.target.files?.[0] || null)}
-                    style={{ ...inputStyle, padding: '7px 12px', cursor: 'pointer' }}
-                />
-                <p style={{ fontSize: '11px', color: '#aaa', marginTop: '6px' }}>CSV must include a phone number column.</p>
+
+            {/* Right Column: Upload & Follow-ups */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <section>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contacts Upload</h3>
+                        <button 
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const csvContent = "name,phone\nJohn Doe,+1234567890\nJane Smith,+0987654321";
+                                const blob = new Blob([csvContent], { type: 'text/csv' });
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'sample_contacts.csv';
+                                a.click();
+                            }}
+                            style={{ border: 'none', background: 'none', color: '#6366f1', fontSize: '12px', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                        >
+                            Download Sample
+                        </button>
+                    </div>
+                    <div 
+                        onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+                        onDragLeave={() => setIsDragging(false)}
+                        onDrop={e => { e.preventDefault(); setIsDragging(false); handleFile(e.dataTransfer.files[0]); }}
+                        style={{ height: '120px', border: '2px dashed', borderColor: isDragging ? '#6366f1' : '#e2e8f0', borderRadius: '16px', background: isDragging ? '#f5f7ff' : '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }}
+                        onClick={() => document.getElementById('file-upload')?.click()}
+                    >
+                        <Upload size={24} color={isDragging ? '#6366f1' : '#94a3b8'} style={{ marginBottom: '8px' }} />
+                        <span style={{ fontSize: '13px', color: '#475569', fontWeight: 500, textAlign: 'center', padding: '0 20px' }}>
+                            {file ? file.name : 'Drop contacts file here or click to browse'}
+                        </span>
+                        <input type="file" id="file-upload" hidden onChange={e => e.target.files && handleFile(e.target.files[0])} accept=".csv,.xlsx" />
+                    </div>
+                </section>
+
+                <section>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Follow-ups</h3>
+                        <button type="button" onClick={addFollowup} style={{ border: 'none', background: 'none', color: '#6366f1', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Plus size={16} /> Add Follow-up
+                        </button>
+                    </div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '180px', overflowY: 'auto', paddingRight: '8px', scrollbarWidth: 'thin', border: '1px solid #f1f5f9', borderRadius: '12px', padding: '8px', background: '#f8fafc' }}>
+                        {followups.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: '13px' }}>
+                                No follow-ups scheduled yet.
+                            </div>
+                        ) : followups.map((f, idx) => (
+                            <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', alignItems: 'end', gap: '10px', padding: '12px', background: '#fff', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <label style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Date</label>
+                                    <input type="date" style={{ ...inputStyle, height: '36px', fontSize: '12px' }} value={f.date} onChange={e => updateFollowup(idx, 'date', e.target.value)} />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <label style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Time</label>
+                                    <input type="time" style={{ ...inputStyle, height: '36px', fontSize: '12px' }} value={f.time} onChange={e => updateFollowup(idx, 'time', e.target.value)} />
+                                </div>
+                                <button 
+                                    type="button" 
+                                    onClick={() => removeFollowup(idx)} 
+                                    style={{ width: '36px', height: '36px', borderRadius: '8px', border: 'none', background: '#fef2f2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                >
+                                    <Trash size={14} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                <div style={{ marginTop: 'auto', display: 'flex', gap: '12px', paddingTop: '12px' }}>
+                    <button type="button" onClick={onClose} style={{ flex: 1, height: '44px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}>
+                        Cancel
+                    </button>
+                    <button type="submit" disabled={loading} style={{ flex: 1, height: '44px', borderRadius: '12px', border: 'none', background: '#6366f1', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>
+                        {loading ? 'Creating...' : 'Create Campaign'}
+                    </button>
+                </div>
             </div>
-            <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: '42px' }}>
-                {loading ? 'Uploading...' : 'Create Batch'}
-            </button>
         </form>
     );
 };

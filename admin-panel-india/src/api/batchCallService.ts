@@ -12,4 +12,5 @@ export const batchCallService = {
     filterListing: (params?: any) => api.get('/batch-call/batch-listing', { params }),
     updateBatchCall: (payload: any) => api.post('/batch-call/retry-batch-call', payload),
     updateFollowupCall: (payload: any) => api.post('/batch-call/retry-followups-batch-call', payload),
+    details: (params?: any) => api.get('/batch-call/details', { params }),
 };
