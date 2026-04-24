@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import logoIcon from "../../assets/logo-icon.svg";
 import {
   BarChart3,
   Building2,
@@ -17,6 +18,26 @@ import { useAuth } from "../../Helper/AuthContext";
 import { authService } from "../../api/authService";
 import Toast from "../toaster/Toast";
 
+// Color tokens matching the Fluent dashboard purple theme
+const COLORS = {
+  brand: "#7c3aed",         // Primary purple (sidebar active bg, logo bg)
+  brandDark: "#6d28d9",     // Darker purple for hover states
+  brandLight: "#ede9fe",    // Light purple tint for subtle backgrounds
+  brandText: "#7c3aed",     // Purple text
+  sidebar: "#ffffff",       // Sidebar background
+  sidebarBorder: "#f0f0f3",
+  navActive: "#7c3aed",
+  navActiveText: "#ffffff",
+  navInactiveText: "#6b7280",
+  navHoverBg: "#f5f3ff",
+  navHoverText: "#7c3aed",
+  pageBackground: "#f7f8fa",
+  text: "#111827",
+  textMuted: "#9ca3af",
+  textSecondary: "#6b7280",
+  danger: "#dc2626",
+};
+
 const DashboardLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, logout } = useAuth();
@@ -28,27 +49,42 @@ const DashboardLayout: React.FC = () => {
   };
 
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "error" | "success";
+  } | null>(null);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setToast({ message: "Passwords do not match", type: 'error' });
+      setToast({ message: "Passwords do not match", type: "error" });
       return;
     }
     setPasswordLoading(true);
     try {
       await authService.changePassword({
         currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword
+        newPassword: passwordForm.newPassword,
       });
-      setToast({ message: "Password changed successfully", type: 'success' });
+      setToast({ message: "Password changed successfully", type: "success" });
       setPasswordModalOpen(false);
-      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
     } catch (err: any) {
-      setToast({ message: err.response?.data?.message || "Failed to change password", type: 'error' });
+      setToast({
+        message:
+          err.response?.data?.message || "Failed to change password",
+        type: "error",
+      });
     } finally {
       setPasswordLoading(false);
     }
@@ -56,238 +92,320 @@ const DashboardLayout: React.FC = () => {
 
   // Role-based navigation
   const navItems = [
-    { to: "/dashboard", icon: BarChart3, label: "Overview" },
+    { to: "/dashboard", icon: BarChart3, label: "Dashboard" },
     ...(user?.isAdmin && user?.isSuperAdmin
       ? [{ to: "/companies", icon: Building2, label: "Companies" }]
       : []),
     ...(user?.isAdmin
       ? [
-        { to: "/users", icon: Users as any, label: "Users" },
-        { to: "/agents", icon: Cpu as any, label: "Agents" },
-        { to: "/phone-numbers", icon: Phone as any, label: "Phone Numbers" },
-        { to: "/blacklist", icon: Ban as any, label: "Blacklist" },
-        { to: "/batch-calls", icon: PhoneCall as any, label: "Batch Calls" },
-      ]
+          { to: "/users", icon: Users as any, label: "Users" },
+          { to: "/agents", icon: Cpu as any, label: "Agents" },
+          { to: "/phone-numbers", icon: Phone as any, label: "Phone Numbers" },
+          { to: "/blacklist", icon: Ban as any, label: "Blacklist Number" },
+          {
+            to: "/batch-calls",
+            icon: PhoneCall as any,
+            label: "Batch Call",
+          },
+        ]
       : []),
   ];
 
+  const roleLabel = user?.isSuperAdmin
+    ? "Super Admin"
+    : user?.isAdmin
+    ? "Company Admin"
+    : "User";
+
+  const userInitial = user?.userName?.charAt(0).toUpperCase() || "A";
+
   return (
-    <div className="flex h-screen bg-[#f7f8fa] overflow-hidden w-full">
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      {/* Sidebar */}
+    <div
+      style={{
+        display: "flex",
+        height: "100vh",
+        background: COLORS.pageBackground,
+        overflow: "hidden",
+        width: "100%",
+      }}
+    >
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* ── Sidebar ── */}
       <aside
         style={{
-          width: sidebarOpen ? "260px" : "72px",
-          transition: "width 0.3s ease",
-          borderRight: "1px solid #eaeaed",
-          background: "#fff",
+          width: sidebarOpen ? "220px" : "68px",
+          transition: "width 0.25s ease",
+          borderRight: `1px solid ${COLORS.sidebarBorder}`,
+          background: COLORS.sidebar,
           display: "flex",
           flexDirection: "column",
           flexShrink: 0,
+          overflow: "hidden",
         }}
       >
         {/* Logo + Toggle */}
         <div
           style={{
-            height: "64px",
+            height: "60px",
             display: "flex",
             alignItems: "center",
-            padding: sidebarOpen ? "0 12px 0 20px" : "0",
+            padding: sidebarOpen ? "0 12px 0 16px" : "0",
             justifyContent: sidebarOpen ? "space-between" : "center",
-            borderBottom: "1px solid #f0f0f0",
+            borderBottom: `1px solid ${COLORS.sidebarBorder}`,
+            flexShrink: 0,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              overflow: "hidden",
+            }}
+          >
+            {/* Logo mark — purple rounded square */}
             <div
               style={{
-                width: "36px",
-                height: "36px",
-                background: "#0a485e",
-                borderRadius: "10px",
+                width: "32px",
+                height: "32px",
+                
+                borderRadius: "8px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
               }}
             >
-              <Building2 size={18} color="#fff" />
+              {/* Use <img> instead of Next.js <Image> for plain React */}
+              <img
+                src={logoIcon}
+                alt="Fluent logo"
+                width={18}
+                height={18}
+                style={{ display: "block" }}
+              />
             </div>
+
             {sidebarOpen && (
               <span
                 style={{
-                  fontFamily: "var(--font-display)",
-                  fontWeight: 700,
-                  fontSize: "16px",
-                  color: "#0a485e",
+                  fontWeight: 800,
+                  fontSize: "17px",
+                  color: COLORS.brand,
+                  letterSpacing: "-0.3px",
+                  whiteSpace: "nowrap",
                 }}
               >
-                WA Manager
+                fluent
               </span>
             )}
           </div>
+
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             style={{
               background: "none",
               border: "none",
               cursor: "pointer",
-              color: "#999",
+              color: COLORS.textMuted,
               display: "flex",
               alignItems: "center",
               padding: "6px",
-              borderRadius: "8px",
+              borderRadius: "7px",
               flexShrink: 0,
+              transition: "background 0.15s",
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = "#f4f7f8")}
-            onMouseLeave={e => (e.currentTarget.style.background = "none")}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = COLORS.navHoverBg)
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "transparent")
+            }
           >
-            <Menu size={18} />
+            <Menu size={17} />
           </button>
         </div>
 
         {/* Navigation */}
-        <nav style={{ flex: 1, padding: "12px 8px" }}>
-          {navItems.map((item, idx) => {
-            if ((item as any).divider) {
-              return <div key={`div-${idx}`} style={{ height: '1px', background: '#f0f0f0', margin: '12px 14px' }} />;
-            }
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to!}
-                style={{ textDecoration: "none" }}
-              >
-                {({ isActive }) => (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      padding: sidebarOpen ? "10px 14px" : "10px",
-                      justifyContent: sidebarOpen ? "flex-start" : "center",
-                      borderRadius: "10px",
-                      marginBottom: "2px",
-                      background: isActive ? "#0a485e" : "transparent",
-                      color: isActive ? "#fff" : "#666",
-                      fontWeight: 600,
-                      fontSize: "14px",
-                      transition: "all 0.15s ease",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {item.icon && <item.icon size={19} />}
-                    {sidebarOpen && <span>{item.label}</span>}
-                  </div>
-                )}
-              </NavLink>
-            );
-          })}
+        <nav
+          style={{
+            flex: 1,
+            padding: "10px 8px",
+            overflowY: "auto",
+            overflowX: "hidden",
+          }}
+        >
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to!}
+              end={item.to === "/dashboard"}
+              style={{ textDecoration: "none", display: "block" }}
+            >
+              {({ isActive }) => (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: sidebarOpen ? "9px 12px" : "9px",
+                    justifyContent: sidebarOpen ? "flex-start" : "center",
+                    borderRadius: "8px",
+                    marginBottom: "2px",
+                    background: isActive ? COLORS.navActive : "transparent",
+                    color: isActive ? COLORS.navActiveText : COLORS.navInactiveText,
+                    fontWeight: 600,
+                    fontSize: "13.5px",
+                    transition: "background 0.15s, color 0.15s",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = COLORS.navHoverBg;
+                      e.currentTarget.style.color = COLORS.navHoverText;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.style.color = COLORS.navInactiveText;
+                    }
+                  }}
+                >
+                  <item.icon
+                    size={18}
+                    style={{ flexShrink: 0 }}
+                  />
+                  {sidebarOpen && <span>{item.label}</span>}
+                </div>
+              )}
+            </NavLink>
+          ))}
         </nav>
 
         {/* Footer */}
-        <div style={{ padding: "16px 12px", borderTop: "1px solid #f0f0f0" }}>
+        <div
+          style={{
+            padding: "12px 8px",
+            borderTop: `1px solid ${COLORS.sidebarBorder}`,
+            flexShrink: 0,
+          }}
+        >
+          {/* User info */}
           {sidebarOpen && (
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: "10px",
-                padding: "0 6px",
-                marginBottom: "12px",
+                padding: "8px 10px",
+                marginBottom: "4px",
+                borderRadius: "8px",
+                background: COLORS.brandLight,
               }}
             >
               <div
                 style={{
-                  width: "34px",
-                  height: "34px",
-                  borderRadius: "10px",
-                  background: "#f4f7f8",
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "8px",
+                  background: COLORS.brand,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: "13px",
                   fontWeight: 700,
-                  color: "#0a485e",
+                  color: "#fff",
+                  flexShrink: 0,
                 }}
               >
-                {user?.userName?.charAt(0).toUpperCase() || "A"}
+                {userInitial}
               </div>
-
-              <div>
+              <div style={{ overflow: "hidden" }}>
                 <p
                   style={{
                     fontSize: "13px",
                     fontWeight: 600,
-                    color: "#0a0a0a",
+                    color: COLORS.text,
                     lineHeight: 1.2,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   }}
                 >
                   {user?.userName || "Admin"}
                 </p>
-
-                <p style={{ fontSize: "11px", color: "#999" }}>
-                  {user?.isSuperAdmin
-                    ? "Super Admin"
-                    : user?.isAdmin
-                      ? "Company Admin"
-                      : "User"}
+                <p
+                  style={{
+                    fontSize: "11px",
+                    color: COLORS.brandText,
+                    fontWeight: 500,
+                  }}
+                >
+                  {roleLabel}
                 </p>
               </div>
             </div>
           )}
 
-          <button
-            onClick={() => setPasswordModalOpen(true)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              width: "100%",
-              padding: "10px 14px",
-              justifyContent: sidebarOpen ? "flex-start" : "center",
-              borderRadius: "10px",
-              border: "none",
-              background: "transparent",
-              color: "#888",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: "pointer",
-              marginBottom: "4px"
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#0a485e")}
-            onMouseLeave={e => (e.currentTarget.style.color = "#888")}
-          >
-            <KeyRound size={18} />
-            {sidebarOpen && <span>Change Password</span>}
-          </button>
+          {/* Collapsed avatar */}
+          {!sidebarOpen && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginBottom: "8px",
+              }}
+            >
+              <div
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "8px",
+                  background: COLORS.brand,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  color: "#fff",
+                }}
+              >
+                {userInitial}
+              </div>
+            </div>
+          )}
 
-          <button
+          {/* Change Password */}
+          <FooterBtn
+            icon={<KeyRound size={17} />}
+            label="Change Password"
+            sidebarOpen={sidebarOpen}
+            hoverColor={COLORS.brand}
+            onClick={() => setPasswordModalOpen(true)}
+          />
+
+          {/* Sign Out */}
+          <FooterBtn
+            icon={<LogOut size={17} />}
+            label="Sign Out"
+            sidebarOpen={sidebarOpen}
+            hoverColor={COLORS.danger}
             onClick={handleLogout}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              width: "100%",
-              padding: "10px 14px",
-              justifyContent: sidebarOpen ? "flex-start" : "center",
-              borderRadius: "10px",
-              border: "none",
-              background: "transparent",
-              color: "#888",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#dc2626")}
-            onMouseLeave={e => (e.currentTarget.style.color = "#888")}
-          >
-            <LogOut size={18} />
-            {sidebarOpen && <span>Sign Out</span>}
-          </button>
+          />
         </div>
       </aside>
 
-      {/* Main Section */}
+      {/* ── Main Content ── */}
       <div
         style={{
           flex: 1,
@@ -295,10 +413,9 @@ const DashboardLayout: React.FC = () => {
           flexDirection: "column",
           minWidth: 0,
           height: "100vh",
-          overflow: "hidden"
+          overflow: "hidden",
         }}
       >
-        {/* Page Content */}
         <main
           style={{
             flex: 1,
@@ -306,69 +423,154 @@ const DashboardLayout: React.FC = () => {
             width: "100%",
             minWidth: 0,
             overflowY: "auto",
-            height: "100%"
+            height: "100%",
           }}
         >
           <Outlet />
         </main>
       </div>
 
-      {/* Change Password Modal */}
+      {/* ── Change Password Modal ── */}
       {passwordModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
-          <div style={{ background: '#fff', width: '100%', maxWidth: '400px', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', padding: '32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700 }}>Change Password</h2>
-              <button onClick={() => setPasswordModalOpen(false)} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer' }}><X size={20} /></button>
-            </div>
-            <form onSubmit={handleChangePassword}>
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#555', marginBottom: '6px' }}>Current Password</label>
-                <input 
-                  type="password" 
-                  required 
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e4e9', borderRadius: '8px', fontSize: '13px', background: '#f9fafb' }}
-                  value={passwordForm.currentPassword}
-                  onChange={e => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                />
-              </div>
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#555', marginBottom: '6px' }}>New Password</label>
-                <input 
-                  type="password" 
-                  required 
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e4e9', borderRadius: '8px', fontSize: '13px', background: '#f9fafb' }}
-                  value={passwordForm.newPassword}
-                  onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                />
-              </div>
-              <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#555', marginBottom: '6px' }}>Confirm New Password</label>
-                <input 
-                  type="password" 
-                  required 
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e4e9', borderRadius: '8px', fontSize: '13px', background: '#f9fafb' }}
-                  value={passwordForm.confirmPassword}
-                  onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                />
-              </div>
-              <button 
-                type="submit" 
-                disabled={passwordLoading}
-                style={{ 
-                  width: '100%', 
-                  background: '#0a485e', 
-                  color: '#fff', 
-                  border: 'none', 
-                  padding: '12px', 
-                  borderRadius: '10px', 
-                  fontWeight: 700, 
-                  fontSize: '14px', 
-                  cursor: passwordLoading ? 'not-allowed' : 'pointer',
-                  opacity: passwordLoading ? 0.7 : 1
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "24px",
+            background: "rgba(0,0,0,0.35)",
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              width: "100%",
+              maxWidth: "400px",
+              borderRadius: "16px",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+              padding: "32px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "24px",
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: "18px",
+                  fontWeight: 700,
+                  color: COLORS.text,
                 }}
               >
-                {passwordLoading ? 'Updating...' : 'Update Password'}
+                Change Password
+              </h2>
+              <button
+                onClick={() => setPasswordModalOpen(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: COLORS.textMuted,
+                  cursor: "pointer",
+                  borderRadius: "6px",
+                  padding: "4px",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "#f3f4f6")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "none")
+                }
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleChangePassword}>
+              {(
+                [
+                  { key: "currentPassword", label: "Current Password" },
+                  { key: "newPassword", label: "New Password" },
+                  { key: "confirmPassword", label: "Confirm New Password" },
+                ] as const
+              ).map(({ key, label }, i) => (
+                <div
+                  key={key}
+                  style={{ marginBottom: i === 2 ? "24px" : "16px" }}
+                >
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: COLORS.textSecondary,
+                      marginBottom: "6px",
+                    }}
+                  >
+                    {label}
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      border: `1.5px solid #e5e7eb`,
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      background: "#f9fafb",
+                      outline: "none",
+                      boxSizing: "border-box",
+                      transition: "border-color 0.15s",
+                    }}
+                    value={passwordForm[key]}
+                    onChange={(e) =>
+                      setPasswordForm({ ...passwordForm, [key]: e.target.value })
+                    }
+                    onFocus={(e) =>
+                      (e.currentTarget.style.borderColor = COLORS.brand)
+                    }
+                    onBlur={(e) =>
+                      (e.currentTarget.style.borderColor = "#e5e7eb")
+                    }
+                  />
+                </div>
+              ))}
+
+              <button
+                type="submit"
+                disabled={passwordLoading}
+                style={{
+                  width: "100%",
+                  background: COLORS.brand,
+                  color: "#fff",
+                  border: "none",
+                  padding: "12px",
+                  borderRadius: "10px",
+                  fontWeight: 700,
+                  fontSize: "14px",
+                  cursor: passwordLoading ? "not-allowed" : "pointer",
+                  opacity: passwordLoading ? 0.7 : 1,
+                  transition: "background 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  if (!passwordLoading)
+                    (e.currentTarget as HTMLButtonElement).style.background =
+                      COLORS.brandDark;
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background =
+                    COLORS.brand;
+                }}
+              >
+                {passwordLoading ? "Updating…" : "Update Password"}
               </button>
             </form>
           </div>
@@ -377,5 +579,55 @@ const DashboardLayout: React.FC = () => {
     </div>
   );
 };
+
+/* ── Small helper so footer buttons stay DRY ── */
+interface FooterBtnProps {
+  icon: React.ReactNode;
+  label: string;
+  sidebarOpen: boolean;
+  hoverColor: string;
+  onClick: () => void;
+}
+const FooterBtn: React.FC<FooterBtnProps> = ({
+  icon,
+  label,
+  sidebarOpen,
+  hoverColor,
+  onClick,
+}) => (
+  <button
+    onClick={onClick}
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      width: "100%",
+      padding: "9px 12px",
+      justifyContent: sidebarOpen ? "flex-start" : "center",
+      borderRadius: "8px",
+      border: "none",
+      background: "transparent",
+      color: "#9ca3af",
+      fontSize: "13px",
+      fontWeight: 600,
+      cursor: "pointer",
+      marginBottom: "2px",
+      transition: "color 0.15s, background 0.15s",
+      whiteSpace: "nowrap",
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.color = hoverColor;
+      e.currentTarget.style.background =
+        hoverColor === "#dc2626" ? "#fef2f2" : "#f5f3ff";
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.color = "#9ca3af";
+      e.currentTarget.style.background = "transparent";
+    }}
+  >
+    {icon}
+    {sidebarOpen && <span>{label}</span>}
+  </button>
+);
 
 export default DashboardLayout;
