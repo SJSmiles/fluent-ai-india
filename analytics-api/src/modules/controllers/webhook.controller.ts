@@ -238,6 +238,7 @@ export async function callStatusHandler(req: any, reply: any) {
                         toNumber: req.body?.To || null,
                         callStatus: req.body?.CallStatus || 'completed',
                         event: event || null,
+                        disconnectionReason: req.body?.HangupCauseName || null,
                         duration: Number(req.body?.Duration) || 0,
                         startedAt: parsedMeta.startedAt
                             ? new Date(parsedMeta.startedAt)

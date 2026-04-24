@@ -11,6 +11,7 @@ const callsSchema = new Schema(
 
         companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
         userId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+        disconnectionReason: { type: String, default: null },
 
         direction: { type: String, enum: ['inbound', 'outbound'], required: true },
 

@@ -13,7 +13,7 @@ const testCallSchema = new Schema(
         userId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
 
         direction: { type: String, enum: ['inbound', 'outbound'], required: true },
-
+        disconnectionReason: { type: String, default: null },
         callLogsId: { type: Schema.Types.ObjectId, ref: 'CallLogs' },
 
         fromNumber: { type: String, default: null },

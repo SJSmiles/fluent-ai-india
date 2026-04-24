@@ -161,6 +161,7 @@ export async function testCallStatusHandler(req: any, reply: any) {
                         fromNumber: req.body?.From || null,
                         toNumber: req.body?.To || null,
                         callStatus: req.body?.CallStatus || 'completed',
+                        disconnectionReason: req.body?.HangupCauseName || null,
                         event: event || null,
                         duration: Number(req.body?.Duration) || 0,
                         startedAt: parsedMeta.startedAt

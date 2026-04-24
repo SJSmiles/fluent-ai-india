@@ -505,3 +505,13 @@ export async function listBatchCallsHandler(request: any, reply: any) {
     throwError('Error listing batch calls', error);
   }
 }
+
+
+export async function batchCallsDetailsHandler(request: any, reply: any) {
+  try {
+    const result = await batchCallService.batchCallDetails(request.user, request.body);
+    return reply.send(result);
+  } catch (error) {
+    throwError('Error listing batch calls', error);
+  }
+}

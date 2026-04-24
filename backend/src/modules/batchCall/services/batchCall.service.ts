@@ -317,6 +317,410 @@ class BatchCallService {
       throwError('Failed to fetch batch calls', err);
     }
   }
+
+
+  public async batchCallDetails(user: any, payload: any) {
+    const {
+      batchIds,
+      searchStr = '',
+      sortBy = 'createdAt DESC',
+      skip = 0,
+      limit = 10,
+      statusFilter = ""
+    } = payload;
+
+    // Sort parsing
+    const sortParts = sortBy.trim().split(' ');
+    const sortField = sortParts[0] || 'createdAt';
+    const direction = sortParts[1] || 'DESC';
+    const sortDirection = direction.toLowerCase() === 'asc' ? 1 : -1;
+
+    // Search regex
+    const searchRegex = searchStr
+      ? {
+        $regex: searchStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+        $options: 'i'
+      }
+      : null;
+
+    // ✅ Separate filters
+    let statusMatch: any = {};
+    let callDataMatch: any = {};
+
+    switch (statusFilter) {
+      case "complete":
+        statusMatch = { status: { $in: [3, 4] } };
+        break;
+
+      case "skip":
+        statusMatch = { status: 5 };
+        break;
+
+      case "meeting":
+        callDataMatch = {
+          "callData.leadStatus": { $eq: "Interested - Meeting Booked" }
+        };
+        break;
+
+      case "failed":
+        statusMatch = { status: 7 };
+        break;
+
+      case "processing":
+        statusMatch = { status: 6 };
+        break;
+
+      case "queued":
+        statusMatch = { status: 1 };
+        break;
+
+      case "followUps":
+        statusMatch = { status: 2 };
+        break;
+
+      default:
+        break;
+    }
+
+    const pipeline: any[] = [
+      // ✅ Base match (only DB fields)
+      {
+        $match: {
+          batchCallId: new Types.ObjectId(batchIds),
+          ...statusMatch
+        }
+      },
+
+      // Batch lookup
+      {
+        $lookup: {
+          from: 'BatchCall',
+          localField: 'batchCallId',
+          foreignField: '_id',
+          as: 'batch',
+          pipeline: [
+            {
+              $project: {
+                name: 1,
+                status: 1,
+                outboundNumber: 1,
+                utcDateTime: 1,
+                actualStartDateTime: 1,
+                totalRecipient: 1,
+                updatedAt: 1
+              }
+            }
+          ]
+        }
+      },
+
+      { $match: { 'batch.0': { $exists: true } } },
+      { $unwind: '$batch' },
+
+      // Latest call data
+      {
+        $lookup: {
+          from: 'Calls',
+          let: {
+            batchCallId: { $toString: '$batchCallId' },
+            recipientNumber: '$number'
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$batchCallId', '$$batchCallId'] },
+                    { $eq: ['$toNumber', '$$recipientNumber'] }
+                  ]
+                }
+              }
+            },
+            { $sort: { createdAt: -1 } },
+            { $limit: 1 },
+            {
+              $project: {
+                status: 1,
+                duration: 1,
+                disconnectionReason: 1,
+                leadStatus: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                attemptLength: 1
+              }
+            }
+          ],
+          as: 'callData'
+        }
+      },
+
+      // All call history
+      {
+        $lookup: {
+          from: 'Calls',
+          let: {
+            batchCallId: { $toString: '$batchCallId' },
+            recipientNumber: '$number'
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$batchCallId', '$$batchCallId'] },
+                    { $eq: ['$toNumber', '$$recipientNumber'] }
+                  ]
+                }
+              }
+            },
+            { $sort: { createdAt: -1 } },
+            {
+              $project: {
+                attemptLength: 1,
+                createdAt: 1,
+                leadStatus: 1,
+                duration: 1,
+                disconnectionReason: 1
+              }
+            }
+          ],
+          as: 'allCallData'
+        }
+      },
+
+      // Extract latest call
+      {
+        $addFields: {
+          callData: { $arrayElemAt: ['$callData', 0] }
+        }
+      },
+
+      // ✅ FIX: Apply meeting filter AFTER lookup
+      ...(Object.keys(callDataMatch).length
+        ? [{ $match: callDataMatch }]
+        : []),
+
+      // Search
+      ...(searchRegex
+        ? [
+          {
+            $match: {
+              $or: [
+                { firstName: searchRegex },
+                { number: searchRegex },
+                { 'batch.name': searchRegex }
+              ]
+            }
+          }
+        ]
+        : []),
+
+      // Sorting
+      { $sort: { [sortField]: sortDirection, _id: 1 } },
+
+      // Pagination + Projection
+      {
+        $facet: {
+          data: [
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $project: {
+                recipientId: '$_id',
+                errorMessage: '$errorMessage',
+                errorMessages: '$errorMessages',
+                recipientName: '$name',
+                recipientNumber: '$number',
+                recipientFirstName: '$firstName',
+                recipientLastName: '$lastName',
+                recipientGender: '$gender',
+                recipientEmail: '$email',
+                recipientStatus: '$status',
+                recipientCreatedAt: '$createdAt',
+                recipientUpdatedAt: '$updatedAt',
+                callAttempt: '$attemptLength',
+
+                batchId: '$batch._id',
+                batchName: '$batch.name',
+                batchStatus: '$batch.status',
+                utcDateTime: '$batch.utcDateTime',
+                actualStartDateTime: '$batch.actualStartDateTime',
+                outboundNumber: '$batch.outboundNumber',
+                totalRecipient: '$batch.totalRecipient',
+                updatedAt: '$batch.updatedAt',
+
+                callStatus: { $ifNull: ['$callData.status', null] },
+                callDuration: { $ifNull: ['$callData.duration', null] },
+                callDisconnectionReason: { $ifNull: ['$callData.disconnectionReason', ''] },
+                callLeadStatus: { $ifNull: ['$callData.leadStatus', ''] },
+                callCreatedAt: { $ifNull: ['$callData.createdAt', null] },
+                callUpdatedAt: { $ifNull: ['$callData.updatedAt', null] },
+
+                callHistory: {
+                  $cond: {
+                    if: { $isArray: '$allCallData' },
+                    then: {
+                      $map: {
+                        input: '$allCallData',
+                        as: 'call',
+                        in: {
+                          attemptNumber: { $ifNull: ['$$call.attemptLength', 0] },
+                          datetime: { $ifNull: ['$$call.createdAt', null] },
+                          status: { $ifNull: ['$$call.leadStatus', ''] },
+                          duration: { $ifNull: ['$$call.duration', 0] },
+                          disconnectionReason: { $ifNull: ['$$call.disconnectionReason', ''] }
+                        }
+                      }
+                    },
+                    else: []
+                  }
+                }
+              }
+            }
+          ],
+          totalCount: [{ $count: 'count' }]
+        }
+      }
+    ];
+
+    try {
+      const result = await Recipient.aggregate(pipeline).exec();
+      const analysis = await this.getBatchDetailsCounts(payload);
+
+      return {
+        analysis,
+        data: result[0]?.data || [],
+        totalCount: result[0]?.totalCount[0]?.count || 0
+      };
+    } catch (error: any) {
+      console.error("Error in batchCallDetails:", {
+        message: error.message,
+        stack: error.stack
+      });
+      throw new Error(`Failed to fetch batch call details: ${error.message}`);
+    }
+  }
+
+
+  public async getBatchDetailsCounts(payload: any) {
+    const { batchIds } = payload;
+
+    const batchObjectId = new Types.ObjectId(batchIds);
+
+    const result = await Recipient.aggregate([
+      {
+        $match: {
+          batchCallId: batchObjectId
+        }
+      },
+
+      // Get latest call per recipient
+      {
+        $lookup: {
+          from: "Calls",
+          let: {
+            batchCallId: { $toString: "$batchCallId" },
+            recipientNumber: "$number"
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$batchCallId", "$$batchCallId"] },
+                    { $eq: ["$toNumber", "$$recipientNumber"] }
+                  ]
+                }
+              }
+            },
+            { $sort: { createdAt: -1 } },
+            { $limit: 1 },
+            {
+              $project: {
+                leadStatus: 1
+              }
+            }
+          ],
+          as: "callData"
+        }
+      },
+
+      {
+        $addFields: {
+          callData: { $arrayElemAt: ["$callData", 0] }
+        }
+      },
+
+      // Group counts
+      {
+        $group: {
+          _id: null,
+
+          total: { $sum: 1 },
+
+          complete: {
+            $sum: {
+              $cond: [{ $in: ["$status", [3, 4]] }, 1, 0]
+            }
+          },
+
+          processing: {
+            $sum: {
+              $cond: [{ $eq: ["$status", 6] }, 1, 0]
+            }
+          },
+
+          queued: {
+            $sum: {
+              $cond: [{ $eq: ["$status", 1] }, 1, 0]
+            }
+          },
+
+          followUps: {
+            $sum: {
+              $cond: [{ $eq: ["$status", 2] }, 1, 0]
+            }
+          },
+
+          skip: {
+            $sum: {
+              $cond: [{ $eq: ["$status", 5] }, 1, 0]
+            }
+          },
+
+          failed: {
+            $sum: {
+              $cond: [{ $eq: ["$status", 7] }, 1, 0]
+            }
+          },
+
+          // ✅ FIXED meeting count
+          meeting: {
+            $sum: {
+              $cond: [
+                { $eq: ["$callData.leadStatus", "Interested - Meeting Booked"] },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    const counts = result[0] || {
+      total: 0,
+      complete: 0,
+      processing: 0,
+      queued: 0,
+      meeting: 0,
+      followUps: 0,
+      skip: 0,
+      failed: 0
+    };
+
+    return counts;
+  }
 }
 
 const batchCallService = new BatchCallService();
