@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { blacklistService } from '../api/blacklistService';
 import { companyService } from '../api/companyService';
 import { useAuth } from '../Helper/AuthContext';
-import { Ban, Search, Trash2, X, AlertCircle, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { Ban, Search, Trash2, AlertCircle, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import Toast from '../Component/toaster/Toast';
 
 const PAGE_LIMIT = 15;
