@@ -2,30 +2,44 @@ import React, { useEffect, useState } from 'react';
 import { phoneNumberService } from '../api/phoneNumberService';
 import { companyService } from '../api/companyService';
 import { useAuth } from '../Helper/AuthContext';
-import { Phone, Plus, Search, Pencil, X, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { Phone, Plus, Search, Pencil, X, ChevronLeft, ChevronRight, Building2 } from 'lucide-react';
 import Toast from '../Component/toaster/Toast';
 
-const PAGE_LIMIT = 15;
+const PAGE_LIMIT = 10;
 
-const Pagination = ({ page, total, limit, onPage }: { page: number; total: number; limit: number; onPage: (p: number) => void }) => {
-    const totalPages = Math.ceil(total / limit);
+const Pagination = ({ page, totalPages, totalRecords, limit, onPage }: {
+    page: number; totalPages: number; totalRecords: number; limit: number; onPage: (p: number) => void;
+}) => {
     const from = (page - 1) * limit + 1;
-    const to = Math.min(page * limit, total);
-    if (totalPages <= 1) return null;
+    const to = Math.min(page * limit, totalRecords);
     return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderTop: '1px solid #f0f1f3' }}>
-            <span style={{ fontSize: '12px', color: '#999' }}>Showing {from}–{to} of {total}</span>
-            <div style={{ display: 'flex', gap: '4px' }}>
-                <button onClick={() => onPage(page - 1)} disabled={page === 1} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e4e9', borderRadius: '8px', background: page === 1 ? '#f9fafb' : '#fff', color: page === 1 ? '#ccc' : '#555', cursor: page === 1 ? 'not-allowed' : 'pointer' }}>
-                    <ChevronLeft size={15} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderTop: '1px solid #f1f5f9' }}>
+            <span style={{ fontSize: '14px', color: '#64748b' }}>Showing {from}–{to} of {totalRecords} records</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button 
+                    onClick={() => onPage(page - 1)} 
+                    disabled={page === 1} 
+                    style={{ padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', color: page === 1 ? '#cbd5e1' : '#64748b', cursor: page === 1 ? 'not-allowed' : 'pointer' }}
+                >
+                    <ChevronLeft size={18} />
                 </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                    <button key={p} onClick={() => onPage(p)} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', borderColor: p === page ? '#0a485e' : '#e2e4e9', background: p === page ? '#0a485e' : '#fff', color: p === page ? '#fff' : '#555' }}>
-                        {p}
-                    </button>
-                ))}
-                <button onClick={() => onPage(page + 1)} disabled={page === totalPages} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e4e9', borderRadius: '8px', background: page === totalPages ? '#f9fafb' : '#fff', color: page === totalPages ? '#ccc' : '#555', cursor: page === totalPages ? 'not-allowed' : 'pointer' }}>
-                    <ChevronRight size={15} />
+                <div style={{ display: 'flex', gap: '4px' }}>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                        <button 
+                            key={p} 
+                            onClick={() => onPage(p)} 
+                            style={{ minWidth: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', borderColor: p === page ? '#6366f1' : '#e2e8f0', background: p === page ? '#6366f1' : '#fff', color: p === page ? '#fff' : '#64748b' }}
+                        >
+                            {p}
+                        </button>
+                    ))}
+                </div>
+                <button 
+                    onClick={() => onPage(page + 1)} 
+                    disabled={page === totalPages} 
+                    style={{ padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', color: page === totalPages ? '#cbd5e1' : '#64748b', cursor: page === totalPages ? 'not-allowed' : 'pointer' }}
+                >
+                    <ChevronRight size={18} />
                 </button>
             </div>
         </div>
@@ -83,40 +97,55 @@ const PhoneNumbers: React.FC = () => {
         fetchRecords();
     };
 
-    const inputStyle: React.CSSProperties = { height: '38px', paddingLeft: '12px', paddingRight: '12px', border: '1px solid #e2e4e9', borderRadius: '8px', fontSize: '13px', background: '#fff', outline: 'none', fontFamily: 'inherit' };
+
 
     return (
-        <div>
+        <div style={{ width: '100%' }}>
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', gap: '12px', flexWrap: 'wrap' }}>
+            
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
                 <div>
-                    <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, color: '#0a0a0a' }}>Phone Numbers</h1>
-                    <p style={{ color: '#888', fontSize: '14px', marginTop: '4px' }}>Manage phone numbers assigned to your system.</p>
+                    <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#1e293b', marginBottom: '4px' }}>Phone Numbers</h1>
+                    <p style={{ color: '#64748b', fontSize: '15px' }}>Manage phone numbers assigned to your system.</p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     {isSuperAdmin && companies.length > 0 && (
                         <div style={{ position: 'relative' }}>
-                            <select value={companyId} onChange={e => { setCompanyId(e.target.value); setPage(1); }}
-                                style={{ ...inputStyle, paddingLeft: '32px', paddingRight: '28px', appearance: 'none', cursor: 'pointer', color: '#0a0a0a' }}>
+                            <Building2 size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
+                            <select
+                                value={companyId}
+                                onChange={e => { setCompanyId(e.target.value); setPage(1); }}
+                                style={{ height: '44px', paddingLeft: '36px', paddingRight: '32px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', background: '#fff', outline: 'none', cursor: 'pointer', appearance: 'none', minWidth: '180px' }}
+                            >
                                 {companies.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
                             </select>
-                            <ChevronDown size={13} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#b0b4ba', pointerEvents: 'none' }} />
                         </div>
                     )}
                     <form onSubmit={handleSearch} style={{ position: 'relative' }}>
-                        <Search size={15} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#b0b4ba', pointerEvents: 'none' }} />
-                        <input type="text" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)}
-                            style={{ ...inputStyle, paddingLeft: '34px', width: '200px' }}
-                            onFocus={e => { e.target.style.borderColor = '#0a485e'; e.target.style.boxShadow = '0 0 0 3px rgba(10,72,94,0.08)'; }}
-                            onBlur={e => { e.target.style.borderColor = '#e2e4e9'; e.target.style.boxShadow = 'none'; }} />
+                        <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                        <input
+                            type="text"
+                            placeholder="Search numbers..."
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            style={{ height: '44px', paddingLeft: '40px', paddingRight: '16px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', width: '240px', outline: 'none', transition: 'all 0.2s' }}
+                            onFocus={e => e.target.style.borderColor = '#6366f1'}
+                            onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                        />
                     </form>
-                    <button className="btn-primary" onClick={() => { setEditRecord(null); setShowModal(true); }}>
-                        <Plus size={16} /> Add Number
+                    <button 
+                        onClick={() => { setEditRecord(null); setShowModal(true); }}
+                        style={{ height: '44px', padding: '0 20px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'background 0.2s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#4f46e5'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#6366f1'}
+                    >
+                        <Plus size={18} /> Add Number
                     </button>
                 </div>
             </div>
 
-            <div className="card" style={{ maxHeight: 'calc(100vh - 200px)', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #f1f5f9', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
                 {isLoading ? (
                     <div style={{ padding: '48px', textAlign: 'center', color: '#aaa', fontSize: '13px' }}>Loading...</div>
                 ) : records.length === 0 ? (
@@ -127,39 +156,45 @@ const PhoneNumbers: React.FC = () => {
                 ) : (
                     <>
                         <div style={{ overflowY: 'auto', flex: 1 }}>
-                            <table>
-                                <thead style={{ position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
-                                    <tr><th>Name</th><th>Phone Number</th><th style={{ width: '80px' }}>Actions</th></tr>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead style={{ position: 'sticky', top: 0, background: '#f9fafb', zIndex: 1, boxShadow: 'inset 0 1px 0 #e2e8f0, inset 0 -1px 0 #e2e8f0' }}>
+                                    <tr>
+                                        <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Name</th>
+                                        <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Phone Number</th>
+                                        <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', width: '100px' }}>Actions</th>
+                                    </tr>
                                 </thead>
                                 <tbody>
                                     {records.map(r => (
-                                        <tr key={r._id}>
-                                            <td style={{ fontWeight: 600, color: '#0a0a0a' }}>{r.name || '–'}</td>
-                                            <td>{r.phoneNumber || '–'}</td>
-                                            <td>
-                                                <button onClick={() => { setEditRecord(r); setShowModal(true); }} title="Edit"
-                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: '4px', display: 'flex' }}
-                                                    onMouseEnter={e => (e.currentTarget.style.color = '#0a485e')}
-                                                    onMouseLeave={e => (e.currentTarget.style.color = '#ccc')}>
-                                                    <Pencil size={15} />
-                                                </button>
+                                        <tr key={r._id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                            <td style={{ padding: '12px 24px', fontWeight: 600, color: '#1e293b', fontSize: '14px' }}>{r.name || '–'}</td>
+                                            <td style={{ padding: '12px 24px', color: '#64748b', fontSize: '14px' }}>{r.phoneNumber || '–'}</td>
+                                            <td style={{ padding: '12px 24px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <button onClick={() => { setEditRecord(r); setShowModal(true); }} title="Edit"
+                                                        style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }}
+                                                        onMouseEnter={e => e.currentTarget.style.color = '#6366f1'}
+                                                        onMouseLeave={e => e.currentTarget.style.color = '#64748b'}>
+                                                        <Pencil size={16} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-                        <Pagination page={page} total={total} limit={PAGE_LIMIT} onPage={p => setPage(p)} />
+                        <Pagination page={page} totalPages={Math.ceil(total / PAGE_LIMIT)} totalRecords={total} limit={PAGE_LIMIT} onPage={p => setPage(p)} />
                     </>
                 )}
             </div>
 
             {showModal && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(8px)' }}>
                     <div style={{ background: '#fff', width: '100%', maxWidth: '460px', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', padding: '32px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700 }}>{editRecord ? 'Edit Phone Number' : 'Add Phone Number'}</h2>
-                            <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', display: 'flex' }}><X size={20} /></button>
+                            <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1e293b' }}>{editRecord ? 'Edit Phone Number' : 'Add Phone Number'}</h2>
+                            <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex' }}><X size={20} /></button>
                         </div>
                         <PhoneNumberForm
                             record={editRecord}
@@ -199,20 +234,38 @@ const PhoneNumberForm = ({ record, companyId, onClose, onError, onSuccess }: {
         } finally { setLoading(false); }
     };
 
-    const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 12px', border: '1px solid #e2e4e9', borderRadius: '8px', fontSize: '13px', background: '#f9fafb', outline: 'none', fontFamily: 'inherit', color: '#0a0a0a' };
-    const labelStyle: React.CSSProperties = { display: 'block', fontSize: '12px', fontWeight: 600, color: '#555', marginBottom: '6px' };
+    const inputStyle: React.CSSProperties = { width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '14px', background: '#f8fafc', outline: 'none', transition: 'all 0.2s', color: '#1e293b' };
+    const labelStyle: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' };
 
     return (
         <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '12px' }}>
+            <div style={{ marginBottom: '16px' }}>
                 <label style={labelStyle}>Name *</label>
-                <input required style={inputStyle} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Main Line" />
+                <input required style={inputStyle} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Main Line" onFocus={e => e.target.style.borderColor = '#6366f1'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
             </div>
-            <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '24px' }}>
                 <label style={labelStyle}>Phone Number *</label>
-                <input required style={inputStyle} value={form.phoneNumber} onChange={e => setForm({ ...form, phoneNumber: e.target.value })} placeholder="+91XXXXXXXXXX" />
+                <input required style={inputStyle} value={form.phoneNumber} onChange={e => setForm({ ...form, phoneNumber: e.target.value })} placeholder="+91XXXXXXXXXX" onFocus={e => e.target.style.borderColor = '#6366f1'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
             </div>
-            <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: '42px' }}>
+            <button 
+                type="submit" 
+                disabled={loading}
+                style={{ 
+                    width: '100%', 
+                    height: '44px', 
+                    background: '#6366f1', 
+                    color: '#fff', 
+                    border: 'none', 
+                    borderRadius: '12px', 
+                    fontSize: '14px', 
+                    fontWeight: 600, 
+                    cursor: 'pointer', 
+                    boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)',
+                    transition: 'all 0.2s' 
+                }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+            >
                 {loading ? 'Saving...' : record ? 'Save Changes' : 'Add Phone Number'}
             </button>
         </form>

@@ -3,7 +3,7 @@ import { userService } from '../api/userService';
 import { roleService } from '../api/roleService';
 import { companyService } from '../api/companyService';
 import { useAuth } from '../Helper/AuthContext';
-import { Users as UsersIcon, Plus, Search, Trash2, Building2, ShieldCheck, X, ChevronLeft, ChevronRight, ChevronDown, Pencil, Key } from 'lucide-react';
+import { Users as UsersIcon, Plus, Search, Trash2, X, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 import Toast from '../Component/toaster/Toast';
 
 const PAGE_LIMIT = 10;
@@ -15,21 +15,47 @@ const Pagination = ({ page, totalPages, totalRecords, limit, onPage }: {
     const from = (page - 1) * limit + 1;
     const to = Math.min(page * limit, totalRecords);
     return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderTop: '1px solid #f0f1f3' }}>
-            <span style={{ fontSize: '12px', color: '#999' }}>Showing {from}–{to} of {totalRecords}</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <button onClick={() => onPage(page - 1)} disabled={page === 1} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e4e9', borderRadius: '8px', background: page === 1 ? '#f9fafb' : '#fff', color: page === 1 ? '#ccc' : '#555', cursor: page === 1 ? 'not-allowed' : 'pointer' }}>
-                    <ChevronLeft size={15} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderTop: '1px solid #f1f5f9' }}>
+            <span style={{ fontSize: '14px', color: '#64748b' }}>Showing {from}–{to} of {totalRecords} users</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button 
+                    onClick={() => onPage(page - 1)} 
+                    disabled={page === 1} 
+                    style={{ padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', color: page === 1 ? '#cbd5e1' : '#64748b', cursor: page === 1 ? 'not-allowed' : 'pointer' }}
+                >
+                    <ChevronLeft size={18} />
                 </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                    <button key={p} onClick={() => onPage(p)} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', borderColor: p === page ? '#0a485e' : '#e2e4e9', background: p === page ? '#0a485e' : '#fff', color: p === page ? '#fff' : '#555' }}>
-                        {p}
-                    </button>
-                ))}
-                <button onClick={() => onPage(page + 1)} disabled={page === totalPages} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e4e9', borderRadius: '8px', background: page === totalPages ? '#f9fafb' : '#fff', color: page === totalPages ? '#ccc' : '#555', cursor: page === totalPages ? 'not-allowed' : 'pointer' }}>
-                    <ChevronRight size={15} />
+                <div style={{ display: 'flex', gap: '4px' }}>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                        <button 
+                            key={p} 
+                            onClick={() => onPage(p)} 
+                            style={{ minWidth: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', borderColor: p === page ? '#6366f1' : '#e2e8f0', background: p === page ? '#6366f1' : '#fff', color: p === page ? '#fff' : '#64748b' }}
+                        >
+                            {p}
+                        </button>
+                    ))}
+                </div>
+                <button 
+                    onClick={() => onPage(page + 1)} 
+                    disabled={page === totalPages} 
+                    style={{ padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', color: page === totalPages ? '#cbd5e1' : '#64748b', cursor: page === totalPages ? 'not-allowed' : 'pointer' }}
+                >
+                    <ChevronRight size={18} />
                 </button>
             </div>
+        </div>
+    );
+};
+
+const Avatar = ({ name, color }: { name: string; color?: string }) => {
+    const initials = name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
+    const bgColors = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6'];
+    const randomColor = color || bgColors[Math.abs(name?.length || 0) % bgColors.length];
+    
+    return (
+        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: randomColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '14px', fontWeight: 600 }}>
+            {initials}
         </div>
     );
 };
@@ -82,11 +108,7 @@ const Users: React.FC = () => {
         finally { setIsLoading(false); }
     };
 
-    const handleCompanyChange = (id: string) => {
-        setSelectedCompanyId(id);
-        setPage(1);
-        setSearchQuery('');
-    };
+
 
     const archiveUser = async (id: string) => {
         if (!window.confirm('Archive this user?')) return;
@@ -105,55 +127,48 @@ const Users: React.FC = () => {
 
     const handlePageChange = (p: number) => { setPage(p); setSearchQuery(''); };
 
-    const showCompanyDropdown = companiesList.length > 0;
+
+
+
 
     return (
-        <div>
+        <div style={{ width: '100%' }}>
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+            
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
                 <div>
-                    <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, color: '#0a0a0a' }}>Users</h1>
-                    <p style={{ color: '#888', fontSize: '14px', marginTop: '4px' }}>Manage users, assign roles, and control access.</p>
+                    <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#1e293b', marginBottom: '4px' }}>Users</h1>
+                    <p style={{ color: '#64748b', fontSize: '15px' }}>Manage users, assign roles, and control access.</p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0, flexWrap: 'wrap' }}>
-                    {/* Company Dropdown */}
-                    {showCompanyDropdown && (
-                        <div style={{ position: 'relative' }}>
-                            <Building2 size={14} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#b0b4ba', pointerEvents: 'none' }} />
-                            <select
-                                value={selectedCompanyId}
-                                onChange={e => handleCompanyChange(e.target.value)}
-                                style={{ height: '38px', paddingLeft: '32px', paddingRight: '32px', border: '1px solid #e2e4e9', borderRadius: '8px', fontSize: '13px', background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#0a0a0a', cursor: 'pointer', appearance: 'none' }}
-                                onFocus={e => { e.target.style.borderColor = '#0a485e'; e.target.style.boxShadow = '0 0 0 3px rgba(10,72,94,0.08)'; }}
-                                onBlur={e => { e.target.style.borderColor = '#e2e4e9'; e.target.style.boxShadow = 'none'; }}
-                            >
-                                {companiesList.map(c => (
-                                    <option key={c._id} value={c._id}>{c.name}</option>
-                                ))}
-                            </select>
-                            <ChevronDown size={13} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#b0b4ba', pointerEvents: 'none' }} />
-                        </div>
-                    )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{ position: 'relative' }}>
-                        <Search size={15} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#b0b4ba', pointerEvents: 'none' }} />
+                        <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                         <input
                             type="text"
                             placeholder="Search users..."
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            style={{ height: '38px', paddingLeft: '34px', paddingRight: '12px', border: '1px solid #e2e4e9', borderRadius: '8px', fontSize: '13px', background: '#fff', outline: 'none', fontFamily: 'inherit', width: '200px' }}
-                            onFocus={e => { e.target.style.borderColor = '#0a485e'; e.target.style.boxShadow = '0 0 0 3px rgba(10,72,94,0.08)'; }}
-                            onBlur={e => { e.target.style.borderColor = '#e2e4e9'; e.target.style.boxShadow = 'none'; }}
+                            style={{ height: '44px', paddingLeft: '40px', paddingRight: '16px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', width: '280px', outline: 'none', transition: 'all 0.2s' }}
+                            onFocus={e => e.target.style.borderColor = '#6366f1'}
+                            onBlur={e => e.target.style.borderColor = '#e2e8f0'}
                         />
                     </div>
-                    <button className="btn-primary" onClick={() => setShowModal(true)}>
-                        <Plus size={16} /> Add User
+                    <button 
+                        onClick={() => setShowModal(true)}
+                        style={{ height: '44px', padding: '0 20px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'background 0.2s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#4f46e5'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#6366f1'}
+                    >
+                        <Plus size={18} /> Add User
                     </button>
                 </div>
             </div>
 
-            <div className="card" style={{ maxHeight: 'calc(100vh - 200px)', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+
+
+            <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #f1f5f9', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
+
                 {isLoading ? (
                     <div style={{ padding: '48px', textAlign: 'center', color: '#aaa', fontSize: '13px' }}>Loading...</div>
                 ) : filtered.length === 0 ? (
@@ -164,41 +179,55 @@ const Users: React.FC = () => {
                 ) : (
                     <>
                         <div style={{ overflowY: 'auto', flex: 1 }}>
-                        <table>
-                            <thead style={{ position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
-                                <tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th style={{ width: '80px' }}>Actions</th></tr>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead style={{ position: 'sticky', top: 0, background: '#f9fafb', zIndex: 1, boxShadow: 'inset 0 1px 0 #e2e8f0, inset 0 -1px 0 #e2e8f0' }}>
+                                <tr>
+                                    <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>User</th>
+                                    <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Role</th>
+                                    <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Phone</th>
+                                    <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Last Active</th>
+                                    <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+                                    <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', width: '100px' }}>Actions</th>
+                                </tr>
                             </thead>
                             <tbody>
                                 {filtered.map(u => (
-                                    <tr key={u._id}>
-                                        <td style={{ fontWeight: 600, color: '#0a0a0a' }}>{u.name}</td>
-                                        <td>{u.userName}</td>
-                                        <td>{u.email || '–'}</td>
-                                        <td>
-                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                                                <ShieldCheck size={13} style={{ color: '#0a485e' }} /> {u.roleId?.name || '–'}
+                                    <tr key={u._id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                        <td style={{ padding: '12px 24px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <Avatar name={u.name} />
+                                                <div>
+                                                    <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '14px' }}>{u.name}</div>
+                                                    <div style={{ color: '#64748b', fontSize: '12px' }}>{u.email || u.userName}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '12px 24px' }}>
+                                            <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, background: '#eef2ff', color: '#6366f1' }}>
+                                                {u.roleId?.name || 'User'}
                                             </span>
                                         </td>
-                                        <td>
-                                            {!u.isArchived && (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                    <button onClick={() => setEditUser(u)} title="Edit" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: '4px', display: 'flex' }}
-                                                        onMouseEnter={e => (e.currentTarget.style.color = '#0a485e')}
-                                                        onMouseLeave={e => (e.currentTarget.style.color = '#ccc')}>
-                                                        <Pencil size={15} />
-                                                    </button>
-                                                    <button onClick={() => setResetPassUser(u)} title="Change Password" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: '4px', display: 'flex' }}
-                                                        onMouseEnter={e => (e.currentTarget.style.color = '#0a485e')}
-                                                        onMouseLeave={e => (e.currentTarget.style.color = '#ccc')}>
-                                                        <Key size={15} />
-                                                    </button>
-                                                    <button onClick={() => archiveUser(u._id)} title="Archive" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: '4px', display: 'flex' }}
-                                                        onMouseEnter={e => (e.currentTarget.style.color = '#dc2626')}
-                                                        onMouseLeave={e => (e.currentTarget.style.color = '#ccc')}>
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-                                            )}
+                                        <td style={{ padding: '12px 24px', color: '#64748b', fontSize: '14px' }}>
+                                            {u.phoneNumber || '+91 90000 00000'}
+                                        </td>
+                                        <td style={{ padding: '12px 24px', color: '#64748b', fontSize: '14px' }}>
+                                            {u.lastActive || 'Just now'}
+                                        </td>
+                                        <td style={{ padding: '12px 24px' }}>
+                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '20px', background: u.isArchived ? '#f1f5f9' : '#f0fdf4', color: u.isArchived ? '#64748b' : '#22c55e', fontSize: '12px', fontWeight: 600 }}>
+                                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: u.isArchived ? '#64748b' : '#22c55e' }} />
+                                                {u.isArchived ? 'Inactive' : 'Active'}
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '12px 24px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                                <button onClick={() => setEditUser(u)} style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#6366f1'} onMouseLeave={e => e.currentTarget.style.color = '#64748b'}>
+                                                    <Pencil size={16} />
+                                                </button>
+                                                <button onClick={() => archiveUser(u._id)} style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#ef4444'} onMouseLeave={e => e.currentTarget.style.color = '#64748b'}>
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

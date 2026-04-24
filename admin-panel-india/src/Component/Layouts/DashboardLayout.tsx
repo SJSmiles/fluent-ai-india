@@ -20,22 +20,22 @@ import Toast from "../toaster/Toast";
 
 // Color tokens matching the Fluent dashboard purple theme
 const COLORS = {
-  brand: "#7c3aed",         // Primary purple (sidebar active bg, logo bg)
-  brandDark: "#6d28d9",     // Darker purple for hover states
-  brandLight: "#ede9fe",    // Light purple tint for subtle backgrounds
-  brandText: "#7c3aed",     // Purple text
+  brand: "#6366f1",         // Primary purple (sidebar active bg, logo bg)
+  brandDark: "#4f46e5",     // Darker purple for hover states
+  brandLight: "#eef2ff",    // Light purple tint for subtle backgrounds
+  brandText: "#6366f1",     // Purple text
   sidebar: "#ffffff",       // Sidebar background
-  sidebarBorder: "#f0f0f3",
-  navActive: "#7c3aed",
-  navActiveText: "#ffffff",
+  sidebarBorder: "#f3f4f6",
+  navActive: "#eef2ff",     // Light purple for active item bg
+  navActiveText: "#6366f1", // Purple for active item text
   navInactiveText: "#6b7280",
-  navHoverBg: "#f5f3ff",
-  navHoverText: "#7c3aed",
-  pageBackground: "#f7f8fa",
-  text: "#111827",
-  textMuted: "#9ca3af",
-  textSecondary: "#6b7280",
-  danger: "#dc2626",
+  navHoverBg: "#f9fafb",
+  navHoverText: "#6366f1",
+  pageBackground: "#f8fafc",
+  text: "#1e293b",
+  textMuted: "#94a3b8",
+  textSecondary: "#64748b",
+  danger: "#ef4444",
 };
 
 const DashboardLayout: React.FC = () => {
@@ -237,33 +237,36 @@ const DashboardLayout: React.FC = () => {
         <nav
           style={{
             flex: 1,
-            padding: "10px 8px",
+            padding: "16px 0",
             overflowY: "auto",
             overflowX: "hidden",
           }}
         >
+          {sidebarOpen && (
+            <div style={{ padding: "0 24px 8px", fontSize: "11px", fontWeight: 700, color: COLORS.textMuted, letterSpacing: "0.05em" }}>
+              MAIN
+            </div>
+          )}
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to!}
               end={item.to === "/dashboard"}
-              style={{ textDecoration: "none", display: "block" }}
+              style={{ textDecoration: "none", display: "block", position: "relative" }}
             >
               {({ isActive }) => (
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "10px",
-                    padding: sidebarOpen ? "9px 12px" : "9px",
+                    gap: "12px",
+                    padding: sidebarOpen ? "10px 24px" : "10px",
                     justifyContent: sidebarOpen ? "flex-start" : "center",
-                    borderRadius: "8px",
-                    marginBottom: "2px",
                     background: isActive ? COLORS.navActive : "transparent",
                     color: isActive ? COLORS.navActiveText : COLORS.navInactiveText,
-                    fontWeight: 600,
-                    fontSize: "13.5px",
-                    transition: "background 0.15s, color 0.15s",
+                    fontWeight: isActive ? 600 : 500,
+                    fontSize: "14px",
+                    transition: "all 0.2s ease",
                     cursor: "pointer",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
@@ -281,8 +284,13 @@ const DashboardLayout: React.FC = () => {
                     }
                   }}
                 >
+                  {/* Vertical Active Indicator */}
+                  {isActive && (
+                    <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "3px", background: COLORS.brand }} />
+                  )}
+                  
                   <item.icon
-                    size={18}
+                    size={20}
                     style={{ flexShrink: 0 }}
                   />
                   {sidebarOpen && <span>{item.label}</span>}
@@ -295,45 +303,46 @@ const DashboardLayout: React.FC = () => {
         {/* Footer */}
         <div
           style={{
-            padding: "12px 8px",
+            padding: "16px",
             borderTop: `1px solid ${COLORS.sidebarBorder}`,
             flexShrink: 0,
           }}
         >
-          {/* User info */}
-          {sidebarOpen && (
+          {/* User info card */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              padding: sidebarOpen ? "12px" : "8px",
+              marginBottom: "12px",
+              borderRadius: "12px",
+              background: COLORS.brandLight,
+              justifyContent: sidebarOpen ? "flex-start" : "center",
+            }}
+          >
             <div
               style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "10px",
+                background: COLORS.brand,
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
-                padding: "8px 10px",
-                marginBottom: "4px",
-                borderRadius: "8px",
-                background: COLORS.brandLight,
+                justifyContent: "center",
+                fontSize: "14px",
+                fontWeight: 700,
+                color: "#fff",
+                flexShrink: 0,
               }}
             >
-              <div
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "8px",
-                  background: COLORS.brand,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  color: "#fff",
-                  flexShrink: 0,
-                }}
-              >
-                {userInitial}
-              </div>
+              {userInitial}
+            </div>
+            {sidebarOpen && (
               <div style={{ overflow: "hidden" }}>
                 <p
                   style={{
-                    fontSize: "13px",
+                    fontSize: "14px",
                     fontWeight: 600,
                     color: COLORS.text,
                     lineHeight: 1.2,
@@ -346,44 +355,17 @@ const DashboardLayout: React.FC = () => {
                 </p>
                 <p
                   style={{
-                    fontSize: "11px",
+                    fontSize: "12px",
                     color: COLORS.brandText,
                     fontWeight: 500,
+                    marginTop: "2px",
                   }}
                 >
                   {roleLabel}
                 </p>
               </div>
-            </div>
-          )}
-
-          {/* Collapsed avatar */}
-          {!sidebarOpen && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                marginBottom: "8px",
-              }}
-            >
-              <div
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "8px",
-                  background: COLORS.brand,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  color: "#fff",
-                }}
-              >
-                {userInitial}
-              </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Change Password */}
           <FooterBtn
