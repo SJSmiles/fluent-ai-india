@@ -68,12 +68,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Step 2: Get current user info
     const currentUserResponse = await userService.getCurrentUser();
-    setUser(currentUserResponse.data.data);
+    const userData = currentUserResponse.data.data || currentUserResponse.data;
+    setUser(userData);
 
     // Step3: Save the user data to localStorage <--
     localStorage.setItem(
       'currentUser',
-      JSON.stringify(currentUserResponse.data.data),
+      JSON.stringify(userData),
     );
   };
 

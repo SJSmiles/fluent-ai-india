@@ -49,9 +49,9 @@ const Users: React.FC = () => {
     const [editUser, setEditUser] = useState<any>(null);
     const [resetPassUser, setResetPassUser] = useState<any>(null);
 
-    // Step 1: Fetch company filter listing on mount → get default companyId
+    // Step 1: Fetch company listing on mount → get default companyId
     useEffect(() => {
-        companyService.getFilterListing()
+        companyService.getAll()
             .then(res => {
                 const list = res.data.data || [];
                 setCompaniesList(list);

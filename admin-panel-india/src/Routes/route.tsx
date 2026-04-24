@@ -5,6 +5,7 @@ import Login from "../pages/Login";
 import Overview from "../pages/Overview";
 import Companies from "../pages/Companies";
 import Users from "../pages/Users";
+import Agents from "../pages/Agents";
 
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -59,6 +60,17 @@ function AppRoutes() {
                     element={
                         user?.isAdmin ? (
                             <Users />
+                        ) : (
+                            <Navigate to="/dashboard" replace />
+                        )
+                    }
+                />
+
+                <Route
+                    path="agents"
+                    element={
+                        user?.isAdmin ? (
+                            <Agents />
                         ) : (
                             <Navigate to="/dashboard" replace />
                         )

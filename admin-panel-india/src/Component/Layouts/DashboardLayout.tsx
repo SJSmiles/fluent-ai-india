@@ -6,11 +6,7 @@ import {
   Users,
   LogOut,
   Menu,
-  Smartphone,
-  FolderTree,
-  Layout,
-  Contact,
-  Send,
+  Cpu,
   KeyRound,
   X
 } from "lucide-react";
@@ -64,21 +60,9 @@ const DashboardLayout: React.FC = () => {
     ...(user?.isAdmin
       ? [
         { to: "/users", icon: Users as any, label: "Users" },
-        { to: "/devices", icon: Smartphone, label: "Devices" },
-        { to: "/groups", icon: FolderTree, label: "Groups" },
-        { to: "/contacts", icon: Contact, label: "Contacts" },
-        { divider: true },
-        { to: "/campaigns", icon: Send, label: "Campaigns" },
-        { to: "/templates", icon: Layout, label: "Templates" },
+        { to: "/agents", icon: Cpu as any, label: "Agents" },
       ]
-      : [
-        { to: "/devices", icon: Smartphone, label: "Devices" },
-        { to: "/groups", icon: FolderTree, label: "Groups" },
-        { to: "/contacts", icon: Contact, label: "Contacts" },
-        { divider: true },
-        { to: "/campaigns", icon: Send, label: "Campaigns" },
-        { to: "/templates", icon: Layout, label: "Templates" },
-      ]),
+      : []),
   ];
 
   return (

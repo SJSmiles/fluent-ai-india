@@ -2,7 +2,7 @@ import api from "./baseService";
 
 export const companyService = {
   getAll: () => api.get("/companies/listing"),
-  getFilterListing: () => api.get("/companies/filter-listing"),
+  getFilterListing: () => api.get("/companies/company-filter-list"),
   getById: (id: string) => api.get(`/companies/${id}`),
   create: (data: any) => api.post("/companies/create", data),
   update: (id: string, data: any) => api.put(`/companies/update/${id}`, data),

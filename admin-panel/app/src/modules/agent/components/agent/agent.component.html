@@ -30,20 +30,14 @@
   <table class="agents-table">
     <thead>
       <tr>
-        <th scope="col" class="px-2">
-          <span class="ps-1">Agent ID</span>
-        </th>
         <th scope="col" (click)="sortActive('agentName')"
           class="unsort-color px-2 cursor-pointer dashboard-custom-width"
-          [ngClass]="{ 'dashboard-font': currentSort === 'agentName' }" style="width: 40%">
+          [ngClass]="{ 'dashboard-font': currentSort === 'agentName' }">
           <app-sort-icon [sortState]="[sortStates['agentName']]" class="icon-sort-placement"></app-sort-icon>
           <span class="ps-1">Agent Name</span>
         </th>
-        <th class="unsort-color px-2 cursor-pointer dashboard-custom-width">
-          <span class="ps-1">Last Updated</span>
-        </th>
-        <th class="px-2 dashboard-custom-width text-center">
-          <span class="ps-1">Primary</span>
+        <th class="px-2 dashboard-custom-width">
+          <span class="ps-1">Prompt</span>
         </th>
         <th class="px-2 batch-call-custom-width text-center">Action</th>
       </tr>
@@ -51,28 +45,11 @@
     <tbody>
       <ng-container *ngFor="let record of recordsList; let j = index">
         <tr class="agents-table-row">
-          <td class="px-2">
-            <span class="agent-id">{{ record.agentId || '-' }}</span>
-          </td>
-          <td class="px-2" [ngClass]="{ 'dashboard-font': currentSort === 'name' }">
-            <div class="d-flex gap-2 align-items-center">
-              <span class="agent-name">{{ record.agentName || '-' }}</span>
-            </div>
+          <td class="px-2" [ngClass]="{ 'dashboard-font': currentSort === 'agentName' }">
+            <span class="agent-name">{{ record.agentName || '-' }}</span>
           </td>
           <td class="px-2">
-            <div class="d-flex gap-2 align-items-center">
-              <app-icon iconType="date" aria-label="date" placement="right"></app-icon>
-              <span class="date">
-                {{ record.createdAt | date: 'dd/MM/yyyy h:mm a' }}
-              </span>
-            </div>
-          </td>
-          <!-- Primary Toggle Column -->
-          <td class="px-2 text-center" (click)="$event.stopPropagation()">
-            <div class="form-check form-switch d-flex justify-content-center">
-              <input class="form-check-input cursor-pointer" type="checkbox" [checked]="record.isPrimary"
-                [disabled]="record.isPrimary" (click)="handlePrimaryToggle($event, primaryConfirmModal, record)">
-            </div>
+            <span>{{ (record.prompt || '-') | slice:0:20 }}{{ record.prompt?.length > 20 ? '...' : '' }}</span>
           </td>
           <td class="px-2 text-center justify-content-center">
             <button type="button" (click)="updateAgent(record)" class="pencil-button">
@@ -82,7 +59,7 @@
         </tr>
       </ng-container>
       <tr class="cursor-pointer" *ngIf="!recordsList || recordsList.length === 0">
-        <td colspan="5" class="text-center py-3">No Agents Found</td>
+        <td colspan="3" class="text-center py-3">No Agents Found</td>
       </tr>
     </tbody>
   </table>
@@ -111,20 +88,4 @@
 <ng-template #createAgentModel let-modal>
   <app-create-agent [selectedAgentData]="selectedAgentData" [modalMode]="modalMode"
     (updateAgent)="handleUpdateAgent($event)"></app-create-agent>
-</ng-template>
-
-<ng-template #primaryConfirmModal let-modal>
-  <div class="modal-header border-0 pb-0">
-    <h4 class="modal-title fw-bold">Confirm Primary Agent</h4>
-    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>
-  </div>
-  <div class="modal-body pt-3">
-    <p class="fs-6 mb-0">
-      Are you sure you want to set <strong>{{ selectedAgentData?.agentName }}</strong> as the primary agent?
-    </p>
-  </div>
-  <div class="modal-footer border-0">
-    <button type="button" class="btn btn-light" (click)="modal.dismiss('cancel')">Cancel</button>
-    <button type="button" class="btn btn-primary" (click)="modal.close('save')">Save</button>
-  </div>
 </ng-template>
