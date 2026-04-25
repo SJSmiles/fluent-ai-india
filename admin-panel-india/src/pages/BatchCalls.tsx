@@ -127,7 +127,10 @@ const BatchCalls: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        fetchRecords();
+        // Prevent double call on mount: wait for companyId to be initialized
+        if (companyId || !isSuperAdmin) {
+            fetchRecords();
+        }
     }, [page, companyId, statusFilter, agentFilter]);
 
     useEffect(() => {
@@ -392,7 +395,7 @@ const BatchCalls: React.FC = () => {
 
             {showModal && (
                 <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-                    <div style={{ background: '#fff', width: '100%', maxWidth: '1000px', maxHeight: '90vh', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                    <div style={{ background: '#fff', width: '100%', maxWidth: '1200px', maxHeight: '90vh', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                         <div style={{ padding: '24px 32px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
                                 <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1e293b' }}>Create New Campaign</h2>
@@ -403,7 +406,7 @@ const BatchCalls: React.FC = () => {
                             </button>
                         </div>
                         
-                        <div style={{ flex: 1, overflowY: 'auto' }}>
+                        <div style={{ flex: 1, overflow: 'hidden' }}>
                             <BatchCallForm
                                 companyId={companyId}
                                 onClose={() => { setShowModal(false); fetchRecords(); }}
@@ -446,7 +449,7 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
 
     const addFollowup = () => {
         if (followups.length >= 10) return;
-        setFollowups([...followups, { date: '', time: '', phoneNumberId: selectedPhone }]);
+        setFollowups([...followups, { date: '', time: '', phoneNumber: selectedPhone }]);
     };
 
     const removeFollowup = (idx: number) => {
@@ -494,9 +497,8 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
             const fd = new FormData();
             fd.append('file', file);
             fd.append('name', name);
-            fd.append('companyId', companyId);
             fd.append('agentId', selectedAgent);
-            fd.append('phoneNumberId', selectedPhone);
+            fd.append('phoneNumber', selectedPhone);
             fd.append('schedule', 'true');
             fd.append('date', scheduledDate);
             fd.append('time', scheduledTime);
@@ -512,15 +514,15 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
         } finally { setLoading(false); }
     };
 
-    const inputStyle: React.CSSProperties = { width: '100%', height: '42px', padding: '0 12px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', color: '#1e293b', outline: 'none', background: '#fff' };
+    const inputStyle: React.CSSProperties = { width: '100%', height: '38px', padding: '0 10px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '13px', color: '#1e293b', outline: 'none', background: '#fff' };
 
     return (
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', padding: '32px' }}>
-            {/* Left Column: Configuration */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', height: '100%', minHeight: 0 }}>
+            {/* Left Column: All Configuration */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', background: '#fcfdfe', borderRight: '1px solid #eef2ff', padding: '24px', overflowY: 'auto' }}>
                 <section>
-                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>Campaign Details</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
+                    <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Campaign Details</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #f1f5f9', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                         <div>
                             <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '6px', display: 'block' }}>Campaign Name</label>
                             <input required style={inputStyle} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Q4 Sales Outreach" />
@@ -529,21 +531,76 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Select Agent</label>
                                 <select required style={inputStyle} value={selectedAgent} onChange={e => setSelectedAgent(e.target.value)}>
-                                    <option value="">Select...</option>
-                                    {agents.map(a => <option key={a._id} value={a.agentId}>{a.agentName}</option>)}
+                                    <option value="">Select Agent...</option>
+                                    {agents.map(a => <option key={a._id} value={a.agentId}>{a.agentName || a.agentId}</option>)}
                                 </select>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Phone Number</label>
                                 <select required style={inputStyle} value={selectedPhone} onChange={e => setSelectedPhone(e.target.value)}>
-                                    <option value="">Select...</option>
-                                    {phoneNumbers.map(p => <option key={p._id} value={p.phoneNumberId}>{p.phoneNumber}</option>)}
+                                    <option value="">Select Phone...</option>
+                                    {phoneNumbers.map(p => <option key={p._id} value={p.phoneNumber}>{p.phoneNumber} ({p.name})</option>)}
                                 </select>
                             </div>
                         </div>
                     </div>
                 </section>
 
+                <section>
+                    <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Scheduling</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: '#fff', padding: '16px', borderRadius: '16px', border: '1px solid #f1f5f9', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={12} /> Date</label>
+                            <input type="date" required style={inputStyle} value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={12} /> Time</label>
+                            <input type="time" required style={inputStyle} value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} />
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Follow-ups</h3>
+                        <button type="button" onClick={addFollowup} style={{ border: 'none', background: 'none', color: '#6366f1', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Plus size={14} /> Add
+                        </button>
+                    </div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto', paddingRight: '8px', scrollbarWidth: 'thin' }}>
+                        {followups.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8', fontSize: '12px', background: '#fff', borderRadius: '12px', border: '1px dashed #e2e8f0' }}>
+                                No follow-ups scheduled yet.
+                            </div>
+                        ) : followups.map((f, idx) => (
+                            <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.5fr auto', gap: '8px', padding: '10px', background: '#fff', borderRadius: '10px', border: '1px solid #eef2ff', alignItems: 'end' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                    <label style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Date</label>
+                                    <input type="date" style={{ ...inputStyle, height: '32px', fontSize: '11px', padding: '0 6px' }} value={f.date} onChange={e => updateFollowup(idx, 'date', e.target.value)} />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                    <label style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Time</label>
+                                    <input type="time" style={{ ...inputStyle, height: '32px', fontSize: '11px', padding: '0 6px' }} value={f.time} onChange={e => updateFollowup(idx, 'time', e.target.value)} />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                    <label style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Phone</label>
+                                    <select style={{ ...inputStyle, height: '32px', fontSize: '11px', padding: '0 6px' }} value={f.phoneNumber} onChange={e => updateFollowup(idx, 'phoneNumber', e.target.value)}>
+                                        <option value="">Select...</option>
+                                        {phoneNumbers.map(p => <option key={p._id} value={p.phoneNumber}>{p.phoneNumber}</option>)}
+                                    </select>
+                                </div>
+                                <button type="button" onClick={() => removeFollowup(idx)} style={{ width: '32px', height: '32px', borderRadius: '6px', border: 'none', background: '#fef2f2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                    <Trash size={12} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            </div>
+
+            {/* Right Column: Upload & Preview */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '24px', overflowY: 'auto' }}>
                 <section>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                         <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contacts Upload</h3>
@@ -568,47 +625,52 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
                         onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
                         onDragLeave={() => setIsDragging(false)}
                         onDrop={e => { e.preventDefault(); setIsDragging(false); handleFile(e.dataTransfer.files[0]); }}
-                        style={{ height: '120px', border: '2px dashed', borderColor: isDragging ? '#6366f1' : '#e2e8f0', borderRadius: '16px', background: isDragging ? '#f5f7ff' : '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }}
+                        style={{ height: '140px', border: '2px dashed', borderColor: isDragging ? '#6366f1' : '#e2e8f0', borderRadius: '20px', background: isDragging ? '#f5f7ff' : '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', position: 'relative', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}
                         onClick={() => document.getElementById('file-upload')?.click()}
                     >
-                        <Upload size={24} color={isDragging ? '#6366f1' : '#94a3b8'} style={{ marginBottom: '8px' }} />
-                        <span style={{ fontSize: '13px', color: '#475569', fontWeight: 500, textAlign: 'center', padding: '0 20px' }}>
-                            {file ? file.name : 'Drop contacts file here or click to browse'}
-                        </span>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+                            <Upload size={20} color="#6366f1" />
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                            <span style={{ fontSize: '14px', color: '#1e293b', fontWeight: 600, display: 'block', marginBottom: '2px' }}>
+                                {file ? file.name : 'Choose a file or drag & drop'}
+                            </span>
+                            <span style={{ fontSize: '12px', color: '#94a3b8' }}>Supports CSV and Excel files</span>
+                        </div>
                         <input type="file" id="file-upload" hidden onChange={e => e.target.files && handleFile(e.target.files[0])} accept=".csv,.xlsx" />
                     </div>
 
                     {file && (
-                        <div style={{ marginTop: '20px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>File Preview</span>
-                                    <span style={{ fontSize: '10px', padding: '2px 6px', background: '#eef2ff', color: '#6366f1', borderRadius: '4px', fontWeight: 600 }}>{previewData.length > 0 ? `${previewData.length - 1} rows shown` : 'Processing...'}</span>
+                        <div style={{ marginTop: '32px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Uploaded Contacts</span>
+                                    <span style={{ fontSize: '11px', padding: '2px 8px', background: '#eef2ff', color: '#6366f1', borderRadius: '6px', fontWeight: 700 }}>{previewData.length > 0 ? `${previewData.length - 1} records` : 'Processing...'}</span>
                                 </div>
                                 <button 
                                     type="button" 
                                     onClick={() => { setFile(null); setPreviewData([]); }} 
-                                    style={{ border: 'none', background: 'none', color: '#ef4444', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                    style={{ border: 'none', background: 'none', color: '#ef4444', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                                 >
-                                    <Trash size={12} /> Remove
+                                    <Trash size={14} /> Clear Selection
                                 </button>
                             </div>
-                            <div style={{ border: '1px solid #f1f5f9', borderRadius: '12px', background: '#fff', overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+                            <div style={{ border: '1px solid #eef2ff', borderRadius: '20px', background: '#fff', overflow: 'hidden', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.02)' }}>
                                 {previewData.length > 0 ? (
-                                    <div style={{ overflowX: 'auto', maxHeight: '180px', overflowY: 'auto' }}>
-                                        <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
+                                    <div style={{ overflowX: 'auto', maxHeight: '240px', overflowY: 'auto' }}>
+                                        <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
                                             <thead style={{ background: '#f8fafc', position: 'sticky', top: 0, zIndex: 1 }}>
                                                 <tr>
                                                     {previewData[0].map((col: any, i: number) => (
-                                                        <th key={i} style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: 700, whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.02em' }}>{col || `Col ${i+1}`}</th>
+                                                        <th key={i} style={{ padding: '12px 16px', textAlign: 'left', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: 700, whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{col || `Column ${i+1}`}</th>
                                                     ))}
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {previewData.slice(1).map((row: any[], i: number) => (
-                                                    <tr key={i}>
+                                                    <tr key={i} style={{ transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#fcfdfe'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                                                         {row.map((cell: any, j: number) => (
-                                                            <td key={j} style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', color: '#1e293b' }}>{cell}</td>
+                                                            <td key={j} style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', color: '#1e293b' }}>{cell}</td>
                                                         ))}
                                                     </tr>
                                                 ))}
@@ -616,79 +678,29 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
                                         </table>
                                     </div>
                                 ) : (
-                                    <div style={{ padding: '32px', textAlign: 'center' }}>
-                                        <div style={{ width: '20px', height: '20px', border: '2px solid #f1f5f9', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
-                                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>Loading preview...</span>
+                                    <div style={{ padding: '48px', textAlign: 'center' }}>
+                                        <div style={{ width: '24px', height: '24px', border: '3px solid #f1f5f9', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
+                                        <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 500 }}>Reading file content...</span>
                                         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
                                     </div>
                                 )}
                             </div>
                             {previewData.length >= 6 && (
-                                <div style={{ marginTop: '8px', color: '#94a3b8', fontSize: '10px', textAlign: 'center', fontWeight: 500 }}>
-                                    Showing first 5 contacts for verification
+                                <div style={{ marginTop: '12px', color: '#94a3b8', fontSize: '11px', textAlign: 'center', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                    <Info size={12} />
+                                    Showing the first 5 records. Scroll to see more.
                                 </div>
                             )}
                         </div>
                     )}
                 </section>
-            </div>
 
-            {/* Right Column: Upload & Follow-ups */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <section>
-                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>Scheduling</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={13} /> Date</label>
-                            <input type="date" required style={inputStyle} value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={13} /> Time</label>
-                            <input type="time" required style={inputStyle} value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} />
-                        </div>
-                    </div>
-                </section>
-
-                <section>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Follow-ups</h3>
-                        <button type="button" onClick={addFollowup} style={{ border: 'none', background: 'none', color: '#6366f1', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Plus size={16} /> Add Follow-up
-                        </button>
-                    </div>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '180px', overflowY: 'auto', paddingRight: '8px', scrollbarWidth: 'thin', border: '1px solid #f1f5f9', borderRadius: '12px', padding: '8px', background: '#f8fafc' }}>
-                        {followups.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: '13px' }}>
-                                No follow-ups scheduled yet.
-                            </div>
-                        ) : followups.map((f, idx) => (
-                            <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', alignItems: 'end', gap: '10px', padding: '12px', background: '#fff', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    <label style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Date</label>
-                                    <input type="date" style={{ ...inputStyle, height: '36px', fontSize: '12px' }} value={f.date} onChange={e => updateFollowup(idx, 'date', e.target.value)} />
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    <label style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Time</label>
-                                    <input type="time" style={{ ...inputStyle, height: '36px', fontSize: '12px' }} value={f.time} onChange={e => updateFollowup(idx, 'time', e.target.value)} />
-                                </div>
-                                <button 
-                                    type="button" 
-                                    onClick={() => removeFollowup(idx)} 
-                                    style={{ width: '36px', height: '36px', borderRadius: '8px', border: 'none', background: '#fef2f2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                                >
-                                    <Trash size={14} />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                <div style={{ marginTop: 'auto', display: 'flex', gap: '12px', paddingTop: '12px' }}>
-                    <button type="button" onClick={onClose} style={{ flex: 1, height: '44px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}>
+                <div style={{ marginTop: 'auto', display: 'flex', gap: '16px', paddingTop: '32px', borderTop: '1px solid #f1f5f9' }}>
+                    <div style={{ flex: 1 }} /> {/* Spacer to push buttons to the right */}
+                    <button type="button" onClick={onClose} style={{ width: '140px', height: '48px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
                         Cancel
                     </button>
-                    <button type="submit" disabled={loading} style={{ flex: 1, height: '44px', borderRadius: '12px', border: 'none', background: '#6366f1', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>
+                    <button type="submit" disabled={loading} style={{ width: '220px', height: '48px', borderRadius: '12px', border: 'none', background: '#6366f1', color: '#fff', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)', transition: 'all 0.2s' }}>
                         {loading ? 'Creating...' : 'Create Campaign'}
                     </button>
                 </div>
