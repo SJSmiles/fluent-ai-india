@@ -83,7 +83,8 @@ export const createCompanyRequest: RequestSchemas = {
             }
           }
         }
-      }
+      },
+      companyWorkPrompt: { type: 'string' },
     }
   }
 };

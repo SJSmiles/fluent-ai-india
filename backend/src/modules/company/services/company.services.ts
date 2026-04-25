@@ -29,6 +29,7 @@ export class CompanyService {
       deepgramApiKey: payload.deepgramApiKey,
       leadStatusPrompt: payload.leadStatusPrompt,
       callSummaryPrompt: payload.callSummaryPrompt,
+      companyWorkPrompt: payload.companyWorkPrompt,
       leadStatus: payload.leadStatus,
       csvColumnConfig: payload.csvColumnConfig,
       address: {
