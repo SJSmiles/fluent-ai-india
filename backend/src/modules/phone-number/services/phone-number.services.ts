@@ -135,7 +135,7 @@ export class PhoneNumberService {
         companyId: new Types.ObjectId(companyId),
         isArchived: false
       })
-        .select('name _id')
+        .select('name _id phoneNumber')
         .lean();
 
       return {

@@ -394,8 +394,8 @@ const BatchCalls: React.FC = () => {
             </div>
 
             {showModal && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-                    <div style={{ background: '#fff', width: '100%', maxWidth: '1200px', maxHeight: '90vh', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '20px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', overflowY: 'auto' }}>
+                    <div style={{ background: '#fff', width: '100%', maxWidth: '1200px', minHeight: '600px', height: 'fit-content', maxHeight: 'calc(100% - 40px)', margin: 'auto', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                         <div style={{ padding: '24px 32px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
                                 <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1e293b' }}>Create New Campaign</h2>
@@ -449,7 +449,7 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
 
     const addFollowup = () => {
         if (followups.length >= 10) return;
-        setFollowups([...followups, { date: '', time: '', phoneNumber: selectedPhone }]);
+        setFollowups([...followups, { date: '', time: '', phoneNumberId: selectedPhone }]);
     };
 
     const removeFollowup = (idx: number) => {
@@ -498,7 +498,7 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
             fd.append('file', file);
             fd.append('name', name);
             fd.append('agentId', selectedAgent);
-            fd.append('phoneNumber', selectedPhone);
+            fd.append('phoneNumberId', selectedPhone);
             fd.append('schedule', 'true');
             fd.append('date', scheduledDate);
             fd.append('time', scheduledTime);
@@ -539,7 +539,7 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
                                 <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Phone Number</label>
                                 <select required style={inputStyle} value={selectedPhone} onChange={e => setSelectedPhone(e.target.value)}>
                                     <option value="">Select Phone...</option>
-                                    {phoneNumbers.map(p => <option key={p._id} value={p.phoneNumber}>{p.phoneNumber} ({p.name})</option>)}
+                                    {phoneNumbers.map(p => <option key={p._id} value={p._id}>{p.phoneNumber} ({p.name})</option>)}
                                 </select>
                             </div>
                         </div>
@@ -585,9 +585,9 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                                     <label style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Phone</label>
-                                    <select style={{ ...inputStyle, height: '32px', fontSize: '11px', padding: '0 6px' }} value={f.phoneNumber} onChange={e => updateFollowup(idx, 'phoneNumber', e.target.value)}>
+                                    <select style={{ ...inputStyle, height: '32px', fontSize: '11px', padding: '0 6px' }} value={f.phoneNumberId} onChange={e => updateFollowup(idx, 'phoneNumberId', e.target.value)}>
                                         <option value="">Select...</option>
-                                        {phoneNumbers.map(p => <option key={p._id} value={p.phoneNumber}>{p.phoneNumber}</option>)}
+                                        {phoneNumbers.map(p => <option key={p._id} value={p._id}>{p.phoneNumber}</option>)}
                                     </select>
                                 </div>
                                 <button type="button" onClick={() => removeFollowup(idx)} style={{ width: '32px', height: '32px', borderRadius: '6px', border: 'none', background: '#fef2f2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
