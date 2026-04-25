@@ -407,7 +407,7 @@ export async function createBatchCall(request: any, reply: any) {
       return reply.status(404).send({ success: false, message: 'PhoneNumber not found' });
     }
 
-    validatedPayload.phoneNumber = phoneNumber.number;
+    validatedPayload.phoneNumber = phoneNumber.phoneNumber;
 
     // Validate agent exists and user has access
     const agent: any = await Agent.findOne({
@@ -513,7 +513,7 @@ export async function createBatchCall(request: any, reply: any) {
           return reply.status(404).send({ success: false, message: 'PhoneNumber not found' });
         }
 
-        followUp.phoneNumber = phoneNumber.number;
+        followUp.phoneNumber = phoneNumber.phoneNumber;
 
 
         // update pointer
