@@ -47,6 +47,7 @@ export class UserService {
         // Check if user belongs to Super Admin company
         const SUPER_ADMIN_COMPANY_ID = process.env.SUPER_ADMIN_COMPANY_ID;
         const isSuperAdmin = userData?.companyId?.toString() === SUPER_ADMIN_COMPANY_ID;
+        console.log(userData?.companyId?.toString(), SUPER_ADMIN_COMPANY_ID, 'Company ID check for super admin');
 
         if (userData && parseInt(userData.tokenVersion) === parseInt(request.user.tokenVersion)) {
           return {
