@@ -1,11 +1,10 @@
 import api from "./baseService";
 
 export const companyService = {
-  getAll: () => api.get("/companies/listing"),
+  getAll: (params?: any) => api.get("/companies/listing", { params }),
   getFilterListing: () => api.get("/companies/company-filter-list"),
   getById: (id: string) => api.get(`/companies/${id}`),
   create: (data: any) => api.post("/companies/create", data),
-  update: (id: string, data: any) => api.put(`/companies/update/${id}`, data),
-  activate: (id: string) => api.patch(`/companies/${id}/activate`),
-  deactivate: (id: string) => api.patch(`/companies/${id}/deactivate`),
+  update: (data: any) => api.put("/companies/update", data),
+  toggleStatus: (data: { _id: string; isActive: boolean }) => api.put("/companies/toggle-status", data),
 };

@@ -110,7 +110,7 @@ export async function updateUserHandler(request: any) {
     if (!request.user?.isAdmin) {
       throw new Error('Permission denied: Admin access required');
     }
-    Server.log.info(request.body, 'Update user request payload');
+    Server.log.info(request.body, '📝 DEBUG - updateUserHandler Body');
     const result = await UserServiceInstance.updateUser(request.user, request.body);
     Server.log.info(result, 'Update user response payload');
     return result;

@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { userService } from '../api/userService';
-import { roleService } from '../api/roleService';
 import { companyService } from '../api/companyService';
 import { useAuth } from '../Helper/AuthContext';
-import { Users as UsersIcon, Plus, Search, Trash2, X, ChevronLeft, ChevronRight, Pencil, ToggleRight, ToggleLeft } from 'lucide-react';
+import { Users as UsersIcon, Plus, Search, Trash2, X, ChevronLeft, ChevronRight, Pencil, Eye, EyeOff } from 'lucide-react';
 import Toast from '../Component/toaster/Toast';
 
 const PAGE_LIMIT = 10;
@@ -84,6 +83,13 @@ const Users: React.FC = () => {
 
     // Step 1: Fetch company listing on mount → get default companyId
     useEffect(() => {
+        // If NOT superAdmin, we don't need to fetch company list
+        if (!isSuperAdmin) {
+            const defaultId = user?.companyId || '';
+            setSelectedCompanyId(defaultId);
+            return;
+        }
+
         companyService.getFilterListing()
             .then(res => {
                 const raw = res.data?.data?.companies || res.data?.companies || res.data?.data || res.data || [];
@@ -102,7 +108,7 @@ const Users: React.FC = () => {
                 }
             })
             .catch(err => console.error(err));
-    }, [user?.companyId]);
+    }, [isSuperAdmin, user?.companyId]);
 
     const handleCompanyChange = (id: string) => {
         setSelectedCompanyId(id);
@@ -418,13 +424,16 @@ const UserForm = ({ onClose, selectedCompanyId, companiesList, onError }: {
     companiesList: { _id: string; name: string; domain?: string }[];
     onError: (msg: string) => void;
 }) => {
+    const { user: currentUser } = useAuth();
     const [form, setForm] = useState({ firstName: '', lastName: '', phoneNumber: '', password: '', isAdmin: false });
     const [emailLocal, setEmailLocal] = useState('');
     const [emailError, setEmailError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
+    const currentUserEmailDomain = (currentUser as any)?.email?.includes('@') ? (currentUser as any).email.split('@')[1] : '';
     const selectedCompany = companiesList.find(c => c._id === selectedCompanyId);
-    const domain = selectedCompany?.domain || '';
+    const domain = selectedCompany?.domain || (currentUser as any)?.domain || currentUserEmailDomain || '';
 
     useEffect(() => {
         setForm(f => ({ ...f, isAdmin: false }));
@@ -445,7 +454,17 @@ const UserForm = ({ onClose, selectedCompanyId, companiesList, onError }: {
         setLoading(true);
         try {
             const email = emailLocal && domain ? `${emailLocal}@${domain}` : emailLocal;
-            await userService.create({ ...form, email, companyId: selectedCompanyId });
+            const payload = {
+                firstName: form.firstName,
+                lastName: form.lastName,
+                phoneNumber: form.phoneNumber,
+                password: form.password,
+                isAdmin: form.isAdmin,
+                email: email,
+                companyId: selectedCompanyId
+            };
+            console.log('📤 DEBUG - Create User Payload:', payload);
+            await userService.create(payload);
             onClose();
         }
         catch (err: any) { onError(err.response?.data?.message || 'Failed to create user.'); }
@@ -490,7 +509,24 @@ const UserForm = ({ onClose, selectedCompanyId, companiesList, onError }: {
                 {emailError && <p style={{ fontSize: '11px', color: '#dc2626', marginTop: '4px' }}>{emailError}</p>}
             </div>
             <div style={{ marginBottom: '20px' }}>
-                <label style={labelStyle}>Password *</label><input required type="password" style={inputStyle} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="••••••••" />
+                <label style={labelStyle}>Password *</label>
+                <div style={{ position: 'relative' }}>
+                    <input 
+                        required 
+                        type={showPassword ? "text" : "password"} 
+                        style={{ ...inputStyle, paddingRight: '40px' }} 
+                        value={form.password} 
+                        onChange={e => setForm({ ...form, password: e.target.value })} 
+                        placeholder="••••••••" 
+                    />
+                    <button 
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                </div>
             </div>
             <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: '42px' }}>
                 {loading ? 'Creating...' : 'Create User'}
@@ -507,9 +543,10 @@ const EditUserForm = ({ user, companiesList, onClose, onError, onSuccess }: {
     onError: (msg: string) => void;
     onSuccess: (msg: string) => void;
 }) => {
-    const { user: currentUser } = useAuth();
+    const { user: currentUser } = useAuth() as any;
+    const currentUserEmailDomain = currentUser?.email?.includes('@') ? currentUser.email.split('@')[1] : '';
     const companyId = user.companyId?._id || user.companyId;
-    const companyDomain = companiesList.find(c => c._id === companyId)?.domain || '';
+    const companyDomain = companiesList.find(c => c._id === companyId)?.domain || currentUser?.domain || currentUserEmailDomain || '';
     const isSelf = user._id === currentUser?._id;
 
     // Parse existing email into localpart
@@ -540,7 +577,17 @@ const EditUserForm = ({ user, companiesList, onClose, onError, onSuccess }: {
         setLoading(true);
         try {
             const email = emailLocal && companyDomain ? `${emailLocal}@${companyDomain}` : emailLocal;
-            await userService.update({ ...form, email, _id: user._id });
+            const payload = {
+                firstName: form.firstName,
+                lastName: form.lastName,
+                phoneNumber: form.phoneNumber,
+                isAdmin: form.isAdmin,
+                status: form.status,
+                email: email,
+                _id: user._id
+            };
+            console.log('📤 DEBUG - Update User Payload:', payload);
+            await userService.update(payload);
             onSuccess('User updated successfully.');
             onClose();
         } catch (err: any) { onError(err.response?.data?.message || 'Failed to update user.'); }
@@ -596,6 +643,8 @@ const EditUserForm = ({ user, companiesList, onClose, onError, onSuccess }: {
 const ResetPasswordForm = ({ user, onClose, onError, onSuccess }: { user: any; onClose: () => void; onError: (msg: string) => void; onSuccess: (msg: string) => void; }) => {
     const [form, setForm] = useState({ password: '', confirmPassword: '' });
     const [loading, setLoading] = useState(false);
+    const [showPass, setShowPass] = useState(false);
+    const [showConfirmPass, setShowConfirmPass] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -619,11 +668,43 @@ const ResetPasswordForm = ({ user, onClose, onError, onSuccess }: { user: any; o
         <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: '12px' }}>
                 <label style={labelStyle}>New Password *</label>
-                <input required type="password" style={inputStyle} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="••••••••" />
+                <div style={{ position: 'relative' }}>
+                    <input 
+                        required 
+                        type={showPass ? "text" : "password"} 
+                        style={{ ...inputStyle, paddingRight: '40px' }} 
+                        value={form.password} 
+                        onChange={e => setForm({ ...form, password: e.target.value })} 
+                        placeholder="••••••••" 
+                    />
+                    <button 
+                        type="button"
+                        onClick={() => setShowPass(!showPass)}
+                        style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    >
+                        {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                </div>
             </div>
             <div style={{ marginBottom: '24px' }}>
                 <label style={labelStyle}>Confirm New Password *</label>
-                <input required type="password" style={inputStyle} value={form.confirmPassword} onChange={e => setForm({ ...form, confirmPassword: e.target.value })} placeholder="••••••••" />
+                <div style={{ position: 'relative' }}>
+                    <input 
+                        required 
+                        type={showConfirmPass ? "text" : "password"} 
+                        style={{ ...inputStyle, paddingRight: '40px' }} 
+                        value={form.confirmPassword} 
+                        onChange={e => setForm({ ...form, confirmPassword: e.target.value })} 
+                        placeholder="••••••••" 
+                    />
+                    <button 
+                        type="button"
+                        onClick={() => setShowConfirmPass(!showConfirmPass)}
+                        style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    >
+                        {showConfirmPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                </div>
             </div>
             <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: '42px' }}>
                 {loading ? 'Updating...' : 'Set New Password'}

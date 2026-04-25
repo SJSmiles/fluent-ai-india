@@ -157,6 +157,15 @@ export const updateUserRequest: RequestSchemas = {
         type: 'string',
         description: 'Phone number (numbers only)'
       },
+      email: {
+        type: 'string',
+        format: 'email',
+        description: 'User email address'
+      },
+      isAdmin: {
+        type: 'boolean',
+        description: 'Whether the user is an admin'
+      },
       status: {
         type: 'number',
         enum: [0, 1],

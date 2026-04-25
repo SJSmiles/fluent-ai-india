@@ -93,7 +93,7 @@ const DashboardLayout: React.FC = () => {
   // Role-based navigation
   const navItems = [
     { to: "/dashboard", icon: BarChart3, label: "Dashboard" },
-    ...(user?.isAdmin && user?.isSuperAdmin
+    ...(user?.superAdmin || user?.isSuperAdmin
       ? [{ to: "/companies", icon: Building2, label: "Companies" }]
       : []),
     ...(user?.isAdmin

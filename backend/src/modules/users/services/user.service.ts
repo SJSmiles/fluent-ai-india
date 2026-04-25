@@ -132,6 +132,7 @@ export class UserService {
         companyId: user?.companyId,
         email: user?.email,
         phoneNumber: user?.phoneNumber,
+        domain: companyDetails?.domain || '',
         isArchived: user.isArchived,
         createdBy: user.createdBy,
         updatedBy: user.updatedBy,
@@ -153,20 +154,21 @@ export class UserService {
   }
 
   public async create(user: any, payload: any): Promise<any> {
+    const isSuperAdmin = user?.isSuperAdmin || user?.companyId?.toString() === process.env.SUPER_ADMIN_COMPANY_ID;
 
     const isUserExists = await User.countDocuments({
       email: { $regex: new RegExp(`^${payload.email}$`, 'i') },
       isArchived: false,
-      companyId: user?.isSuperAdmin ? new Types.ObjectId(payload.companyId) : new Types.ObjectId(user.companyId)
+      companyId: isSuperAdmin ? new Types.ObjectId(payload.companyId) : new Types.ObjectId(user.companyId)
     });
     if (isUserExists) {
       throwError(ERROR_MESSAGE.REGISTRATION_FAILED, 400);
     }
-    if (!payload?.companyId && !user?.isSuperAdmin) {
+    if (!payload?.companyId && !isSuperAdmin) {
       throw new Error('Company ID is required');
     }
     const companyDetail: any = await Company.findOne({
-      _id: new Types.ObjectId(user?.isSuperAdmin ? payload.companyId : user.companyId)
+      _id: new Types.ObjectId(isSuperAdmin ? payload.companyId : user.companyId)
     });
     if (!companyDetail) {
       throw new Error('Company not found');
@@ -623,6 +625,10 @@ export class UserService {
 
   public async updateUser(user: any, payload: any): Promise<any> {
     try {
+      const keys = Object.keys(payload || {});
+      console.log('📦 DEBUG - updateUser Payload Keys:', keys);
+      console.log('📦 DEBUG - updateUser Payload Email:', payload?.email);
+      
       const userId = payload._id;
 
       if (!Types.ObjectId.isValid(userId)) {
@@ -670,22 +676,15 @@ export class UserService {
       // Use the target user's companyId for fetching configurations
       const targetCompanyId = existingUser.companyId;
 
-      const updateFields: any = {
-        firstName: payload.firstName.trim(),
-        lastName: payload.lastName.trim(),
-        phoneNumber: payload.phoneNumber,
-        isAdmin: payload.isAdmin,
-        updatedBy: user.userId
-      };
+      existingUser.firstName = payload.firstName.trim();
+      existingUser.lastName = payload.lastName.trim();
+      existingUser.email = payload.email ? payload.email.trim() : existingUser.email;
+      existingUser.phoneNumber = payload.phoneNumber;
+      existingUser.isAdmin = payload.isAdmin;
+      existingUser.updatedBy = user.userId;
 
-      await User.findByIdAndUpdate(
-        new Types.ObjectId(userId),
-        { $set: updateFields },
-        {
-          new: true,
-          select: '-password'
-        }
-      );
+      console.log('📝 DEBUG - Saving user:', existingUser.email);
+      await existingUser.save();
 
       // Optional: Log for audit trail (similar to reference code)
       if (isSuperAdmin) {

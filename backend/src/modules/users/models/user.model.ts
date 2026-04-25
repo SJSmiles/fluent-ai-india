@@ -7,7 +7,6 @@ const userSchema = new Schema<IUser>(
     firstName: {
       type: String,
       required: true,
-      unique: true,
       lowercase: true
     },
     lastName: {

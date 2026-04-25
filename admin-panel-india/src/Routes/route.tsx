@@ -51,7 +51,7 @@ function AppRoutes() {
                 <Route
                     path="companies"
                     element={
-                        user?.isAdmin && user?.isSuperAdmin ? (
+                        user?.superAdmin || user?.isSuperAdmin ? (
                             <Companies />
                         ) : (
                             <Navigate to="/dashboard" replace />
