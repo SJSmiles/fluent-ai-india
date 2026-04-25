@@ -10,4 +10,6 @@ export const agentService = {
   delete: (id: string) => api.delete(`/agents/${id}`),
   setPrimary: (id: string) => api.post(`/agents/${id}/set-primary`, {}),
   downloadSample: () => api.get("/agents/download-sample", { responseType: 'blob' }),
+  makeCall: (data: { agentId: string; phoneNumber: string; toPhoneNumber: string; userId?: string; metadata?: any }) =>
+    api.post("/agents/make-call", data),
 };

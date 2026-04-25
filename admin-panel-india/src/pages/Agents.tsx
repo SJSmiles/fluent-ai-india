@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { agentService } from '../api/agentService';
 import { companyService } from '../api/companyService';
+import { phoneNumberService } from '../api/phoneNumberService';
 import { useAuth } from '../Helper/AuthContext';
-import { Cpu, Plus, Search, Trash2, X, ChevronLeft, ChevronRight, Pencil, Clock, Building2, Play, Check } from 'lucide-react';
+import { Cpu, Plus, Search, Trash2, X, ChevronLeft, ChevronRight, Pencil, Building2, PhoneCall, Play, Clock, Check } from 'lucide-react';
 import Toast from '../Component/toaster/Toast';
 
 const PAGE_LIMIT = 10;
@@ -17,27 +18,27 @@ const Pagination = ({ page, totalPages, totalRecords, limit, onPage }: {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderTop: '1px solid #f1f5f9' }}>
             <span style={{ fontSize: '14px', color: '#64748b' }}>Showing {from}–{to} of {totalRecords} agents</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button 
-                    onClick={() => onPage(page - 1)} 
-                    disabled={page === 1} 
+                <button
+                    onClick={() => onPage(page - 1)}
+                    disabled={page === 1}
                     style={{ padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', color: page === 1 ? '#cbd5e1' : '#64748b', cursor: page === 1 ? 'not-allowed' : 'pointer' }}
                 >
                     <ChevronLeft size={18} />
                 </button>
                 <div style={{ display: 'flex', gap: '4px' }}>
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                        <button 
-                            key={p} 
-                            onClick={() => onPage(p)} 
+                        <button
+                            key={p}
+                            onClick={() => onPage(p)}
                             style={{ minWidth: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', borderColor: p === page ? '#6366f1' : '#e2e8f0', background: p === page ? '#6366f1' : '#fff', color: p === page ? '#fff' : '#64748b' }}
                         >
                             {p}
                         </button>
                     ))}
                 </div>
-                <button 
-                    onClick={() => onPage(page + 1)} 
-                    disabled={page === totalPages} 
+                <button
+                    onClick={() => onPage(page + 1)}
+                    disabled={page === totalPages}
                     style={{ padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', color: page === totalPages ? '#cbd5e1' : '#64748b', cursor: page === totalPages ? 'not-allowed' : 'pointer' }}
                 >
                     <ChevronRight size={18} />
@@ -51,7 +52,7 @@ const Avatar = ({ name, color }: { name: string; color?: string }) => {
     const initials = name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
     const bgColors = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6'];
     const randomColor = color || bgColors[Math.abs(name?.length || 0) % bgColors.length];
-    
+
     return (
         <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: randomColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '14px', fontWeight: 600 }}>
             {initials}
@@ -72,6 +73,8 @@ const Agents: React.FC = () => {
     const [page, setPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
     const [pagination, setPagination] = useState({ totalPages: 1, totalRecords: 0, currentPage: 1, limit: PAGE_LIMIT });
+    const [showMakeCallModal, setShowMakeCallModal] = useState(false);
+    const [selectedAgentForCall, setSelectedAgentForCall] = useState<any>(null);
 
     // Fetch agents on mount and page change
     useEffect(() => {
@@ -110,7 +113,7 @@ const Agents: React.FC = () => {
             const res = await agentService.getAll(params);
             const data = res.data.data || [];
             setAgents(data);
-            
+
             // Handle pagination more robustly
             if (res.data.pagination) {
                 setPagination(res.data.pagination);
@@ -168,7 +171,7 @@ const Agents: React.FC = () => {
                 `}
             </style>
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-            
+
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
                 <div>
@@ -203,7 +206,7 @@ const Agents: React.FC = () => {
                             onBlur={e => e.target.style.borderColor = '#e2e8f0'}
                         />
                     </div>
-                    <button 
+                    <button
                         onClick={() => setShowModal(true)}
                         style={{ height: '44px', padding: '0 20px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'background 0.2s' }}
                         onMouseEnter={e => e.currentTarget.style.background = '#4f46e5'}
@@ -228,46 +231,53 @@ const Agents: React.FC = () => {
                 ) : (
                     <>
                         <div style={{ overflowY: 'auto', flex: 1 }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead style={{ position: 'sticky', top: 0, background: '#f9fafb', zIndex: 1, boxShadow: 'inset 0 1px 0 #e2e8f0, inset 0 -1px 0 #e2e8f0' }}>
-                                <tr>
-                                    <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Agent</th>
-                                    <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prompt Prefix</th>
-                                    <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', width: '120px' }}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filtered.map(a => (
-                                    <tr key={a._id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                                        <td style={{ padding: '12px 24px' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                <Avatar name={a.name} />
-                                                <div>
-                                                    <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '14px' }}>{a.name}</div>
-                                                    <div style={{ color: '#64748b', fontSize: '12px' }}>{a.description || 'AI Voice Agent'}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td style={{ padding: '12px 24px' }}>
-                                            <div style={{ fontSize: '13px', color: '#64748b', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {a.prompt || 'No prompt set'}
-                                            </div>
-                                        </td>
-                                        <td style={{ padding: '12px 24px' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                                <button onClick={() => setEditAgent(a)} title="Edit" style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#6366f1'} onMouseLeave={e => e.currentTarget.style.color = '#64748b'}>
-                                                    <Pencil size={16} />
-                                                </button>
-                                                <button onClick={() => deleteAgent(a._id)} title="Delete" style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#ef4444'} onMouseLeave={e => e.currentTarget.style.color = '#64748b'}>
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </td>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead style={{ position: 'sticky', top: 0, background: '#f9fafb', zIndex: 1, boxShadow: 'inset 0 1px 0 #e2e8f0, inset 0 -1px 0 #e2e8f0' }}>
+                                    <tr>
+                                        <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Agent</th>
+                                        <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prompt Prefix</th>
+                                        <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', width: '120px' }}>Actions</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {filtered.map(a => (
+                                        <tr key={a._id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                            <td style={{ padding: '12px 24px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <Avatar name={a.name} />
+                                                    <div>
+                                                        <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '14px' }}>{a.name}</div>
+                                                        <div style={{ color: '#64748b', fontSize: '12px' }}>{a.description || 'AI Voice Agent'}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '12px 24px' }}>
+                                                <div style={{ fontSize: '13px', color: '#64748b', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {a.prompt || 'No prompt set'}
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '12px 24px', textAlign: 'center' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                                    <button
+                                                        onClick={() => { setSelectedAgentForCall(a); setShowMakeCallModal(true); }}
+                                                        style={{ width: '32px', height: '32px', borderRadius: '8px', border: 'none', background: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }}
+                                                        title="Make Call"
+                                                    >
+                                                        <PhoneCall size={16} />
+                                                    </button>
+                                                    <button onClick={() => setEditAgent(a)} title="Edit" style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#6366f1'} onMouseLeave={e => e.currentTarget.style.color = '#64748b'}>
+                                                        <Pencil size={16} />
+                                                    </button>
+                                                    <button onClick={() => deleteAgent(a._id)} title="Delete" style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#ef4444'} onMouseLeave={e => e.currentTarget.style.color = '#64748b'}>
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                         <Pagination
                             page={pagination.currentPage}
                             totalPages={pagination.totalPages}
@@ -296,6 +306,7 @@ const Agents: React.FC = () => {
                         </div>
                         <EditAgentForm
                             agent={editAgent}
+                            companiesList={companiesList}
                             onClose={() => { setEditAgent(null); fetchAgents(page); }}
                             onError={msg => setToast({ message: msg, type: 'error' })}
                             onSuccess={msg => setToast({ message: msg, type: 'success' })}
@@ -329,6 +340,16 @@ const Agents: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {showMakeCallModal && (
+                <MakeCallModal
+                    agent={selectedAgentForCall}
+                    companyId={selectedCompanyId}
+                    onClose={() => setShowMakeCallModal(false)}
+                    onError={(msg: any) => setToast({ message: msg, type: 'error' })}
+                    onSuccess={(msg: any) => setToast({ message: msg, type: 'success' })}
+                />
+            )}
         </div>
     );
 };
@@ -343,11 +364,11 @@ const AgentForm = ({ companiesList, selectedCompanyId, onClose, onError, onSucce
     onSuccess: (msg: string) => void;
 }) => {
     const { user } = useAuth();
-    const [form, setForm] = useState({ 
-        name: '', 
-        firstMessage: '', 
-        prompt: '', 
-        endCallMessage: '', 
+    const [form, setForm] = useState({
+        name: '',
+        firstMessage: '',
+        prompt: '',
+        endCallMessage: '',
         voiceId: '',
         companyId: selectedCompanyId || user?.companyId || ''
     });
@@ -368,19 +389,115 @@ const AgentForm = ({ companiesList, selectedCompanyId, onClose, onError, onSucce
     return <AgentFormBody form={form} setForm={setForm} loading={loading} onSubmit={handleSubmit} onClose={onClose} submitLabel="Create Agent" companiesList={companiesList} user={user} />;
 };
 
+
+// ─── Make Call Modal ──────────────────────────────────────────────────────────
+const MakeCallModal = ({ agent, companyId, onClose, onError, onSuccess }: any) => {
+    const [loading, setLoading] = useState(false);
+    const [phoneNumbers, setPhoneNumbers] = useState<any[]>([]);
+    const [formData, setFormData] = useState({
+        phoneNumberId: '',
+        toPhoneNumber: '',
+    });
+
+    useEffect(() => {
+        if (companyId) {
+            phoneNumberService.filterListing({ companyId }).then(res => {
+                setPhoneNumbers(res.data.data || []);
+            }).catch(console.error);
+        }
+    }, [companyId]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!formData.phoneNumberId) return onError('Please select an outbound number');
+        if (!formData.toPhoneNumber) return onError('Please enter recipient number');
+
+        setLoading(true);
+        try {
+            const selectedPhone = phoneNumbers.find(p => p._id === formData.phoneNumberId);
+            await agentService.makeCall({
+                agentId: agent._id,
+                phoneNumber: selectedPhone.phoneNumber,
+                toPhoneNumber: formData.toPhoneNumber,
+            });
+            onSuccess('Call initiated successfully');
+            onClose();
+        } catch (err: any) {
+            onError(err.response?.data?.message || 'Failed to initiate call');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
+            <div style={{ background: '#fff', width: '100%', maxWidth: '450px', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', animation: 'modalAppear 0.3s ease-out' }}>
+                <div style={{ padding: '24px 32px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b' }}>Make Outbound Call</h2>
+                        <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Initiate a call using <b>{agent.name}</b></p>
+                    </div>
+                    <button onClick={onClose} style={{ width: '36px', height: '36px', borderRadius: '10px', border: 'none', background: '#f1f5f9', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} style={{ padding: '32px' }}>
+                    <div style={{ marginBottom: '24px' }}>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Outbound Number (From)</label>
+                        <select
+                            required
+                            value={formData.phoneNumberId}
+                            onChange={e => setFormData({ ...formData, phoneNumberId: e.target.value })}
+                            style={{ width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '14px', background: '#f8fafc', outline: 'none' }}
+                        >
+                            <option value="">Select Phone Number</option>
+                            {phoneNumbers.map(p => (
+                                <option key={p._id} value={p._id}>{p.phoneNumber} ({p.name})</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div style={{ marginBottom: '32px' }}>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recipient Number (To)</label>
+                        <input
+                            required
+                            type="text"
+                            placeholder="e.g. +91XXXXXXXXXX"
+                            value={formData.toPhoneNumber}
+                            onChange={e => setFormData({ ...formData, toPhoneNumber: e.target.value })}
+                            style={{ width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '14px', background: '#f8fafc', outline: 'none' }}
+                        />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        <button type="button" onClick={onClose} style={{ flex: 1, height: '48px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                        <button type="submit" disabled={loading} style={{ flex: 2, height: '48px', borderRadius: '12px', border: 'none', background: '#10b981', color: '#fff', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            {loading ? 'Initiating...' : <><PhoneCall size={18} /> Call Now</>}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 // ─── Edit Agent Form ──────────────────────────────────────────────────────────
-const EditAgentForm = ({ agent, onClose, onError, onSuccess }: {
+const EditAgentForm = ({ agent, onClose, onError, onSuccess, companiesList }: {
     agent: any;
     onClose: () => void;
     onError: (msg: string) => void;
     onSuccess: (msg: string) => void;
+    companiesList: any[];
 }) => {
+    const { user } = useAuth();
     const [form, setForm] = useState({
         name: agent.name || '',
         firstMessage: agent.firstMessage || '',
         prompt: agent.prompt || '',
         endCallMessage: agent.endCallMessage || '',
         voiceId: agent.voiceId || '',
+        companyId: agent.companyId || '',
     });
     const [loading, setLoading] = useState(false);
 
@@ -396,7 +513,7 @@ const EditAgentForm = ({ agent, onClose, onError, onSuccess }: {
         finally { setLoading(false); }
     };
 
-    return <AgentFormBody form={form} setForm={setForm} loading={loading} onSubmit={handleSubmit} onClose={onClose} submitLabel="Update Agent" user={user} />;
+    return <AgentFormBody form={form} setForm={setForm} loading={loading} onSubmit={handleSubmit} onClose={onClose} submitLabel="Update Agent" companiesList={companiesList} user={user} />;
 };
 
 // ─── Shared Form Body ─────────────────────────────────────────────────────────
@@ -415,10 +532,10 @@ const AgentFormBody = ({ form, setForm, loading, onSubmit, onClose, submitLabel,
                     {isSuperAdmin && companiesList && (
                         <div style={{ marginBottom: '24px' }}>
                             <label style={labelStyle}>Company *</label>
-                            <select 
-                                required 
-                                style={{ ...inputStyle, appearance: 'auto' }} 
-                                value={form.companyId} 
+                            <select
+                                required
+                                style={{ ...inputStyle, appearance: 'auto' }}
+                                value={form.companyId}
                                 onChange={e => setForm({ ...form, companyId: e.target.value })}
                             >
                                 <option value="">Select Company</option>
@@ -432,25 +549,25 @@ const AgentFormBody = ({ form, setForm, loading, onSubmit, onClose, submitLabel,
                         <label style={labelStyle}>Name *</label>
                         <input required style={inputStyle} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Sales AI Agent (Sourabh)" />
                     </div>
-                    
+
                     <div style={{ marginBottom: '24px' }}>
                         <label style={labelStyle}>First Message</label>
-                        <textarea 
-                            style={{ ...inputStyle, minHeight: '80px', resize: 'none' }} 
-                            value={form.firstMessage} 
-                            onChange={e => setForm({ ...form, firstMessage: e.target.value })} 
-                            placeholder="Hello, kya meri baat [Name] ke responsible person se horahi h?" 
+                        <textarea
+                            style={{ ...inputStyle, minHeight: '80px', resize: 'none' }}
+                            value={form.firstMessage}
+                            onChange={e => setForm({ ...form, firstMessage: e.target.value })}
+                            placeholder="Hello, kya meri baat [Name] ke responsible person se horahi h?"
                         />
                         <p style={descStyle}>Call connect hote hi agent yahi bolega.</p>
                     </div>
 
                     <div style={{ marginBottom: '24px' }}>
                         <label style={labelStyle}>End Call Message</label>
-                        <textarea 
-                            style={{ ...inputStyle, minHeight: '80px', resize: 'none' }} 
-                            value={form.endCallMessage} 
-                            onChange={e => setForm({ ...form, endCallMessage: e.target.value })} 
-                            placeholder="Dhanyawad ji! Aapko WhatsApp jaldi milega. Aapka din shubh rahe!" 
+                        <textarea
+                            style={{ ...inputStyle, minHeight: '80px', resize: 'none' }}
+                            value={form.endCallMessage}
+                            onChange={e => setForm({ ...form, endCallMessage: e.target.value })}
+                            placeholder="Dhanyawad ji! Aapko WhatsApp jaldi milega. Aapka din shubh rahe!"
                         />
                         <p style={descStyle}>Call khatam hone se pehle bola jaayega.</p>
                     </div>
@@ -474,7 +591,7 @@ const AgentFormBody = ({ form, setForm, loading, onSubmit, onClose, submitLabel,
                             <label style={labelStyle}>System Prompt *</label>
                         </div>
                     </div>
-                    
+
                     <textarea
                         required
                         style={{ ...inputStyle, width: '100%', flex: 1, minHeight: '500px', padding: '16px', lineHeight: '1.6', resize: 'none', border: '1px solid #e2e8f0' }}
@@ -482,7 +599,7 @@ const AgentFormBody = ({ form, setForm, loading, onSubmit, onClose, submitLabel,
                         onChange={e => setForm({ ...form, prompt: e.target.value })}
                         placeholder="# AGENT IDENTITY&#10;You are Riya, a loan consultant from Aditya Birla Finance...&#10;&#10;## TONE&#10;- Speak in friendly Hinglish&#10;- Be concise, max 2 sentences per response"
                     />
-                    
+
                 </div>
             </div>
 
@@ -493,8 +610,8 @@ const AgentFormBody = ({ form, setForm, loading, onSubmit, onClose, submitLabel,
                     <span>All fields are saved instantly on submit.</span>
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         onClick={onClose}
                         style={{ padding: '10px 24px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
                         onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
@@ -502,23 +619,23 @@ const AgentFormBody = ({ form, setForm, loading, onSubmit, onClose, submitLabel,
                     >
                         Cancel
                     </button>
-                    <button 
-                        type="submit" 
+                    <button
+                        type="submit"
                         disabled={loading}
-                        style={{ 
-                            padding: '10px 28px', 
-                            borderRadius: '12px', 
-                            border: 'none', 
-                            background: '#6366f1', 
-                            color: '#fff', 
-                            fontSize: '14px', 
-                            fontWeight: 600, 
-                            cursor: 'pointer', 
-                            display: 'flex', 
-                            alignItems: 'center', 
+                        style={{
+                            padding: '10px 28px',
+                            borderRadius: '12px',
+                            border: 'none',
+                            background: '#6366f1',
+                            color: '#fff',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
                             gap: '8px',
                             boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)',
-                            transition: 'all 0.2s' 
+                            transition: 'all 0.2s'
                         }}
                         onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
                         onMouseLeave={e => e.currentTarget.style.transform = 'none'}

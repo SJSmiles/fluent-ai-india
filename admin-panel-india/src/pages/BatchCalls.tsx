@@ -13,16 +13,17 @@ const PAGE_LIMIT = 15;
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; label: string }> = {
     '1': { bg: '#f1f5f9', color: '#64748b', label: 'Draft' },
-    '3': { bg: '#fff7ed', color: '#c2410c', label: 'Scheduled' },
-    '4': { bg: '#eff6ff', color: '#1d4ed8', label: 'Running' },
+    '2': { bg: '#ecfdf5', color: '#059669', label: 'Start Calling' },
+    '3': { bg: '#fff7ed', color: '#ea580c', label: 'Not Started' },
+    '4': { bg: '#eff6ff', color: '#1d4ed8', label: 'In Process' },
     '5': { bg: '#f0fdf4', color: '#15803d', label: 'Completed' },
     '6': { bg: '#fef2f2', color: '#dc2626', label: 'Failed' },
-    '7': { bg: '#fef2f2', color: '#dc2626', label: 'Error' },
-    'pending':   { bg: '#f1f5f9', color: '#64748b', label: 'Draft' },
-    'running':   { bg: '#eff6ff', color: '#1d4ed8', label: 'Running' },
+    '7': { bg: '#f9fafb', color: '#6b7280', label: 'Skipped' },
+    '9': { bg: '#eef2ff', color: '#4f46e5', label: 'Pending' },
+    'pending':   { bg: '#eef2ff', color: '#4f46e5', label: 'Pending' },
+    'running':   { bg: '#eff6ff', color: '#1d4ed8', label: 'In Process' },
     'completed': { bg: '#f0fdf4', color: '#15803d', label: 'Completed' },
     'failed':    { bg: '#fef2f2', color: '#dc2626', label: 'Failed' },
-    'stopped':   { bg: '#f9fafb', color: '#6b7280', label: 'Stopped' },
 };
 
 const StatusBadge = ({ status }: { status: any }) => {
@@ -503,6 +504,7 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
             fd.append('schedule', 'true');
             fd.append('date', scheduledDate);
             fd.append('time', scheduledTime);
+            fd.append('timezone', Intl.DateTimeFormat().resolvedOptions().timeZone);
             if (followups.length > 0) {
                 fd.append('followUpsDetails', JSON.stringify(followups));
             }
@@ -558,6 +560,10 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
                             <label style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={12} /> Time</label>
                             <input type="time" required style={inputStyle} value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} />
                         </div>
+                    </div>
+                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '11px' }}>
+                        <Info size={12} />
+                        <span>Current Timezone: <strong>{Intl.DateTimeFormat().resolvedOptions().timeZone}</strong></span>
                     </div>
                 </section>
 
