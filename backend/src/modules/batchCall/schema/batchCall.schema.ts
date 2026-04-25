@@ -28,3 +28,26 @@ export const listBatchCallsRequest: RequestSchemas = {
     }
   }
 };
+
+
+export const batchCallsDetailsRequest: RequestSchemas = {
+  tags: ['Batch Call Details'],
+  summary: 'Batch Calls With Details',
+  description: 'Batch Calls With Details',
+  body: {
+    title: 'Batch Call Details',
+    type: 'object',
+    additionalProperties: false,
+    required: ['batchIds'],
+    properties: {
+      batchIds: { type: 'string' },
+      userId: { type: 'string' },
+      skip: { type: 'number', default: 0 },
+      limit: { type: 'number', default: 10 },
+      searchStr: { type: 'string', default: '' },
+      sortBy: { type: 'string', default: '' },
+      callLeadStatus: { type: 'string', default: '' },
+      statusFilter: { type: 'string', default: '' }
+    }
+  }
+};

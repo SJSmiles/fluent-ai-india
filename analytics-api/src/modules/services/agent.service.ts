@@ -1,19 +1,27 @@
 // src/modules/services/agent.service.ts
-import { Types } from 'mongoose';
-import { Agent } from '../models/agent.model';
-import { Company } from '../models/company.model';
+import { connectDB } from 'database/mongo-connection';
+import { ObjectId } from 'mongodb';
+import mongoose from 'mongoose';
+
 
 export async function getAgentConfig(agentId: string) {
-    // ✅ Convert string → ObjectId first
-    const objectId = new Types.ObjectId(agentId);
+    const database = await connectDB();
+    const db = mongoose.connection.db;
 
-    const agent = await Agent.findById(objectId).lean();
+    // ✅ collections
+    const agentCollection = db.collection('Agent');
+    const companyCollection = db.collection('Company');
+
+    // ✅ convert to ObjectId
+    const objectId = new ObjectId(agentId);
+
+    const agent = await agentCollection.findOne({ _id: objectId });
 
     if (!agent) {
         throw new Error(`Agent not found: ${agentId}`);
     }
 
-    const company = await Company.findById(agent.companyId).lean();
+    const company = await companyCollection.findOne({ _id: agent.companyId });
 
     if (!company) {
         throw new Error(`Company not found for agent: ${agentId}`);
@@ -24,9 +32,9 @@ export async function getAgentConfig(agentId: string) {
         companyId: company._id.toString(),
         prompt: agent.prompt,
         voiceId: agent.voiceId,
-        firstMessage: (agent as any).firstMessage,
-        endCallMessage: (agent as any).endCallMessage,
-        endCallInvoke: (agent as any).endCallInvoke,
+        firstMessage: agent.firstMessage,
+        endCallMessage: agent.endCallMessage,
+        endCallInvoke: agent.endCallInvoke,
         deepgramKey: company.deepgramApiKey,
         elevenLabsKey: company.elevenLabsApiKey,
         openaiKey: process.env.VLLM_API_KEY,

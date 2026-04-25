@@ -28,6 +28,7 @@ export interface ICompany {
   leadStatus?: any[];
   leadStatusPrompt: string;
   callSummaryPrompt: string;
+  companyWorkPrompt: string;
   createdBy?: Types.ObjectId;
   updatedBy?: Types.ObjectId;
 }

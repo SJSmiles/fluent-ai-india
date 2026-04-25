@@ -2,7 +2,7 @@ import { redis } from '../store/redis';
 import { getAgentConfig } from '../services/agent.service';
 import jwt from 'jsonwebtoken';
 
-import { TestCallLogs } from '../models/testCallLogs';
+import { TestCallLogs } from '../models/testCallLogs.model';
 import { TestCalls } from 'modules/models/testCalls.model';
 import { testCallProcessQueue } from 'modules/queue/queue';
 
@@ -161,6 +161,7 @@ export async function testCallStatusHandler(req: any, reply: any) {
                         fromNumber: req.body?.From || null,
                         toNumber: req.body?.To || null,
                         callStatus: req.body?.CallStatus || 'completed',
+                        disconnectionReason: req.body?.HangupCauseName || null,
                         event: event || null,
                         duration: Number(req.body?.Duration) || 0,
                         startedAt: parsedMeta.startedAt

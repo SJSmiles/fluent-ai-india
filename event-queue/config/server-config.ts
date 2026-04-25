@@ -80,4 +80,38 @@ Analyze the conversation and return JSON:
 `;
 
 
+export const enhanceLeadPrompt = (
+  basePrompt: string,
+  leadStatusArray: string[]
+) => {
+  const defaultArray = [
+    "Interested",
+    "Not Interested",
+    "Callback",
+    "Do Not Disturb"
+  ];
+
+  const finalArray = leadStatusArray?.length ? leadStatusArray : defaultArray;
+
+  return `
+${basePrompt}
+
+---------------------
+STRICT CLASSIFICATION RULES:
+
+Allowed lead statuses:
+${finalArray.join(" | ")}
+
+Rules:
+- You MUST return ONLY one value from the allowed list above.
+- Do NOT create new values.
+- Do NOT modify spelling.
+- Even if the base prompt suggests something else, you MUST follow this list.
+
+Return JSON ONLY:
+{ "leadStatus": "<one_of_allowed_values>" }
+`;
+};
+
+
 

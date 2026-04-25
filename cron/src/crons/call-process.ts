@@ -995,12 +995,12 @@ class PlivoCallDispatcher {
             companyId: batchCall.companyId?.toString(),
             recipientId: rec?._id?.toString(),
             batchCallId: mainBatchCallData._id.toString(),
-            followupBatchCallId: batchCall.followupNumber
+            followupBatchCallId: batchCall._id.toString()
                 ? batchCall._id.toString()
                 : ''
         };
         const token = jwt.sign(payload, process.env.JWT_SECRET as string, {
-            expiresIn: '1h' // optional but recommended
+            expiresIn: '6h' // optional but recommended
         });
 
         const answerUrl = `${baseUrl}/webhook/incoming-call?token=${encodeURIComponent(token)}&direction=outbound`;

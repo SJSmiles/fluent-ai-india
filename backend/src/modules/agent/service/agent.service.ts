@@ -187,107 +187,179 @@ export class AgentService {
     }
   }
 
+  // public async getAgentListingForBatchCall(user: any, payload: any): Promise<any> {
+  //   try {
+  //     const SUPER_ADMIN_COMPANY_ID = process.env.SUPER_ADMIN_COMPANY_ID;
+  //     const isSuperAdmin = user?.companyId?.toString() === SUPER_ADMIN_COMPANY_ID;
+
+  //     let agentQuery: any = { isArchived: { $ne: true } };
+
+  //     if (isSuperAdmin) {
+  //       agentQuery.companyId = payload?.companyId
+  //         ? new Types.ObjectId(payload.companyId)
+  //         : user?.companyId;
+  //     }
+
+  //     let primaryMap = new Map<string, boolean>();
+
+  //     if (user.isAdmin) {
+  //       const userAgents = await UserAgent.find({
+  //         userId: payload?.userId ? new Types.ObjectId(payload.userId) : user?.userId,
+  //         isArchived: { $ne: true }
+  //       }).select('agentId isPrimary').lean();
+
+  //       const agentIds = userAgents.map(ua => ua.agentId);
+  //       agentQuery._id = { $in: agentIds };
+  //       userAgents.forEach(ua => {
+  //         if (ua.agentId) primaryMap.set(ua.agentId.toString(), ua.isPrimary || false);
+  //       });
+  //     } else {
+  //       const userAgents = await UserAgent.find({
+  //         userId: user.userId,
+  //         isArchived: { $ne: true }
+  //       }).select('agentId isPrimary').lean();
+
+  //       const agentIds = userAgents.map(ua => ua.agentId);
+  //       agentQuery._id = { $in: agentIds };
+  //       userAgents.forEach(ua => {
+  //         if (ua.agentId) primaryMap.set(ua.agentId.toString(), ua.isPrimary || false);
+  //       });
+  //     }
+
+  //     const data = await Agent.find(agentQuery)
+  //       .select('_id name voiceId prompt companyId firstMessage isArchived createdAt updatedAt')
+  //       .lean();
+
+  //     let enrichedData: any[] = data.map((agent: any) => ({
+  //       ...agent,
+  //       isPrimary: primaryMap.get(agent._id.toString()) || false
+  //     }));
+
+  //     // Enrich with user/company info for Super Admin
+  //     if (isSuperAdmin && data.length > 0) {
+  //       const agentIds = data.map((agent: any) => agent._id);
+  //       const userAgents = await UserAgent.find({ agentId: { $in: agentIds } })
+  //         .select('agentId userId').lean();
+
+  //       const agentUserMap = new Map<string, any[]>();
+  //       userAgents.forEach(ua => {
+  //         if (ua.agentId) {
+  //           const key = ua.agentId.toString();
+  //           if (!agentUserMap.has(key)) agentUserMap.set(key, []);
+  //           agentUserMap.get(key)!.push(ua.userId);
+  //         }
+  //       });
+
+  //       const userIds = Array.from(new Set(userAgents.map(ua => ua.userId)));
+
+  //       if (userIds.length > 0) {
+  //         const users = await User.find({ _id: { $in: userIds } })
+  //           .select('_id firstName lastName email companyId')
+  //           .populate('companyId', 'name domain')
+  //           .lean();
+
+  //         const userMap = new Map(users.map(u => [u._id.toString(), u]));
+
+  //         enrichedData = enrichedData.map((agent: any) => {
+  //           const mappedUserIds = agentUserMap.get(agent._id.toString()) || [];
+  //           const mappedUsers: any[] = mappedUserIds
+  //             .map(uid => userMap.get(uid.toString()))
+  //             .filter(Boolean);
+
+  //           const companyInfo = mappedUsers[0]?.companyId
+  //             ? { _id: mappedUsers[0].companyId._id, name: mappedUsers[0].companyId.name, domain: mappedUsers[0].companyId.domain }
+  //             : null;
+
+  //           return {
+  //             ...agent,
+  //             mappedUsers: mappedUsers.map((u: any) => ({
+  //               _id: u._id, firstName: u.firstName, lastName: u.lastName, email: u.email
+  //             })),
+  //             company: companyInfo
+  //           };
+  //         });
+  //       }
+  //     }
+
+  //     return {
+  //       status: true,
+  //       message: 'Agent list retrieved successfully',
+  //       data: enrichedData,
+  //       totalCount: enrichedData.length,
+  //       isSuperAdmin
+  //     };
+  //   } catch (error: any) {
+  //     throw throwError(
+  //       `Failed to retrieve agent list: ${error.message}`,
+  //       { status: 500 },
+  //       'INTERNAL_SERVER_ERROR'
+  //     );
+  //   }
+  // }
+
+
   public async getAgentListingForBatchCall(user: any, payload: any): Promise<any> {
     try {
       const SUPER_ADMIN_COMPANY_ID = process.env.SUPER_ADMIN_COMPANY_ID;
       const isSuperAdmin = user?.companyId?.toString() === SUPER_ADMIN_COMPANY_ID;
 
-      let agentQuery: any = { isArchived: { $ne: true } };
-
-      if (isSuperAdmin) {
-        agentQuery.companyId = payload?.companyId
-          ? new Types.ObjectId(payload.companyId)
-          : user?.companyId;
-      }
-
-      let primaryMap = new Map<string, boolean>();
+      // Step 1: Get UserAgent mappings
+      const userAgentQuery: any = {
+        isArchived: { $ne: true }
+      };
 
       if (user.isAdmin) {
-        const userAgents = await UserAgent.find({
-          userId: payload?.userId ? new Types.ObjectId(payload.userId) : user?.userId,
-          isArchived: { $ne: true }
-        }).select('agentId isPrimary').lean();
-
-        const agentIds = userAgents.map(ua => ua.agentId);
-        agentQuery._id = { $in: agentIds };
-        userAgents.forEach(ua => {
-          if (ua.agentId) primaryMap.set(ua.agentId.toString(), ua.isPrimary || false);
-        });
+        userAgentQuery.userId = payload?.userId
+          ? new Types.ObjectId(payload.userId)
+          : user?.userId;
       } else {
-        const userAgents = await UserAgent.find({
-          userId: user.userId,
-          isArchived: { $ne: true }
-        }).select('agentId isPrimary').lean();
-
-        const agentIds = userAgents.map(ua => ua.agentId);
-        agentQuery._id = { $in: agentIds };
-        userAgents.forEach(ua => {
-          if (ua.agentId) primaryMap.set(ua.agentId.toString(), ua.isPrimary || false);
-        });
+        userAgentQuery.userId = user.userId;
       }
 
-      const data = await Agent.find(agentQuery)
-        .select('_id name voiceId prompt companyId firstMessage isArchived createdAt updatedAt')
+      const userAgents = await UserAgent.find(userAgentQuery)
+        .select('agentId')
         .lean();
 
-      let enrichedData: any[] = data.map((agent: any) => ({
-        ...agent,
-        isPrimary: primaryMap.get(agent._id.toString()) || false
-      }));
+      const agentIds = userAgents.map(ua => ua.agentId).filter(Boolean);
 
-      // Enrich with user/company info for Super Admin
-      if (isSuperAdmin && data.length > 0) {
-        const agentIds = data.map((agent: any) => agent._id);
-        const userAgents = await UserAgent.find({ agentId: { $in: agentIds } })
-          .select('agentId userId').lean();
-
-        const agentUserMap = new Map<string, any[]>();
-        userAgents.forEach(ua => {
-          if (ua.agentId) {
-            const key = ua.agentId.toString();
-            if (!agentUserMap.has(key)) agentUserMap.set(key, []);
-            agentUserMap.get(key)!.push(ua.userId);
-          }
-        });
-
-        const userIds = Array.from(new Set(userAgents.map(ua => ua.userId)));
-
-        if (userIds.length > 0) {
-          const users = await User.find({ _id: { $in: userIds } })
-            .select('_id firstName lastName email companyId')
-            .populate('companyId', 'name domain')
-            .lean();
-
-          const userMap = new Map(users.map(u => [u._id.toString(), u]));
-
-          enrichedData = enrichedData.map((agent: any) => {
-            const mappedUserIds = agentUserMap.get(agent._id.toString()) || [];
-            const mappedUsers: any[] = mappedUserIds
-              .map(uid => userMap.get(uid.toString()))
-              .filter(Boolean);
-
-            const companyInfo = mappedUsers[0]?.companyId
-              ? { _id: mappedUsers[0].companyId._id, name: mappedUsers[0].companyId.name, domain: mappedUsers[0].companyId.domain }
-              : null;
-
-            return {
-              ...agent,
-              mappedUsers: mappedUsers.map((u: any) => ({
-                _id: u._id, firstName: u.firstName, lastName: u.lastName, email: u.email
-              })),
-              company: companyInfo
-            };
-          });
-        }
+      if (agentIds.length === 0) {
+        return {
+          status: true,
+          message: 'No agents found',
+          data: [],
+          totalCount: 0,
+          isSuperAdmin
+        };
       }
+
+      // Step 2: Fetch only required agent fields
+      const agentQuery: any = {
+        _id: { $in: agentIds },
+        isArchived: { $ne: true }
+      };
+
+      if (isSuperAdmin && payload?.companyId) {
+        agentQuery.companyId = new Types.ObjectId(payload.companyId);
+      }
+
+      const agents = await Agent.find(agentQuery)
+        .select('_id name') // ✅ only required fields
+        .lean();
+
+      // Step 3: Format response
+      const data = agents.map(agent => ({
+        agentId: agent._id,
+        agentName: agent.name
+      }));
 
       return {
         status: true,
         message: 'Agent list retrieved successfully',
-        data: enrichedData,
-        totalCount: enrichedData.length,
+        data,
+        totalCount: data.length,
         isSuperAdmin
       };
+
     } catch (error: any) {
       throw throwError(
         `Failed to retrieve agent list: ${error.message}`,

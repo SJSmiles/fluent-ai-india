@@ -1,13 +1,73 @@
 import { redis } from '../store/redis';
 import { getAgentConfig } from '../services/agent.service';
 import jwt from 'jsonwebtoken';
-import { CallLogs } from 'modules/models/callLogs.';
-
+import { CallLogs } from 'modules/models/callLogs.model.';
 import { Calls } from 'modules/models/calls.model';
 import { callProcessQueue } from 'modules/queue/queue';
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
+import { ObjectId } from 'mongodb';
+import { connectDB } from 'database/mongo-connection';
 
+async function validateAndLoadData(decoded: any) {
+    await connectDB();
+    const db = mongoose.connection.db;
 
+    const {
+        agentId,
+        userId,
+        companyId,
+        recipientId,
+        batchCallId,
+        followupBatchCallId
+    } = decoded;
+
+    const toObjectId = (id: string) => id ? new ObjectId(id) : null;
+
+    // 🔥 REQUIRED fields (must be in token)
+    if (!agentId) throw new ValidationError('TOKEN_AGENT_MISSING');
+    if (!companyId) throw new ValidationError('TOKEN_COMPANY_MISSING');
+    if (!userId) throw new ValidationError('TOKEN_USER_MISSING');
+    if (!recipientId) throw new ValidationError('TOKEN_RECIPIENT_MISSING');
+    if (!batchCallId) throw new ValidationError('TOKEN_BATCHCALL_MISSING');
+
+    // 🔥 REQUIRED DB checks
+    const [agent, company, user, recipient, batchCall] = await Promise.all([
+        db.collection('Agent').findOne({ _id: toObjectId(agentId) }),
+        db.collection('Company').findOne({ _id: toObjectId(companyId) }),
+        db.collection('User').findOne({ _id: toObjectId(userId) }),
+        db.collection('Recipients').findOne({ _id: toObjectId(recipientId) }),
+        db.collection('BatchCall').findOne({ _id: toObjectId(batchCallId) })
+    ]);
+
+    if (!agent) throw new ValidationError('INVALID_AGENT');
+    if (!company) throw new ValidationError('INVALID_COMPANY');
+    if (!user) throw new ValidationError('INVALID_USER');
+    if (!recipient) throw new ValidationError('INVALID_RECIPIENT');
+    if (!batchCall) throw new ValidationError('INVALID_BATCHCALL');
+
+    // 🟡 ONLY optional field
+    let followupBatchCall = null;
+
+    if (followupBatchCallId) {
+        followupBatchCall = await db.collection('BatchCallFollowUps').findOne({
+            _id: toObjectId(followupBatchCallId)
+        });
+
+        // optional → but if provided & invalid → throw
+        if (!followupBatchCall) {
+            throw new ValidationError('INVALID_FOLLOWUP_BATCHCALL');
+        }
+    }
+
+    return {
+        agent,
+        company,
+        user,
+        recipient,
+        batchCall,
+        followupBatchCall
+    };
+}
 
 
 
@@ -20,6 +80,8 @@ export async function incomingCallHandler(req: any, reply: any) {
             token,
             process.env.JWT_TOKEN_SECRET as string
         );
+        // 🔥 validate DB data
+        //const data = await validateAndLoadData(decoded);
 
         const callUUID = req.body?.CallUUID;
         if (!callUUID) {
@@ -176,6 +238,7 @@ export async function callStatusHandler(req: any, reply: any) {
                         toNumber: req.body?.To || null,
                         callStatus: req.body?.CallStatus || 'completed',
                         event: event || null,
+                        disconnectionReason: req.body?.HangupCauseName || null,
                         duration: Number(req.body?.Duration) || 0,
                         startedAt: parsedMeta.startedAt
                             ? new Date(parsedMeta.startedAt)
@@ -280,4 +343,14 @@ export function generatePlivoXml(
   </Stream>
 
 </Response>`;
+}
+
+
+class ValidationError extends Error {
+    code: string;
+
+    constructor(code: string, message?: string) {
+        super(message || code);
+        this.code = code;
+    }
 }
