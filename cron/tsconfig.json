@@ -7,8 +7,7 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "outDir": "dist",
-    "noEmit": true,
-    "allowImportingTsExtensions": true
+    "noEmit": false
   },
   "ts-node": {
     "esm": true
