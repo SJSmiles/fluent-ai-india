@@ -11,6 +11,7 @@ import { Company } from '../../company/models/company.model';
 import { UserAgent } from '../../agent/models/user-agent.model';
 import { BlackList } from '../../black-list/models/black-list.model';
 import * as XLSX from 'xlsx';
+import { PhoneNumber } from '../../phone-number/models/phone-number.model';
 
 const pipeline = promisify(_pipeline);
 
@@ -305,7 +306,7 @@ function validateBatchCallPayload(formData: any) {
   if (!formData.agentId?.trim()) errors.push('Agent ID is required');
   if (!formData.date?.trim()) errors.push('Date is required (YYYY-MM-DD)');
   if (!formData.time?.trim()) errors.push('Time is required (HH:MM)');
-  if (!formData.phoneNumber?.trim()) errors.push('Phone number is required');
+  if (!formData.phoneNumberId?.trim()) errors.push('Phone number Id is required');
 
   if (formData.date && !/^\d{4}-\d{2}-\d{2}$/.test(formData.date.trim())) {
     errors.push('Date must be in YYYY-MM-DD format');
@@ -342,7 +343,8 @@ function validateBatchCallPayload(formData: any) {
     date: formData.date.trim(),
     time: formData.time.trim(),
     followUpsDetails,
-    phoneNumber: formData.phoneNumber?.trim() || undefined
+    phoneNumberId: formData.phoneNumberId?.trim(),
+    phoneNumber: null
   };
 }
 
@@ -394,6 +396,20 @@ export async function createBatchCall(request: any, reply: any) {
       ];
 
     // Validate agent exists and user has access
+    const phoneNumber: any = await PhoneNumber.findOne({
+      _id: validatedPayload.phoneNumberId,
+      companyId: user.companyId,
+      isArchived: false
+    }).lean();
+
+    if (!phoneNumber) {
+      cleanup(filePath);
+      return reply.status(404).send({ success: false, message: 'PhoneNumber not found' });
+    }
+
+    validatedPayload.phoneNumber = phoneNumber.number;
+
+    // Validate agent exists and user has access
     const agent: any = await Agent.findOne({
       _id: validatedPayload.agentId,
       companyId: user.companyId,
@@ -416,6 +432,94 @@ export async function createBatchCall(request: any, reply: any) {
       return reply.status(403).send({ success: false, message: 'User does not have access to this agent' });
     }
 
+    if (validatedPayload.followUpsDetails?.length > 0) {
+      const timezone = validatedPayload.timezone;
+
+      const mainDateTime = moment.tz(
+        `${validatedPayload.date}T${validatedPayload.time}`,
+        timezone
+      );
+
+      let previousFollowUpTime = mainDateTime.clone();
+
+      for (const [index, followUp] of validatedPayload.followUpsDetails.entries()) {
+        // Required fields
+        if (!followUp.time || !followUp.date || !followUp.phoneNumberId) {
+          cleanup(filePath);
+          return reply.status(400).send({
+            success: false,
+            message: `Follow-up at index ${index} is missing required fields 'time', 'date', or 'phoneNumberId'`
+          });
+        }
+
+        // Format check
+        if (!/^\d{2}:\d{2}$/.test(followUp.time.trim())) {
+          cleanup(filePath);
+          return reply.status(400).send({
+            success: false,
+            message: `Follow-up at index ${index} has invalid time format. Expected HH:MM`
+          });
+        }
+
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(followUp.date.trim())) {
+          cleanup(filePath);
+          return reply.status(400).send({
+            success: false,
+            message: `Follow-up at index ${index} has invalid date format. Expected YYYY-MM-DD`
+          });
+        }
+
+        // Parse follow-up datetime
+        const followUpDateTime = moment.tz(
+          `${followUp.date.trim()}T${followUp.time.trim()}`,
+          timezone
+        );
+
+        if (!followUpDateTime.isValid()) {
+          cleanup(filePath);
+          return reply.status(400).send({
+            success: false,
+            message: `Follow-up at index ${index} has invalid date/time`
+          });
+        }
+
+        // ❗ Must be >= 10 mins from MAIN batch call
+        if (followUpDateTime.diff(mainDateTime, 'minutes') < 10) {
+          cleanup(filePath);
+          return reply.status(400).send({
+            success: false,
+            message: `Follow-up at index ${index} must be at least 10 minutes after main batch call`
+          });
+        }
+
+        // ❗ Must be >= 10 mins from previous follow-up
+        if (followUpDateTime.diff(previousFollowUpTime, 'minutes') < 10) {
+          cleanup(filePath);
+          return reply.status(400).send({
+            success: false,
+            message: `Follow-up at index ${index} must be at least 10 minutes after previous follow-up`
+          });
+        }
+
+        // Validate agent exists and user has access
+        const phoneNumber: any = await PhoneNumber.findOne({
+          _id: followUp.phoneNumberId,
+          companyId: user.companyId,
+          isArchived: false
+        }).lean();
+
+        if (!phoneNumber) {
+          cleanup(filePath);
+          return reply.status(404).send({ success: false, message: 'PhoneNumber not found' });
+        }
+
+        followUp.phoneNumber = phoneNumber.number;
+
+
+        // update pointer
+        previousFollowUpTime = followUpDateTime.clone();
+      }
+    }
     // Parse and validate file
     const { validContacts, allProcessedContacts, reportBuffer, summary } =
       await parseAndValidateFile(filePath, user.companyId, columnConfig);
