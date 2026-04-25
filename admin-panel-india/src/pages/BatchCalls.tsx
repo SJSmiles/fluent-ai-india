@@ -7,6 +7,7 @@ import { PhoneCall, Plus, Search, Trash2, X, ChevronLeft, ChevronRight, ChevronD
 import { agentService } from '../api/agentService';
 import { phoneNumberService } from '../api/phoneNumberService';
 import Toast from '../Component/toaster/Toast';
+import * as XLSX from 'xlsx';
 
 const PAGE_LIMIT = 15;
 
@@ -434,6 +435,7 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
     const [scheduledTime, setScheduledTime] = useState('');
     const [followups, setFollowups] = useState<any[]>([]);
     const [isDragging, setIsDragging] = useState(false);
+    const [previewData, setPreviewData] = useState<any[][]>([]);
 
     useEffect(() => {
         if (companyId) {
@@ -463,6 +465,22 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
             return;
         }
         setFile(f);
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+                setPreviewData(json.filter(row => row.length > 0).slice(0, 6));
+            } catch (err) {
+                console.error('Error parsing file:', err);
+                setPreviewData([]);
+            }
+        };
+        reader.readAsArrayBuffer(f);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -527,23 +545,6 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
                 </section>
 
                 <section>
-                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>Scheduling</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={13} /> Date</label>
-                            <input type="date" required style={inputStyle} value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={13} /> Time</label>
-                            <input type="time" required style={inputStyle} value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} />
-                        </div>
-                    </div>
-                </section>
-            </div>
-
-            {/* Right Column: Upload & Follow-ups */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <section>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                         <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contacts Upload</h3>
                         <button 
@@ -575,6 +576,76 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
                             {file ? file.name : 'Drop contacts file here or click to browse'}
                         </span>
                         <input type="file" id="file-upload" hidden onChange={e => e.target.files && handleFile(e.target.files[0])} accept=".csv,.xlsx" />
+                    </div>
+
+                    {file && (
+                        <div style={{ marginTop: '20px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>File Preview</span>
+                                    <span style={{ fontSize: '10px', padding: '2px 6px', background: '#eef2ff', color: '#6366f1', borderRadius: '4px', fontWeight: 600 }}>{previewData.length > 0 ? `${previewData.length - 1} rows shown` : 'Processing...'}</span>
+                                </div>
+                                <button 
+                                    type="button" 
+                                    onClick={() => { setFile(null); setPreviewData([]); }} 
+                                    style={{ border: 'none', background: 'none', color: '#ef4444', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                    <Trash size={12} /> Remove
+                                </button>
+                            </div>
+                            <div style={{ border: '1px solid #f1f5f9', borderRadius: '12px', background: '#fff', overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+                                {previewData.length > 0 ? (
+                                    <div style={{ overflowX: 'auto', maxHeight: '180px', overflowY: 'auto' }}>
+                                        <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
+                                            <thead style={{ background: '#f8fafc', position: 'sticky', top: 0, zIndex: 1 }}>
+                                                <tr>
+                                                    {previewData[0].map((col: any, i: number) => (
+                                                        <th key={i} style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: 700, whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.02em' }}>{col || `Col ${i+1}`}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {previewData.slice(1).map((row: any[], i: number) => (
+                                                    <tr key={i}>
+                                                        {row.map((cell: any, j: number) => (
+                                                            <td key={j} style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', color: '#1e293b' }}>{cell}</td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : (
+                                    <div style={{ padding: '32px', textAlign: 'center' }}>
+                                        <div style={{ width: '20px', height: '20px', border: '2px solid #f1f5f9', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+                                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>Loading preview...</span>
+                                        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                                    </div>
+                                )}
+                            </div>
+                            {previewData.length >= 6 && (
+                                <div style={{ marginTop: '8px', color: '#94a3b8', fontSize: '10px', textAlign: 'center', fontWeight: 500 }}>
+                                    Showing first 5 contacts for verification
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </section>
+            </div>
+
+            {/* Right Column: Upload & Follow-ups */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <section>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>Scheduling</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={13} /> Date</label>
+                            <input type="date" required style={inputStyle} value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={13} /> Time</label>
+                            <input type="time" required style={inputStyle} value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} />
+                        </div>
                     </div>
                 </section>
 
