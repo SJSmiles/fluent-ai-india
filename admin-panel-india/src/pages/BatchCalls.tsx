@@ -76,7 +76,7 @@ const Pagination = ({ page, total, limit, onPage }: { page: number; total: numbe
                     <ChevronLeft size={15} />
                 </button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                    <button key={p} onClick={() => onPage(p)} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', borderColor: p === page ? '#0a485e' : '#e2e4e9', background: p === page ? '#0a485e' : '#fff', color: p === page ? '#fff' : '#555' }}>
+                    <button key={p} onClick={() => onPage(p)} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', borderColor: p === page ? '#4f46e5' : '#e2e4e9', background: p === page ? '#4f46e5' : '#fff', color: p === page ? '#fff' : '#555' }}>
                         {p}
                     </button>
                 ))}
@@ -110,14 +110,15 @@ const BatchCalls: React.FC = () => {
         setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
-    const isSuperAdmin = user?.isAdmin && user?.isSuperAdmin;
+    const isSuperAdmin = user?.isAdmin && user?.superAdmin;
 
     const inputStyle: React.CSSProperties = { height: '38px', paddingLeft: '12px', paddingRight: '12px', border: '1px solid #e2e4e9', borderRadius: '8px', fontSize: '13px', background: '#fff', outline: 'none', fontFamily: 'inherit' };
 
     useEffect(() => {
         if (isSuperAdmin) {
             companyService.getAll().then(res => {
-                const list = res.data.data || [];
+                const raw = res.data?.data?.companies || res.data?.companies || res.data?.data || res.data || [];
+                const list = Array.isArray(raw) ? raw : [];
                 setCompanies(list);
                 setCompanyId(user?.companyId || list[0]?._id || '');
             }).catch(console.error);

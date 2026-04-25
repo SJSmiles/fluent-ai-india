@@ -60,13 +60,13 @@ const OverviewGuide = () => {
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Hero Header */}
             <div style={{ 
-                background: 'linear-gradient(135deg, #0a485e 0%, #166534 100%)', 
+                background: 'linear-gradient(135deg, #4f46e5 0%, #166534 100%)', 
                 borderRadius: '20px', 
                 padding: '32px 40px', 
                 color: '#fff', 
                 position: 'relative',
                 overflow: 'hidden',
-                boxShadow: '0 10px 30px rgba(10, 72, 94, 0.1)',
+                boxShadow: '0 10px 30px rgba(79, 70, 229, 0.1)',
                 flexShrink: 0
             }}>
                 <div style={{ position: 'relative', zIndex: 2 }}>
@@ -95,7 +95,7 @@ const OverviewGuide = () => {
                         onClick={() => navigate('/devices')}
                         style={{ 
                             background: '#fff', 
-                            color: '#0a485e', 
+                            color: '#4f46e5', 
                             padding: '12px 28px', 
                             borderRadius: '10px', 
                             border: 'none', 
@@ -136,19 +136,19 @@ const OverviewGuide = () => {
                                 gap: '16px', 
                                 padding: '16px', 
                                 borderRadius: '14px', 
-                                border: step.isHighlighted ? '2px solid #0a485e20' : '1px solid #f0f1f3',
+                                border: step.isHighlighted ? '2px solid #4f46e520' : '1px solid #f0f1f3',
                                 background: step.isHighlighted ? '#f8fafc' : '#fff',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease',
                                 position: 'relative'
                             }}
                             onMouseEnter={e => {
-                                e.currentTarget.style.borderColor = '#0a485e';
+                                e.currentTarget.style.borderColor = '#4f46e5';
                                 e.currentTarget.style.transform = 'translateY(-1px)';
                                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
                             }}
                             onMouseLeave={e => {
-                                e.currentTarget.style.borderColor = step.isHighlighted ? '#0a485e20' : '#f0f1f3';
+                                e.currentTarget.style.borderColor = step.isHighlighted ? '#4f46e520' : '#f0f1f3';
                                 e.currentTarget.style.transform = 'none';
                                 e.currentTarget.style.boxShadow = 'none';
                             }}
@@ -156,7 +156,7 @@ const OverviewGuide = () => {
                             <div style={{ 
                                 width: '30px', 
                                 height: '30px', 
-                                background: step.id <= 3 ? '#e2e4e9' : '#0a485e', 
+                                background: step.id <= 3 ? '#e2e4e9' : '#4f46e5', 
                                 color: step.id <= 3 ? '#555' : '#fff', 
                                 borderRadius: '8px', 
                                 display: 'flex', 
@@ -183,7 +183,7 @@ const OverviewGuide = () => {
                                 <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#0a0a0a', marginBottom: '2px' }}>{step.title}</h4>
                                 <p style={{ fontSize: '12px', color: '#666', lineHeight: 1.3 }}>{step.desc}</p>
                             </div>
-                            <ArrowRight size={18} style={{ color: step.id <= 3 ? '#ccc' : '#0a485e' }} />
+                            <ArrowRight size={18} style={{ color: step.id <= 3 ? '#ccc' : '#4f46e5' }} />
                         </div>
                     ))}
                 </div>
@@ -220,7 +220,7 @@ const Overview: React.FC = () => {
             label: "Active Companies",
             value: data?.companiesCount ?? 0,
             icon: Building2,
-            color: "#0a485e",
+            color: "#4f46e5",
             show: isSuperAdmin && isAdmin,
             desc: "Active business accounts"
         },
@@ -270,14 +270,14 @@ const Overview: React.FC = () => {
         <div style={{ paddingBottom: '60px' }}>
             {/* 1. Admin Hero Section */}
             <div style={{
-                background: 'linear-gradient(135deg, #0a485e 0%, #1e293b 100%)',
+                background: 'linear-gradient(135deg, #4f46e5 0%, #1e293b 100%)',
                 borderRadius: '24px',
                 padding: '40px',
                 color: '#fff',
                 position: 'relative',
                 overflow: 'hidden',
                 marginBottom: '32px',
-                boxShadow: '0 20px 40px rgba(10, 72, 94, 0.15)',
+                boxShadow: '0 20px 40px rgba(79, 70, 229, 0.15)',
             }}>
                 <div style={{ position: 'relative', zIndex: 2 }}>
                     <div style={{
@@ -308,7 +308,7 @@ const Overview: React.FC = () => {
                             onClick={() => navigate('/campaigns')}
                             style={{
                                 background: '#fff',
-                                color: '#0a485e',
+                                color: '#4f46e5',
                                 padding: '14px 28px',
                                 borderRadius: '12px',
                                 border: 'none',
@@ -438,7 +438,7 @@ const Overview: React.FC = () => {
                                 <button key={t} style={{
                                     padding: '6px 12px',
                                     borderRadius: '8px',
-                                    background: t === '7D' ? '#0a485e' : '#f0f1f3',
+                                    background: t === '7D' ? '#4f46e5' : '#f0f1f3',
                                     color: t === '7D' ? '#fff' : '#666',
                                     fontSize: '11px',
                                     fontWeight: 700,
@@ -453,8 +453,8 @@ const Overview: React.FC = () => {
                         <svg viewBox="0 0 800 240" style={{ width: '100%', height: '100%', padding: '20px 0' }}>
                             <defs>
                                 <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="#0a485e" stopOpacity="0.2" />
-                                    <stop offset="100%" stopColor="#0a485e" stopOpacity="0" />
+                                    <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.2" />
+                                    <stop offset="100%" stopColor="#4f46e5" stopOpacity="0" />
                                 </linearGradient>
                             </defs>
                             {/* Grid lines */}
@@ -470,15 +470,15 @@ const Overview: React.FC = () => {
                             <path
                                 d="M 0 200 Q 100 80 200 160 Q 300 40 400 120 Q 500 200 600 80 Q 700 140 800 40"
                                 fill="none"
-                                stroke="#0a485e"
+                                stroke="#4f46e5"
                                 strokeWidth="3"
                                 strokeLinecap="round"
                             />
                             
                             {/* Data Points */}
-                            <circle cx="200" cy="160" r="4" fill="#fff" stroke="#0a485e" strokeWidth="2" />
-                            <circle cx="400" cy="120" r="4" fill="#fff" stroke="#0a485e" strokeWidth="2" />
-                            <circle cx="600" cy="80" r="4" fill="#fff" stroke="#0a485e" strokeWidth="2" />
+                            <circle cx="200" cy="160" r="4" fill="#fff" stroke="#4f46e5" strokeWidth="2" />
+                            <circle cx="400" cy="120" r="4" fill="#fff" stroke="#4f46e5" strokeWidth="2" />
+                            <circle cx="600" cy="80" r="4" fill="#fff" stroke="#4f46e5" strokeWidth="2" />
                         </svg>
                         <div style={{ position: 'absolute', bottom: '12px', width: '100%', display: 'flex', justifyContent: 'space-around', fontSize: '10px', fontWeight: 600, color: '#94a3b8' }}>
                             {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map(d => <span key={d}>{d}</span>)}
@@ -506,8 +506,8 @@ const Overview: React.FC = () => {
 
                     <div style={{ marginTop: 'auto', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #e2e8f0' }}>
                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '8px' }}>
-                            <ShieldCheck size={16} color="#0a485e" />
-                            <span style={{ fontSize: '12px', fontWeight: 700, color: '#0a485e' }}>Security Guard</span>
+                            <ShieldCheck size={16} color="#4f46e5" />
+                            <span style={{ fontSize: '12px', fontWeight: 700, color: '#4f46e5' }}>Security Guard</span>
                         </div>
                         <p style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>All systems are operating normally. No security threats detected.</p>
                     </div>
@@ -546,7 +546,7 @@ const Overview: React.FC = () => {
                                 boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
                             }}
                             onMouseEnter={e => {
-                                e.currentTarget.style.borderColor = '#0a485e';
+                                e.currentTarget.style.borderColor = '#4f46e5';
                                 e.currentTarget.style.transform = 'translateY(-2px)';
                                 e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.05)';
                             }}

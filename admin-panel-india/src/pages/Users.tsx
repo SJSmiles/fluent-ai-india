@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { userService } from '../api/userService';
 import { roleService } from '../api/roleService';
 import { companyService } from '../api/companyService';
 import { useAuth } from '../Helper/AuthContext';
-import { Users as UsersIcon, Plus, Search, Trash2, X, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
+import { Users as UsersIcon, Plus, Search, Trash2, X, ChevronLeft, ChevronRight, Pencil, ToggleRight, ToggleLeft } from 'lucide-react';
 import Toast from '../Component/toaster/Toast';
 
 const PAGE_LIMIT = 10;
@@ -49,7 +50,7 @@ const Pagination = ({ page, totalPages, totalRecords, limit, onPage }: {
 };
 
 const Avatar = ({ name, color }: { name: string; color?: string }) => {
-    const initials = name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
+    const initials = (name || '').split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
     const bgColors = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6'];
     const randomColor = color || bgColors[Math.abs(name?.length || 0) % bgColors.length];
     
@@ -63,6 +64,7 @@ const Avatar = ({ name, color }: { name: string; color?: string }) => {
 // ─── Users Page ───────────────────────────────────────────────────────────────
 const Users: React.FC = () => {
     const { user } = useAuth();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [users, setUsers] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -74,20 +76,39 @@ const Users: React.FC = () => {
     const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
     const [editUser, setEditUser] = useState<any>(null);
     const [resetPassUser, setResetPassUser] = useState<any>(null);
+    const [confirmToggleUser, setConfirmToggleUser] = useState<any>(null);
+
+    const isSuperAdmin = user?.superAdmin || user?.isSuperAdmin;
+
+    const inputStyle: React.CSSProperties = { height: '44px', paddingLeft: '12px', paddingRight: '12px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', outline: 'none', background: '#fff', transition: 'all 0.2s' };
 
     // Step 1: Fetch company listing on mount → get default companyId
     useEffect(() => {
-        companyService.getAll()
+        companyService.getFilterListing()
             .then(res => {
-                const list = res.data.data || [];
+                const raw = res.data?.data?.companies || res.data?.companies || res.data?.data || res.data || [];
+                const list = Array.isArray(raw) ? raw : [];
                 setCompaniesList(list);
-                // Pick current user's companyId as default
-                const defaultId = user?.companyId || (list[0]?._id ?? '');
+                
+                // 1. Priority: URL param
+                // 2. Fallback: current user's companyId
+                // 3. Last fallback: first company in list
+                const urlCompanyId = searchParams.get('companyId');
+                const defaultId = urlCompanyId || user?.companyId || (list[0]?._id ?? '');
+                
                 setSelectedCompanyId(defaultId);
-                // selectedCompanyId change triggers Step 2 (user listing)
+                if (urlCompanyId !== defaultId) {
+                    setSearchParams({ companyId: defaultId }, { replace: true });
+                }
             })
             .catch(err => console.error(err));
     }, [user?.companyId]);
+
+    const handleCompanyChange = (id: string) => {
+        setSelectedCompanyId(id);
+        setSearchParams({ companyId: id });
+        setPage(1);
+    };
 
     // Step 2: Fetch users — runs only after Step 1 sets selectedCompanyId
     // Guard ensures user listing is NOT called before company listing resolves
@@ -103,7 +124,9 @@ const Users: React.FC = () => {
             if (companyId) params.companyId = companyId;
             const res = await userService.getAll(params);
             setUsers(res.data.data || []);
-            setPagination(res.data.pagination);
+            if (res.data.pagination) {
+                setPagination(res.data.pagination);
+            }
         } catch (err) { console.error(err); }
         finally { setIsLoading(false); }
     };
@@ -111,18 +134,33 @@ const Users: React.FC = () => {
 
 
     const archiveUser = async (id: string) => {
-        if (!window.confirm('Archive this user?')) return;
+        if (!window.confirm('Delete this user?')) return;
         try {
             await userService.delete(id);
             fetchUsers(page, selectedCompanyId);
         } catch (err: any) { alert(err.response?.data?.message || 'Failed'); }
     };
 
-    const filtered = users.filter(u =>
+    const handleToggleStatus = async (user: any) => {
+        setConfirmToggleUser(user);
+    };
+
+    const confirmToggleStatus = async () => {
+        if (!confirmToggleUser) return;
+        const newStatus = confirmToggleUser.status === 1 ? 0 : 1;
+        try {
+            await userService.toggleStatus({ _id: confirmToggleUser._id, status: newStatus });
+            setToast({ message: `User ${newStatus === 1 ? 'activated' : 'deactivated'} successfully`, type: 'success' });
+            fetchUsers(page, selectedCompanyId);
+        } catch (err: any) { alert(err.response?.data?.message || 'Failed to update status'); }
+        finally { setConfirmToggleUser(null); }
+    };
+
+    const filtered = (users || []).filter(u =>
         !searchQuery ||
-        u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.userName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.email?.toLowerCase().includes(searchQuery.toLowerCase())
+        (u.firstName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (u.lastName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (u.email || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const handlePageChange = (p: number) => { setPage(p); setSearchQuery(''); };
@@ -134,6 +172,37 @@ const Users: React.FC = () => {
     return (
         <div style={{ width: '100%' }}>
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+            {/* Confirmation Modal for Toggle Status */}
+            {confirmToggleUser && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+                    <div style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '400px', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: confirmToggleUser.status === 1 ? '#fef2f2' : '#f0fdf4', color: confirmToggleUser.status === 1 ? '#ef4444' : '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                                <UsersIcon size={24} />
+                            </div>
+                            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '8px' }}>
+                                {confirmToggleUser.status === 1 ? 'Deactivate User?' : 'Activate User?'}
+                            </h3>
+                            <p style={{ fontSize: '14px', color: '#64748b', lineHeight: 1.5 }}>
+                                {confirmToggleUser.status === 1 ? (
+                                    <>Are you sure you want to deactivate <b>{confirmToggleUser.firstName} {confirmToggleUser.lastName}</b> ({confirmToggleUser.email})?</>
+                                ) : (
+                                    <>Are you sure you want to activate this user?</>
+                                )}
+                            </p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button onClick={() => setConfirmToggleUser(null)} style={{ flex: 1, height: '40px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', fontWeight: 600, cursor: 'pointer' }}>
+                                Cancel
+                            </button>
+                            <button onClick={confirmToggleStatus} style={{ flex: 1, height: '40px', borderRadius: '10px', border: 'none', background: confirmToggleUser.status === 1 ? '#ef4444' : '#4f46e5', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>
+                                {confirmToggleUser.status === 1 ? 'Deactivate' : 'Activate'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
@@ -154,6 +223,18 @@ const Users: React.FC = () => {
                             onBlur={e => e.target.style.borderColor = '#e2e8f0'}
                         />
                     </div>
+
+                    {!!isSuperAdmin && (
+                        <select 
+                            value={selectedCompanyId} 
+                            onChange={e => handleCompanyChange(e.target.value)}
+                            style={{ ...inputStyle, minWidth: '180px' }}
+                        >
+                            {(!companiesList || !Array.isArray(companiesList) || companiesList.length === 0) && <option value="">Loading Companies...</option>}
+                            {Array.isArray(companiesList) && companiesList.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                        </select>
+                    )}
+
                     <button 
                         onClick={() => setShowModal(true)}
                         style={{ height: '44px', padding: '0 20px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'background 0.2s' }}
@@ -185,7 +266,8 @@ const Users: React.FC = () => {
                                     <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>User</th>
                                     <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Role</th>
                                     <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Phone</th>
-                                    <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Last Active</th>
+                                    <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Created At</th>
+                                    <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Updated At</th>
                                     <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
                                     <th style={{ padding: '12px 24px', textAlign: 'center', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', width: '100px' }}>Actions</th>
                                 </tr>
@@ -195,29 +277,60 @@ const Users: React.FC = () => {
                                     <tr key={u._id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                                         <td style={{ padding: '12px 24px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                <Avatar name={u.name} />
+                                                <Avatar name={u.firstName} />
                                                 <div>
-                                                    <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '14px' }}>{u.name}</div>
+                                                    <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '14px' }}>{u.firstName} {u.lastName}</div>
                                                     <div style={{ color: '#64748b', fontSize: '12px' }}>{u.email || u.userName}</div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td style={{ padding: '12px 24px' }}>
-                                            <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, background: '#eef2ff', color: '#6366f1' }}>
-                                                {u.roleId?.name || 'User'}
+                                            <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, background: u.isAdmin ? '#eef2ff' : '#f1f5f9', color: u.isAdmin ? '#6366f1' : '#64748b' }}>
+                                                {u.isAdmin ? 'Admin' : 'User'}
                                             </span>
                                         </td>
                                         <td style={{ padding: '12px 24px', color: '#64748b', fontSize: '14px' }}>
-                                            {u.phoneNumber || '+91 90000 00000'}
+                                            {u.phoneNumber || '—'}
                                         </td>
-                                        <td style={{ padding: '12px 24px', color: '#64748b', fontSize: '14px' }}>
-                                            {u.lastActive || 'Just now'}
+                                        <td style={{ padding: '12px 24px', color: '#64748b', fontSize: '13px' }}>
+                                            {u.createdAt ? new Date(u.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                                        </td>
+                                        <td style={{ padding: '12px 24px', color: '#64748b', fontSize: '13px' }}>
+                                            {u.updatedAt ? new Date(u.updatedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '—'}
                                         </td>
                                         <td style={{ padding: '12px 24px' }}>
-                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '20px', background: u.isArchived ? '#f1f5f9' : '#f0fdf4', color: u.isArchived ? '#64748b' : '#22c55e', fontSize: '12px', fontWeight: 600 }}>
-                                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: u.isArchived ? '#64748b' : '#22c55e' }} />
-                                                {u.isArchived ? 'Inactive' : 'Active'}
-                                            </div>
+                                            {u._id === user?._id ? (
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '20px', background: '#f0fdf4', color: '#22c55e', fontSize: '12px', fontWeight: 600 }}>
+                                                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e' }} />
+                                                    Active
+                                                </div>
+                                            ) : (
+                                                <div 
+                                                    onClick={() => handleToggleStatus(u)}
+                                                    style={{ 
+                                                        width: '40px', 
+                                                        height: '22px', 
+                                                        background: u.status === 1 ? '#4f46e5' : '#cbd5e1', 
+                                                        borderRadius: '20px', 
+                                                        padding: '2px', 
+                                                        cursor: 'pointer', 
+                                                        position: 'relative', 
+                                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' 
+                                                    }}
+                                                >
+                                                    <div style={{ 
+                                                        width: '18px', 
+                                                        height: '18px', 
+                                                        background: '#fff', 
+                                                        borderRadius: '50%', 
+                                                        position: 'absolute', 
+                                                        left: u.status === 1 ? '20px' : '2px', 
+                                                        top: '2px', 
+                                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)' 
+                                                    }} />
+                                                </div>
+                                            )}
                                         </td>
                                         <td style={{ padding: '12px 24px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
@@ -305,21 +418,16 @@ const UserForm = ({ onClose, selectedCompanyId, companiesList, onError }: {
     companiesList: { _id: string; name: string; domain?: string }[];
     onError: (msg: string) => void;
 }) => {
-    const [form, setForm] = useState({ name: '', phoneNumber: '', userName: '', password: '', roleId: '' });
+    const [form, setForm] = useState({ firstName: '', lastName: '', phoneNumber: '', password: '', isAdmin: false });
     const [emailLocal, setEmailLocal] = useState('');
     const [emailError, setEmailError] = useState('');
-    const [roles, setRoles] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
     const selectedCompany = companiesList.find(c => c._id === selectedCompanyId);
     const domain = selectedCompany?.domain || '';
 
     useEffect(() => {
-        if (!selectedCompanyId) return;
-        roleService.getFilterList({ companyId: selectedCompanyId })
-            .then(res => setRoles(res.data.data || []))
-            .catch(err => console.error(err));
-        setForm(f => ({ ...f, roleId: '' }));
+        setForm(f => ({ ...f, isAdmin: false }));
         setEmailLocal('');
         setEmailError('');
     }, [selectedCompanyId]);
@@ -349,18 +457,19 @@ const UserForm = ({ onClose, selectedCompanyId, companiesList, onError }: {
 
     return (
         <form onSubmit={handleSubmit}>
-            {/* Role — first */}
-            <div style={{ marginBottom: '12px' }}>
-                <label style={labelStyle}>Role *</label>
-                <select required style={{ ...inputStyle, appearance: 'auto' as any }} value={form.roleId} onChange={e => setForm({ ...form, roleId: e.target.value })}>
-                    <option value="">Select role</option>
-                    {roles.map(r => <option key={r._id} value={r._id}>{r.name}</option>)}
-                </select>
-            </div>
-            {/* Name + Phone */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                <div><label style={labelStyle}>Name *</label><input required style={inputStyle} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="John Doe" /></div>
-                <div><label style={labelStyle}>Phone *</label><input required style={inputStyle} value={form.phoneNumber} onChange={e => setForm({ ...form, phoneNumber: e.target.value })} placeholder="+1234567890" /></div>
+                <div><label style={labelStyle}>First Name *</label><input required style={inputStyle} value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} placeholder="John" /></div>
+                <div><label style={labelStyle}>Last Name *</label><input required style={inputStyle} value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} placeholder="Doe" /></div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div><label style={labelStyle}>Phone</label><input style={inputStyle} value={form.phoneNumber} onChange={e => setForm({ ...form, phoneNumber: e.target.value })} placeholder="+1234567890" /></div>
+                <div>
+                    <label style={labelStyle}>Role *</label>
+                    <select required style={{ ...inputStyle, appearance: 'auto' as any }} value={form.isAdmin ? 'true' : 'false'} onChange={e => setForm({ ...form, isAdmin: e.target.value === 'true' })}>
+                        <option value="false">User</option>
+                        <option value="true">Admin</option>
+                    </select>
+                </div>
             </div>
             {/* Email with @domain suffix */}
             <div style={{ marginBottom: '12px' }}>
@@ -380,10 +489,8 @@ const UserForm = ({ onClose, selectedCompanyId, companiesList, onError }: {
                 </div>
                 {emailError && <p style={{ fontSize: '11px', color: '#dc2626', marginTop: '4px' }}>{emailError}</p>}
             </div>
-            {/* Username + Password */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-                <div><label style={labelStyle}>Username *</label><input required style={inputStyle} value={form.userName} onChange={e => setForm({ ...form, userName: e.target.value })} placeholder="johndoe" /></div>
-                <div><label style={labelStyle}>Password *</label><input required type="password" style={inputStyle} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="••••••••" /></div>
+            <div style={{ marginBottom: '20px' }}>
+                <label style={labelStyle}>Password *</label><input required type="password" style={inputStyle} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="••••••••" />
             </div>
             <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: '42px' }}>
                 {loading ? 'Creating...' : 'Create User'}
@@ -410,22 +517,15 @@ const EditUserForm = ({ user, companiesList, onClose, onError, onSuccess }: {
     const existingLocal = existingEmail.includes('@') ? existingEmail.split('@')[0] : existingEmail;
 
     const [form, setForm] = useState({
-        name: user.name || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
         phoneNumber: user.phoneNumber || '',
-        userName: user.userName || '',
-        roleId: user.roleId?._id || user.roleId || '',
+        isAdmin: user.isAdmin || false,
+        status: user.status ?? 1,
     });
     const [emailLocal, setEmailLocal] = useState(existingLocal);
     const [emailError, setEmailError] = useState('');
-    const [roles, setRoles] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        if (!companyId) return;
-        roleService.getFilterList({ companyId })
-            .then(res => setRoles(res.data.data || []))
-            .catch(err => console.error(err));
-    }, [companyId]);
 
     const validateEmailLocal = (val: string) => {
         if (!val) return '';
@@ -440,7 +540,7 @@ const EditUserForm = ({ user, companiesList, onClose, onError, onSuccess }: {
         setLoading(true);
         try {
             const email = emailLocal && companyDomain ? `${emailLocal}@${companyDomain}` : emailLocal;
-            await userService.update(user._id, { ...form, email });
+            await userService.update({ ...form, email, _id: user._id });
             onSuccess('User updated successfully.');
             onClose();
         } catch (err: any) { onError(err.response?.data?.message || 'Failed to update user.'); }
@@ -452,20 +552,21 @@ const EditUserForm = ({ user, companiesList, onClose, onError, onSuccess }: {
 
     return (
         <form onSubmit={handleSubmit}>
-            {/* Role — first */}
-            {!isSelf && (
-                <div style={{ marginBottom: '12px' }}>
-                    <label style={labelStyle}>Role *</label>
-                    <select required style={{ ...inputStyle, appearance: 'auto' as any }} value={form.roleId} onChange={e => setForm({ ...form, roleId: e.target.value })}>
-                        <option value="">Select role</option>
-                        {roles.map(r => <option key={r._id} value={r._id}>{r.name}</option>)}
-                    </select>
-                </div>
-            )}
-            {/* Name + Phone */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                <div><label style={labelStyle}>Name *</label><input required style={inputStyle} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="John Doe" /></div>
-                <div><label style={labelStyle}>Phone *</label><input required style={inputStyle} value={form.phoneNumber} onChange={e => setForm({ ...form, phoneNumber: e.target.value })} placeholder="+1234567890" /></div>
+                <div><label style={labelStyle}>First Name *</label><input required style={inputStyle} value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} placeholder="John" /></div>
+                <div><label style={labelStyle}>Last Name *</label><input required style={inputStyle} value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} placeholder="Doe" /></div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div><label style={labelStyle}>Phone</label><input style={inputStyle} value={form.phoneNumber} onChange={e => setForm({ ...form, phoneNumber: e.target.value })} placeholder="+1234567890" /></div>
+                {!isSelf && (
+                    <div>
+                        <label style={labelStyle}>Role *</label>
+                        <select required style={{ ...inputStyle, appearance: 'auto' as any }} value={form.isAdmin ? 'true' : 'false'} onChange={e => setForm({ ...form, isAdmin: e.target.value === 'true' })}>
+                            <option value="false">User</option>
+                            <option value="true">Admin</option>
+                        </select>
+                    </div>
+                )}
             </div>
             {/* Email with @domain suffix */}
             <div style={{ marginBottom: '12px' }}>
@@ -485,11 +586,6 @@ const EditUserForm = ({ user, companiesList, onClose, onError, onSuccess }: {
                 </div>
                 {emailError && <p style={{ fontSize: '11px', color: '#dc2626', marginTop: '4px' }}>{emailError}</p>}
             </div>
-            {/* Username */}
-            <div style={{ marginBottom: '20px' }}>
-                <label style={labelStyle}>Username *</label>
-                <input required style={inputStyle} value={form.userName} onChange={e => setForm({ ...form, userName: e.target.value })} placeholder="johndoe" />
-            </div>
             <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: '42px' }}>
                 {loading ? 'Saving...' : 'Save Changes'}
             </button>
@@ -508,7 +604,7 @@ const ResetPasswordForm = ({ user, onClose, onError, onSuccess }: { user: any; o
 
         setLoading(true);
         try {
-            await userService.resetPassword(user._id, form);
+            await userService.resetPassword({ _id: user._id, newPassword: form.password });
             onSuccess('Password updated successfully.');
             onClose();
         } catch (err: any) {

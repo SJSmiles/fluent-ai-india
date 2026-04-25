@@ -135,7 +135,7 @@ export const updateUserRequest: RequestSchemas = {
     title: 'Update User',
     type: 'object',
     additionalProperties: false,
-    required: ['_id', 'firstName', 'lastName', 'phoneNumber', 'status'],
+    required: ['_id', 'firstName', 'lastName', 'status'],
     properties: {
       _id: {
         type: 'string',

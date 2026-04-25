@@ -339,9 +339,18 @@ export class UserService {
           }
         },
         {
-          // Exclude sensitive fields
+          // Include only requested fields
           $project: {
-            password: 0
+            _id: 1,
+            firstName: 1,
+            lastName: 1,
+            email: 1,
+            isAdmin: 1,
+            phoneNumber: 1,
+            updatedAt: 1,
+            createdAt: 1,
+            status: 1,
+            isArchived: 1
           }
         },
         {
@@ -493,7 +502,7 @@ export class UserService {
         password: hashedPassword,
         companyId: targetCompanyId,
         status: payload.status !== undefined ? payload.status : 1,
-        isAdmin: false,
+        isAdmin: payload?.isAdmin || false,
         isHSAdmin: false,
         isArchived: false,
         createdBy: user.userId,
@@ -661,10 +670,11 @@ export class UserService {
       // Use the target user's companyId for fetching configurations
       const targetCompanyId = existingUser.companyId;
 
-      const updateFields = {
+      const updateFields: any = {
         firstName: payload.firstName.trim(),
         lastName: payload.lastName.trim(),
         phoneNumber: payload.phoneNumber,
+        isAdmin: payload.isAdmin,
         updatedBy: user.userId
       };
 

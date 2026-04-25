@@ -10,6 +10,7 @@ interface User {
   companyId: string;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  superAdmin?: boolean;
 }
 
 interface AuthContextType {

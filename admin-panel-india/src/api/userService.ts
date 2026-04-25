@@ -8,7 +8,8 @@ export const userService = {
     api.get("/users/filter-list", { params }),
   getById: (id: string) => api.get(`/users/${id}`),
   create: (data: any) => api.post("/users/create", data),
-  update: (id: string, data: any) => api.put(`/users/update/${id}`, data),
+  update: (data: any) => api.put("/users/update", data),
+  toggleStatus: (data: any) => api.put("/users/toggle-status", data),
+  resetPassword: (data: any) => api.post("/users/change-password", data),
   delete: (id: string) => api.delete(`/users/${id}`),
-  resetPassword: (id: string, data: any) => api.patch(`/users/${id}/reset-password`, data),
 };

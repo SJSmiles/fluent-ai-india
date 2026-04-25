@@ -95,7 +95,7 @@ const Companies: React.FC = () => {
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
                             style={{ height: '38px', paddingLeft: '34px', paddingRight: '12px', border: '1px solid #e2e4e9', borderRadius: '8px', fontSize: '13px', background: '#fff', outline: 'none', fontFamily: 'inherit', width: '240px' }}
-                            onFocus={e => { e.target.style.borderColor = '#0a485e'; e.target.style.boxShadow = '0 0 0 3px rgba(10,72,94,0.08)'; }}
+                            onFocus={e => { e.target.style.borderColor = '#4f46e5'; e.target.style.boxShadow = '0 0 0 3px rgba(10,72,94,0.08)'; }}
                             onBlur={e => { e.target.style.borderColor = '#e2e4e9'; e.target.style.boxShadow = 'none'; }}
                         />
                     </div>
@@ -133,13 +133,13 @@ const Companies: React.FC = () => {
                                         <td>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                 <button onClick={() => setEditCompany(company)} title="Edit" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: '4px', display: 'flex' }}
-                                                    onMouseEnter={e => (e.currentTarget.style.color = '#0a485e')}
+                                                    onMouseEnter={e => (e.currentTarget.style.color = '#4f46e5')}
                                                     onMouseLeave={e => (e.currentTarget.style.color = '#ccc')}>
                                                     <Pencil size={15} />
                                                 </button>
                                                 {!isOwnCompany && (
                                                     <button onClick={() => requestToggle(company)} title={company.isActive ? 'Deactivate' : 'Activate'} disabled={togglingId === company._id} style={{ background: 'none', border: 'none', cursor: togglingId === company._id ? 'not-allowed' : 'pointer', padding: '4px', display: 'flex', opacity: togglingId === company._id ? 0.5 : 1 }}>
-                                                        {togglingId === company._id ? <Loader2 size={22} style={{ color: '#0a485e', animation: 'spin 0.8s linear infinite' }} /> : company.isActive ? <ToggleRight size={22} style={{ color: '#059669' }} /> : <ToggleLeft size={22} style={{ color: '#bbb' }} />}
+                                                        {togglingId === company._id ? <Loader2 size={22} style={{ color: '#4f46e5', animation: 'spin 0.8s linear infinite' }} /> : company.isActive ? <ToggleRight size={22} style={{ color: '#059669' }} /> : <ToggleLeft size={22} style={{ color: '#bbb' }} />}
                                                     </button>
                                                 )}
                                             </div>
@@ -238,7 +238,7 @@ const CompanyForm = ({ onClose }: { onClose: () => void }) => {
                 <div><label style={labelStyle}>Max Users</label><input type="number" min="1" style={inputStyle} value={form.maxUsersAllowed} onChange={e => set('maxUsersAllowed', parseInt(e.target.value) || 4)} /></div>
                 <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '4px' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}>
-                        <input type="checkbox" checked={form.isReseller} onChange={e => set('isReseller', e.target.checked)} style={{ accentColor: '#0a485e' }} /> Is Reseller
+                        <input type="checkbox" checked={form.isReseller} onChange={e => set('isReseller', e.target.checked)} style={{ accentColor: '#4f46e5' }} /> Is Reseller
                     </label>
                 </div>
             </div>
@@ -253,7 +253,7 @@ const CompanyForm = ({ onClose }: { onClose: () => void }) => {
                 <label style={labelStyle}>Email</label>
                 <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e4e9', borderRadius: '8px', background: '#f9fafb', overflow: 'hidden' }}>
                     <input style={{ flex: 1, padding: '10px 12px', border: 'none', background: 'transparent', fontSize: '13px', outline: 'none', fontFamily: 'inherit', color: '#0a0a0a' }} value={form.user.emailLocal} onChange={e => setUser('emailLocal', e.target.value)} placeholder="john" />
-                    <span style={{ padding: '10px 12px 10px 0', fontSize: '13px', color: form.domain ? '#0a485e' : '#aaa', fontWeight: 500, whiteSpace: 'nowrap' }}>@{form.domain || 'mycompany.com'}</span>
+                    <span style={{ padding: '10px 12px 10px 0', fontSize: '13px', color: form.domain ? '#4f46e5' : '#aaa', fontWeight: 500, whiteSpace: 'nowrap' }}>@{form.domain || 'mycompany.com'}</span>
                 </div>
             </div>
             <div style={{ marginBottom: '12px' }}>

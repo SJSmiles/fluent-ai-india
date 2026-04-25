@@ -20,7 +20,7 @@ const Pagination = ({ page, total, limit, onPage }: { page: number; total: numbe
                     <ChevronLeft size={15} />
                 </button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                    <button key={p} onClick={() => onPage(p)} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', borderColor: p === page ? '#0a485e' : '#e2e4e9', background: p === page ? '#0a485e' : '#fff', color: p === page ? '#fff' : '#555' }}>
+                    <button key={p} onClick={() => onPage(p)} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', borderColor: p === page ? '#4f46e5' : '#e2e4e9', background: p === page ? '#4f46e5' : '#fff', color: p === page ? '#fff' : '#555' }}>
                         {p}
                     </button>
                 ))}
@@ -140,7 +140,7 @@ const Blacklist: React.FC = () => {
                         <Search size={15} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#b0b4ba', pointerEvents: 'none' }} />
                         <input type="text" placeholder="Search number or email..." value={search} onChange={e => setSearch(e.target.value)}
                             style={{ ...inputStyle, paddingLeft: '34px', width: '220px' }}
-                            onFocus={e => { e.target.style.borderColor = '#0a485e'; e.target.style.boxShadow = '0 0 0 3px rgba(10,72,94,0.08)'; }}
+                            onFocus={e => { e.target.style.borderColor = '#4f46e5'; e.target.style.boxShadow = '0 0 0 3px rgba(10,72,94,0.08)'; }}
                             onBlur={e => { e.target.style.borderColor = '#e2e4e9'; e.target.style.boxShadow = 'none'; }} />
                     </form>
                 </div>
