@@ -607,15 +607,22 @@ const BatchCallForm = ({ companyId, onClose, onError, onSuccess }: {
                         <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contacts Upload</h3>
                         <button 
                             type="button"
-                            onClick={(e) => {
+                            onClick={async (e) => {
                                 e.stopPropagation();
-                                const csvContent = "name,phone\nJohn Doe,+1234567890\nJane Smith,+0987654321";
-                                const blob = new Blob([csvContent], { type: 'text/csv' });
-                                const url = window.URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = 'sample_contacts.csv';
-                                a.click();
+                                try {
+                                    const res = await agentService.downloadSample();
+                                    const url = window.URL.createObjectURL(new Blob([res.data]));
+                                    const link = document.createElement('a');
+                                    link.href = url;
+                                    link.setAttribute('download', 'sample_contacts.csv');
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    link.remove();
+                                    window.URL.revokeObjectURL(url);
+                                } catch (err) {
+                                    console.error('Failed to download sample:', err);
+                                    setToast({ message: 'Failed to download sample file', type: 'error' });
+                                }
                             }}
                             style={{ border: 'none', background: 'none', color: '#6366f1', fontSize: '12px', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
                         >

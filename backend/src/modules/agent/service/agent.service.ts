@@ -90,54 +90,35 @@ export class AgentService {
       const SUPER_ADMIN_COMPANY_ID = process.env.SUPER_ADMIN_COMPANY_ID;
       const isSuperAdmin = user?.companyId?.toString() === SUPER_ADMIN_COMPANY_ID;
 
-      let targetUserIds: any[] = [];
-      targetUserIds = [user.userId];
+      const searchQuery: any = { isArchived: { $ne: true } };
 
-      // ── Super Admin ───────────────────────────────────────────────────────
+      // ─── Filter by Company ────────────────────────────────────────────────
       if (isSuperAdmin) {
-        if (payload?.companyId && user?.isAdmin) {
-          const companyUsers = await User.find({
-            companyId: payload?.companyId ? new Types.ObjectId(payload.companyId) : new Types.ObjectId(user.companyId),
-            isArchived: false
-          }).select('_id').lean();
-
-          targetUserIds = companyUsers.map(u => u._id);
-          if (payload?.userId) {
-            targetUserIds = targetUserIds.filter(id => id.toString() === payload.userId);
-          }
+        if (payload?.companyId) {
+          searchQuery.companyId = new Types.ObjectId(payload.companyId);
         }
-      }
-      // ── Company Admin ─────────────────────────────────────────────────────
-      else if (user.isAdmin) {
-        if (payload.userId) {
-          targetUserIds = [new Types.ObjectId(payload.userId)];
-        } else {
-          const companyUsers = await User.find({
-            companyId: payload?.companyId ? new Types.ObjectId(payload.companyId) : new Types.ObjectId(user.companyId),
-            isArchived: false
-          }).select('_id').lean();
-
-          targetUserIds = companyUsers.map(u => u._id);
-        }
-      }
-      if (targetUserIds.length === 0) {
-        return { status: true, message: 'No users found for this filter', data: [], totalCount: 0 };
-      }
-      // Get mapped agent IDs for target users
-      const userAgents = await UserAgent.find({
-        userId: { $in: targetUserIds },
-        isArchived: false
-      }).select('agentId userId isPrimary').lean();
-
-      const agentIds = userAgents.map(ua => ua.agentId);
-      if (agentIds.length === 0) {
-        return { status: true, message: 'No agents found for the selected users', data: [], totalCount: 0 };
+      } else {
+        // Regular admins and users only see their own company's agents
+        searchQuery.companyId = new Types.ObjectId(user.companyId);
       }
 
-      const searchQuery: any = {
-        isArchived: { $ne: true },
-        _id: { $in: agentIds }
-      };
+      // ─── User-level Mapping (for non-admins) ──────────────────────────────
+      let userAgents: any[] = [];
+      if (!user.isAdmin && !isSuperAdmin) {
+        userAgents = await UserAgent.find({
+          userId: user.userId,
+          isArchived: false
+        }).select('agentId userId isPrimary').lean();
+
+        const agentIds = userAgents.map(ua => ua.agentId).filter(Boolean);
+        searchQuery._id = { $in: agentIds };
+      } else {
+        // For admins, we still want to know which agents are mapped to them (for isPrimary flag)
+        userAgents = await UserAgent.find({
+          userId: user.userId,
+          isArchived: false
+        }).select('agentId userId isPrimary').lean();
+      }
 
       if (payload?.search) {
         const searchRegex = new RegExp(payload.search, 'i');

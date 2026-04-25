@@ -9,4 +9,5 @@ export const agentService = {
   update: (id: string, data: any) => api.put(`/agents/update/${id}`, data),
   delete: (id: string) => api.delete(`/agents/${id}`),
   setPrimary: (id: string) => api.post(`/agents/${id}/set-primary`, {}),
+  downloadSample: () => api.get("/agents/download-sample", { responseType: 'blob' }),
 };

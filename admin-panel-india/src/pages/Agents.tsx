@@ -75,19 +75,29 @@ const Agents: React.FC = () => {
 
     // Fetch agents on mount and page change
     useEffect(() => {
-        fetchAgents(page);
+        if (selectedCompanyId || !user?.superAdmin) {
+            fetchAgents(page);
+        }
     }, [page, selectedCompanyId]);
 
     useEffect(() => {
-        if (user?.isAdmin || user?.isSuperAdmin) {
+        if (user?.superAdmin) {
             fetchCompanies();
+        } else if (user?.companyId) {
+            setSelectedCompanyId(user.companyId);
         }
     }, [user]);
 
     const fetchCompanies = async () => {
         try {
             const res = await companyService.getFilterListing();
-            setCompaniesList(res.data.data || []);
+            const list = res.data.data || [];
+            setCompaniesList(list);
+            if (user?.companyId) {
+                setSelectedCompanyId(user.companyId);
+            } else if (list.length > 0) {
+                setSelectedCompanyId(list[0]._id);
+            }
         } catch (err) { console.error(err); }
     };
 
@@ -310,6 +320,8 @@ const Agents: React.FC = () => {
                             <button onClick={() => setShowModal(false)} style={{ width: '36px', height: '36px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}><X size={20} /></button>
                         </div>
                         <AgentForm
+                            companiesList={companiesList}
+                            selectedCompanyId={selectedCompanyId}
                             onClose={() => { setShowModal(false); fetchAgents(page); }}
                             onError={msg => setToast({ message: msg, type: 'error' })}
                             onSuccess={msg => setToast({ message: msg, type: 'success' })}
@@ -323,12 +335,22 @@ const Agents: React.FC = () => {
 
 // ─── Agent Form ───────────────────────────────────────────────────────────────
 // ─── Agent Form ───────────────────────────────────────────────────────────────
-const AgentForm = ({ onClose, onError, onSuccess }: {
+const AgentForm = ({ companiesList, selectedCompanyId, onClose, onError, onSuccess }: {
+    companiesList: any[];
+    selectedCompanyId: string;
     onClose: () => void;
     onError: (msg: string) => void;
     onSuccess: (msg: string) => void;
 }) => {
-    const [form, setForm] = useState({ name: '', firstMessage: '', prompt: '', endCallMessage: '', voiceId: '' });
+    const { user } = useAuth();
+    const [form, setForm] = useState({ 
+        name: '', 
+        firstMessage: '', 
+        prompt: '', 
+        endCallMessage: '', 
+        voiceId: '',
+        companyId: selectedCompanyId || user?.companyId || ''
+    });
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: { preventDefault(): void }) => {
@@ -343,7 +365,7 @@ const AgentForm = ({ onClose, onError, onSuccess }: {
         finally { setLoading(false); }
     };
 
-    return <AgentFormBody form={form} setForm={setForm} loading={loading} onSubmit={handleSubmit} onClose={onClose} submitLabel="Create Agent" />;
+    return <AgentFormBody form={form} setForm={setForm} loading={loading} onSubmit={handleSubmit} onClose={onClose} submitLabel="Create Agent" companiesList={companiesList} user={user} />;
 };
 
 // ─── Edit Agent Form ──────────────────────────────────────────────────────────
@@ -374,20 +396,38 @@ const EditAgentForm = ({ agent, onClose, onError, onSuccess }: {
         finally { setLoading(false); }
     };
 
-    return <AgentFormBody form={form} setForm={setForm} loading={loading} onSubmit={handleSubmit} onClose={onClose} submitLabel="Update Agent" />;
+    return <AgentFormBody form={form} setForm={setForm} loading={loading} onSubmit={handleSubmit} onClose={onClose} submitLabel="Update Agent" user={user} />;
 };
 
 // ─── Shared Form Body ─────────────────────────────────────────────────────────
-const AgentFormBody = ({ form, setForm, loading, onSubmit, onClose, submitLabel }: any) => {
+const AgentFormBody = ({ form, setForm, loading, onSubmit, onClose, submitLabel, companiesList, user }: any) => {
     const inputStyle: React.CSSProperties = { width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '14px', background: '#f8fafc', outline: 'none', transition: 'all 0.2s', color: '#1e293b' };
     const labelStyle: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' };
     const descStyle: React.CSSProperties = { fontSize: '12px', color: '#94a3b8', marginTop: '6px' };
+
+    const isSuperAdmin = user?.isAdmin && user?.superAdmin;
 
     return (
         <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
             <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
                 {/* Left Column: Form Fields */}
                 <div className="hide-scrollbar" style={{ width: '35%', padding: '32px', borderRight: '1px solid #f1f5f9', overflowY: 'auto' }}>
+                    {isSuperAdmin && companiesList && (
+                        <div style={{ marginBottom: '24px' }}>
+                            <label style={labelStyle}>Company *</label>
+                            <select 
+                                required 
+                                style={{ ...inputStyle, appearance: 'auto' }} 
+                                value={form.companyId} 
+                                onChange={e => setForm({ ...form, companyId: e.target.value })}
+                            >
+                                <option value="">Select Company</option>
+                                {companiesList.map((c: any) => (
+                                    <option key={c._id} value={c._id}>{c.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                     <div style={{ marginBottom: '24px' }}>
                         <label style={labelStyle}>Name *</label>
                         <input required style={inputStyle} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Sales AI Agent (Sourabh)" />

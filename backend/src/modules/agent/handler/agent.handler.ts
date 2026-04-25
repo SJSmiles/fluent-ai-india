@@ -141,16 +141,12 @@ export async function downloadSampleExcelHandler(request: any, reply: any) {
       request.query
     );
 
-    const res = reply.raw;
-    res.writeHead(200, {
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-      'Content-Length': buffer.length,
-    });
-    res.end(buffer);
-
-    // Tell Fastify the reply is already handled
-    reply.hijack();
+    return reply
+      .status(200)
+      .header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      .header('Content-Disposition', `attachment; filename="${filename}"`)
+      .header('Content-Length', buffer.length)
+      .send(buffer);
 
   } catch (error: any) {
     Server.log.error(error, 'Error in downloadSampleExcelHandler');
