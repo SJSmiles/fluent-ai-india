@@ -264,7 +264,7 @@ export async function handleTestCallUpdate(callUUID: string): Promise<void> {
         let sentiment: string | null = null;
         let nextAction: string | null = null;
         let intent: string | null = null;
-        let rawLeadStatus: any;
+
 
         let summaryRes: any = null;
         let leadRes: any = null;
@@ -289,18 +289,15 @@ export async function handleTestCallUpdate(callUUID: string): Promise<void> {
 
             // 🚀 PARALLEL AI CALLS
             [summaryRes, leadRes, analysisRes] = await Promise.all([
-                runAI(summaryPrompt, transcript),
-                runAI(leadPrompt, transcript),
-                runAI(DEFAULT_ANALYSIS_PROMPT, transcript),
+                runAI(summaryPrompt, transcript, { expectJson: false }), // ✅ STRING
+                runAI(leadPrompt, transcript, { expectJson: true }),     // ✅ JSON
+                runAI(DEFAULT_ANALYSIS_PROMPT, transcript, { expectJson: true }), // ✅ JSON
             ]);
 
-            // ✅ EXTRACT VALUES
-            rawLeadStatus = leadRes?.leadStatus || null;
-
-            summary = summaryRes?.summary || null;
-
+            summary = summaryRes || null;
+            leadStatus = leadRes || null;
             leadStatus = mapLeadStatus(
-                rawLeadStatus,
+                leadStatus,
                 companyData.leadStatus || []
             );
 
@@ -310,8 +307,7 @@ export async function handleTestCallUpdate(callUUID: string): Promise<void> {
 
             Logger.info('🧠 AI Results', {
                 summary,
-                rawLeadStatus,
-                finalLeadStatus: leadStatus,
+                leadStatus,
                 sentiment,
                 nextAction,
                 intent,
@@ -363,7 +359,7 @@ function normalize(text: string) {
     return text?.toLowerCase().trim();
 }
 
-function mapLeadStatus(aiStatus: string, allowedStatuses: string[]) {
+function mapLeadStatus(aiStatus: any, allowedStatuses: string[]) {
     if (!aiStatus) return 'Unclassified';
 
     const normalizedAI = normalize(aiStatus);
@@ -385,7 +381,11 @@ function mapLeadStatus(aiStatus: string, allowedStatuses: string[]) {
     return 'Unclassified';
 }
 
-async function runAI(prompt: string, transcript: any[]) {
+async function runAI(
+    prompt: string,
+    transcript: any[],
+    options?: { expectJson?: boolean }
+) {
     const finalPrompt = `
 ${prompt}
 
@@ -395,11 +395,38 @@ ${transcript.map(t => `${t.role}: ${t.text}`).join('\n')}
 
     const response = await generateChat(finalPrompt);
 
-    try {
-        return JSON.parse(response);
-    } catch (e) {
+    console.log('🤖 AI Raw Response:', response);
+
+    // ✅ If expecting plain text → return as-is
+    if (!options?.expectJson) {
+        return { text: response?.trim() };
+    }
+
+    // ✅ JSON mode
+    const parsed = safeParseJSON(response);
+
+    if (!parsed) {
         Logger.error('❌ AI parse failed', { response });
         return {};
+    }
+
+    return parsed;
+}
+
+
+function safeParseJSON(response: string) {
+    try {
+        return JSON.parse(response);
+    } catch {
+        const match = response.match(/\{[\s\S]*\}/);
+        if (match) {
+            try {
+                return JSON.parse(match[0]);
+            } catch (e) {
+                Logger.error('❌ JSON extraction failed', { response });
+            }
+        }
+        return null;
     }
 }
 

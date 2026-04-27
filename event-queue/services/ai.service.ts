@@ -172,7 +172,7 @@ export class OpenAICompatibleLLM {
         if (!this.openaiClient) {
             throw new Error('OpenAI client not initialized');
         }
-
+        console.log(`OpenAI generate request with model: ${this.model}`);
         const response = await this.openaiClient.chat.completions.create({
             model: this.model,
             messages: this.convertMessages(messages),
